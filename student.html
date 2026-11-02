@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학습 현황</title>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <style>
+    body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .container { background-color: #ffffff; max-width: 720px; width: 100%; padding: 28px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); box-sizing: border-box; }
+    h1 { text-align: center; color: #003366; margin: 0 0 4px; font-size: 22px; }
+    .sub { text-align: center; color: #888; font-size: 13px; margin-bottom: 24px; }
+    .cards { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; flex: 1; min-width: 140px; text-align: center; }
+    .card .label { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+    .card .value { font-size: 26px; font-weight: 700; color: #0f172a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { padding: 10px 8px; text-align: center; font-size: 14px; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f1f5f9; color: #334155; }
+    td.level-cell { text-align: left; color: #475569; font-size: 13px; }
+    .score-good { color: #16a34a; font-weight: bold; }
+    .score-warn { color: #dc2626; font-weight: bold; }
+    .empty-box { text-align: center; padding: 40px 10px; color: #94a3b8; }
+    .error-box { text-align: center; padding: 30px 10px; color: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="title">📊 학습 현황</h1>
+    <div class="sub" id="sub">불러오는 중...</div>
+    <div id="content"></div>
+  </div>
+
+<script>
+  // 주소 예시: student.html?grade=4&classNum=해반&num=3
+  const params = new URLSearchParams(location.search);
+  const grade = params.get('grade') || '';
+  const classNum = params.get('classNum') || '';
+  const num = params.get('num') || '';
+  const REFRESH_SEC = 30;
+
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function render(data) {
+    document.getElementById('title').textContent = '📊 ' + (data.name || '학생') + ' 학습 현황';
+    document.title = (data.name || '학생') + ' 학습 현황';
+    document.getElementById('sub').textContent = data.todayDateStr + ' 오늘 기록 · ' + REFRESH_SEC + '초마다 자동 새로고침';
+
+    const min = Math.floor(data.totalSeconds / 60), sec = data.totalSeconds % 60;
+    let html = `
+      <div class="cards">
+        <div class="card"><div class="label">오늘 누적 학습시간</div><div class="value">${min}분 ${sec}초</div></div>
+        <div class="card"><div class="label">오늘 학습 문제 세트 수</div><div class="value">${data.totalCount}회</div></div>
+        <div class="card"><div class="label">오늘 학습한 단계 수</div><div class="value">${data.levelRows.length}개</div></div>
+      </div>`;
+
+    if (data.levelRows.length === 0) {
+      html += '<div class="empty-box">아직 오늘 학습 기록이 없습니다.<br>연산진단시스템에서 문제를 풀면 여기에 표시됩니다.</div>';
+    } else {
+      html += '<table><thead><tr><th>영역</th><th>단계</th><th>오늘 평균점수</th><th>횟수</th></tr></thead><tbody>';
+      data.levelRows.forEach(r => {
+        const cls = r.avgScore >= 80 ? 'score-good' : 'score-warn';
+        html += `<tr><td>${esc(r.operation)}</td><td class="level-cell">${esc(r.level)}</td><td class="${cls}">${r.avgScore}점</td><td>${r.count}회</td></tr>`;
+      });
+      html += '</tbody></table>';
+    }
+    document.getElementById('content').innerHTML = html;
+  }
+
+  function load() {
+    if (!grade || !classNum || !num) {
+      document.getElementById('sub').textContent = '';
+      document.getElementById('content').innerHTML = '<div class="error-box">주소에 학년·반·번호가 없습니다.<br>예: student.html?grade=4&classNum=해반&num=3</div>';
+      return;
+    }
+    callApi('getStudentDashboardData', [grade, classNum, num])
+      .then(render)
+      .catch(err => {
+        document.getElementById('sub').textContent = '';
+        document.getElementById('content').innerHTML = '<div class="error-box">' + esc(err.message) + '</div>';
+      });
+  }
+
+  load();
+  // 페이지 전체를 다시 읽지 않고 데이터만 다시 불러옵니다 (화면이 깜빡이지 않음)
+  setInterval(load, REFRESH_SEC * 1000);
+</script>
+</body>
+</html>
