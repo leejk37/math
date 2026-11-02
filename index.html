@@ -25,6 +25,7 @@
     #nav-menu { display: flex; gap: 8px; margin-bottom: 25px; border-bottom: 3px solid #e2e8f0; padding-bottom: 10px; width: 100%; }
     .nav-btn { flex: 1; padding: 12px 5px; font-size: 18px; font-weight: bold; border: none; background-color: #e2e8f0; border-radius: 8px 8px 0 0; cursor: pointer; transition: 0.3s; color: #475569; position: relative; top: 3px; }
     .nav-btn:hover { background-color: #cbd5e1; }
+    #nav-menu .nav-btn { font-size: 15px; white-space: nowrap; padding-left: 4px; padding-right: 4px; }
     .nav-btn.active { background-color: #003366; color: white; top: 0; padding-bottom: 15px; border-bottom: none; }
     
     .screen { display: none; width: 100%; animation: fadeIn 0.3s ease-in-out; }
@@ -208,7 +209,7 @@
             <input type="text" id="featureName" placeholder="이름" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;">
           </div>
           <select id="featureOperation" onchange="updateFeatureSubLevels()" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;">
-            <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈">곱셈</option><option value="나눗셈">나눗셈</option>
+            <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈">곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수">4학년 분수</option>
           </select>
           <select id="featureLevel" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;"></select>
           <textarea id="featureComment" rows="4" placeholder="불편사항을 입력해주세요" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
@@ -228,7 +229,7 @@
         </select>
         <select id="resetClass" style="padding: 5px; width: 65px;"></select>
         <select id="resetOperation" onchange="updateResetSubLevels()" style="padding: 5px; width: 70px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수">4학년 분수</option>
         </select>
         <select id="resetTargetLevel" style="padding: 5px; flex-grow: 1; max-width: 450px;"></select>
         <button class="action-btn" style="background-color: #dc2626; margin-left: auto;" onclick="executeResetRecords()">기록 삭제</button>
@@ -241,7 +242,7 @@
         <select id="searchGrade" style="padding: 5px; width: 75px;"></select>
         <select id="searchClass" style="padding: 5px; width: 65px;"></select>
         <select id="searchOperation" onchange="updateSearchSubLevels()" style="padding: 5px; width: 75px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수">4학년 분수</option>
         </select>
         <select id="searchTargetLevel" style="padding: 5px; flex-grow: 1; max-width: 300px;"><option value="전체">모든 단계</option></select>
         <input type="number" id="searchScore" value="80" style="width: 45px; text-align: right; padding: 5px;"> 점
@@ -265,7 +266,7 @@
           <option value="student">학생 개인 단계별 평균 기록</option>
         </select>
         <select id="dashOperation" style="padding: 5px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수">4학년 분수</option>
         </select>
         <select id="dashGrade"></select>
         <select id="dashClassNum"></select>
@@ -282,6 +283,8 @@
       <button id="btn-sub" class="nav-btn" onclick="switchScreen('sub')">➖ 뺄셈 진단</button>
       <button id="btn-mul" class="nav-btn active" onclick="switchScreen('mul')">✖️ 곱셈 진단</button>
       <button id="btn-div" class="nav-btn" onclick="switchScreen('div')">➗ 나눗셈 진단</button>
+      <button id="btn-frac3" class="nav-btn" onclick="switchScreen('frac3')">🍕 3학년 분수·소수</button>
+      <button id="btn-frac4" class="nav-btn" onclick="switchScreen('frac4')">🍰 4학년 분수</button>
     </div>
 
     <div style="background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 25px; width: calc(100% - 30px); display: flex; gap: 10px; align-items: center; justify-content: center; border: 2px solid #cbd5e1;">
@@ -406,6 +409,32 @@
 </div>
 
 
+    <div id="screen-frac3" class="screen">
+      <div id="frac3-curriculumControls" style="background: #fef9c3; border: 2px solid #fde047; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
+        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
+          <label style="color: #a16207;"><b>세부 단계 : </b></label>
+          <select id="frac3-subLevel" data-op="3학년 분수·소수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
+        </div>
+        <div id="frac3-startSection" style="text-align: center;">
+          <button class="submit-btn" id="frac3-startBtn" style="background-color: #a16207; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac3')">3학년 분수·소수 진단 시작</button>
+        </div>
+      </div>
+      <iframe id="frac3-frame" title="3학년 분수·소수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
+    </div>
+
+    <div id="screen-frac4" class="screen">
+      <div id="frac4-curriculumControls" style="background: #fce7f3; border: 2px solid #f9a8d4; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
+        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
+          <label style="color: #be185d;"><b>세부 단계 : </b></label>
+          <select id="frac4-subLevel" data-op="4학년 분수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
+        </div>
+        <div id="frac4-startSection" style="text-align: center;">
+          <button class="submit-btn" id="frac4-startBtn" style="background-color: #be185d; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac4')">4학년 분수 진단 시작</button>
+        </div>
+      </div>
+      <iframe id="frac4-frame" title="4학년 분수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
+    </div>
+
     <div id="screen-mul" class="screen active">
       <div id="mul-curriculumControls" style="background: #e0f2fe; border: 2px solid #bae6fd; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 6px;">
@@ -507,8 +536,32 @@
           "9단계(2137): 세수의 혼합계산",
           "10단계(3114): 세자리수의 뺄셈 (받아내림 없음)",
           "11단계(3115): 세자리수의 뺄셈 (받아내림 1회)",
-          "12단계(3116): 세자리수의 뺄셈 (받아내림 2회)"]
+          "12단계(3116): 세자리수의 뺄셈 (받아내림 2회)"],
+      // 💡 분수 영역: 문제 화면은 frac 폴더의 페이지(파일명은 FRAC_FILES 참고)
+      "3학년 분수·소수": [
+          "1단계(3161): 원을 똑같이 나누기 (활동·기록 없음)",
+          "2단계(3162): 똑같이 나누고 분수로 나타내기",
+          "3단계(3163): 분수만큼 색칠하고 나머지를 분수로",
+          "4단계(3164): 단위분수 알기",
+          "5단계(3165): 분모가 같은 분수의 크기 비교",
+          "6단계(3166): 단위분수의 크기 비교",
+          "7단계(3167): 분수와 소수",
+          "8단계(3168): 소수 알기 종합",
+          "9단계(3169): 소수의 크기 비교"],
+      // 1·2단계는 분수의 덧셈(4211·4212)을 넣을 자리로 비워 둠
+      "4학년 분수": [
+          "3단계(4213): 진분수의 뺄셈",
+          "4단계(4214): 대분수의 뺄셈 (자연수끼리·분수끼리)",
+          "5단계(4214): 대분수의 뺄셈 (가분수로 바꾸어)",
+          "6단계(4215): 자연수 − 분수",
+          "7단계(4216): 받아내림이 있는 대분수의 뺄셈"]
       };
+
+    // 단계 → 문제 페이지 파일 (web/frac 폴더)
+    const FRAC_FILES = {
+      "3학년 분수·소수": ["3161.html","3162.html","3163.html","3164.html","3165.html","3166.html","3167.html","3168.html","3169.html"],
+      "4학년 분수": ["4213.html","4214a.html","4214b.html","4215.html","4216.html"]
+    };
 
 
     let studentData = {}; 
@@ -544,7 +597,7 @@
     });
 
     function switchScreen(type) {
-      ['add', 'sub', 'mul', 'div'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
+      ['add', 'sub', 'mul', 'div', 'frac3', 'frac4'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
       document.getElementById('screen-' + type).classList.add('active'); document.getElementById('btn-' + type).classList.add('active');
     }
 
@@ -4842,6 +4895,79 @@ setTimeout(() => {
         });
       });
     })();
+
+    // ==========================================
+    // 🍕 분수 영역 (3학년 분수·소수 / 4학년 분수)
+    //  - 문제 화면은 frac 폴더의 페이지를 iframe으로 띄움
+    //  - 학생 정보는 sessionStorage로 넘기고(주소에 이름을 넣지 않음), 저장은 각 페이지의 frac-kit.js가 담당
+    // ==========================================
+    function initFracLevelSelects() {
+      ['frac3', 'frac4'].forEach(function(key) {
+        const sel = document.getElementById(key + '-subLevel');
+        if (!sel) return;
+        sel.innerHTML = '';
+        (curriculumData[sel.dataset.op] || []).forEach(function(text) { sel.add(new Option(text, text)); });
+        sel.addEventListener('change', function() { document.getElementById(key + '-startBtn').focus(); });
+      });
+    }
+
+    function startFracQuiz(key) {
+      if (!document.getElementById('studentName').value) { alert("학생 정보를 먼저 선택해주세요!"); return; }
+      const sel = document.getElementById(key + '-subLevel');
+      const op = sel.dataset.op;
+      const file = (FRAC_FILES[op] || [])[sel.selectedIndex];
+      if (!file) { alert('이 단계의 문제 화면이 아직 연결되지 않았습니다.'); return; }
+
+      const nonce = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      try {
+        sessionStorage.setItem('frac_session', JSON.stringify({
+          nonce: nonce,
+          grade: document.getElementById('grade').value,
+          classNum: document.getElementById('classNum').value,
+          studentNum: document.getElementById('studentNum').value,
+          name: document.getElementById('studentName').value,
+          operation: op,
+          level: sel.value
+        }));
+      } catch (e) { alert('이 브라우저에서는 기록을 넘길 수 없습니다. 시크릿 창이 아닌지 확인해 주세요.'); return; }
+
+      ['dashboardControls', 'targetSearchResult', 'chartContainer', 'nav-menu'].forEach(function(id) {
+        const el = document.getElementById(id); if (el) el.style.display = 'none';
+      });
+      document.getElementById(key + '-curriculumControls').style.display = 'none';
+      const frame = document.getElementById(key + '-frame');
+      frame.style.height = '600px';
+      frame.style.display = 'block';
+      frame.src = 'frac/' + file + '?s=' + nonce;
+    }
+
+    function resetFracScreen() {
+      ['frac3', 'frac4'].forEach(function(key) {
+        const frame = document.getElementById(key + '-frame');
+        if (frame) { frame.style.display = 'none'; frame.src = 'about:blank'; }
+        const ctrl = document.getElementById(key + '-curriculumControls');
+        if (ctrl) ctrl.style.display = 'block';
+      });
+      document.getElementById('dashboardControls').style.display = 'flex';
+      document.getElementById('nav-menu').style.display = 'flex';
+      try { sessionStorage.removeItem('frac_session'); } catch (e) {}
+    }
+
+    // 문제 페이지(iframe)가 보내는 신호: 높이 맞추기 / 단계 선택으로 돌아가기
+    window.addEventListener('message', function(e) {
+      if (e.origin !== location.origin || !e.data) return;
+      if (e.data.type === 'frac-height') {
+        ['frac3', 'frac4'].forEach(function(key) {
+          const frame = document.getElementById(key + '-frame');
+          if (frame && frame.contentWindow === e.source) frame.style.height = Math.max(400, e.data.h) + 'px';
+        });
+      } else if (e.data.type === 'frac-exit') {
+        resetFracScreen();
+      }
+    });
+
+    initFracLevelSelects();
+
     // 학교명·학년도는 GAS '설정' 시트에서 읽어 옵니다 (코드에 학교명을 적지 않음)
     callApi('getPublicConfig').then(function(c) {
       if (c.schoolName) { document.getElementById('footerSchool').textContent = c.schoolName; document.title = c.schoolName + ' 연산 진단 시스템'; }
