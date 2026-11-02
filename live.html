@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실시간 현황판</title>
+<script src="config.js"></script>
+<script src="api.js"></script>
+<style>
+  :root {
+    --bg: #f4f6fa; --panel: #ffffff; --line: #e3e7ef; --ink: #1d2433; --sub: #667085;
+    --none: #eef1f6; --none-ink: #98a2b3;
+    --s100: #12b76a; --s80: #6ce9a6; --s60: #fdb022; --s40: #f97066; --s20: #d92d20;
+    --accent: #2e6be6; --o: #12b76a; --x: #f04438;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 12px 20px; }
+  header h1 { font-size: 20px; margin: 0; white-space: nowrap; }
+  header h1 small { font-weight: 500; color: var(--sub); font-size: 14px; margin-left: 6px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
+  select, input[type=date], button { font: inherit; font-size: 15px; padding: 7px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: #fff; color: var(--ink); }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  label.toggle { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--sub); cursor: pointer; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #c0c6d2; display: inline-block; }
+  .dot.on { background: var(--s100); box-shadow: 0 0 0 4px rgba(18,183,106,.18); }
+  .dot.err { background: var(--x); }
+  #who { font-size: 13px; color: var(--sub); }
+
+  main { padding: 16px 20px 40px; max-width: 1500px; margin: 0 auto; }
+  .notice { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 28px; text-align: center;
+    color: var(--sub); line-height: 1.7; }
+  .notice b { color: var(--ink); }
+
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .stat .k { font-size: 13px; color: var(--sub); }
+  .stat .v { font-size: 26px; font-weight: 700; margin-top: 2px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-left: 8px solid var(--none);
+    border-radius: 12px; padding: 10px 12px; cursor: pointer; min-height: 118px; transition: transform .15s; }
+  .card:hover { transform: translateY(-2px); }
+  .card.none { background: var(--none); color: var(--none-ink); cursor: default; }
+  .card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .card .num { font-size: 15px; font-weight: 700; }
+  .card .name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .score { font-size: 30px; font-weight: 800; line-height: 1.1; margin-top: 4px; }
+  .card .lv { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); margin-top: 4px; }
+  .marks { display: flex; gap: 3px; margin-top: 6px; flex-wrap: wrap; }
+  .m { width: 20px; height: 20px; border-radius: 5px; font-size: 11px; font-weight: 700; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; }
+  .m.O { background: var(--o); } .m.X { background: var(--x); }
+  .card.flash { animation: flash 2.4s ease-out; }
+  @keyframes flash { 0% { box-shadow: 0 0 0 6px rgba(46,107,230,.55); } 100% { box-shadow: 0 0 0 0 rgba(46,107,230,0); } }
+
+  h2 { font-size: 17px; margin: 26px 0 10px; }
+  h2 small { font-weight: 500; color: var(--sub); font-size: 13px; margin-left: 6px; }
+  .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; }
+  .item { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .item .t { font-weight: 700; font-size: 15px; }
+  .item .s { font-size: 12px; color: var(--sub); margin: 2px 0 8px; }
+  .qrow { display: grid; grid-template-columns: 36px 1fr; gap: 8px; align-items: center; padding: 4px 0;
+    border-top: 1px dashed var(--line); font-size: 14px; }
+  .qrow .q { font-weight: 700; }
+  .bar { display: flex; align-items: center; gap: 8px; }
+  .bar > span:last-child { white-space: nowrap; }
+  .bar .fill { height: 10px; border-radius: 5px; background: var(--x); min-width: 2px; }
+  .bar .fill.zero { background: var(--o); }
+  .who-wrong { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+  table.feed { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; overflow: hidden; font-size: 14px; }
+  .feed th, .feed td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+  .feed th { background: #f8fafc; color: var(--sub); font-weight: 600; font-size: 13px; }
+
+  .dim { position: fixed; inset: 0; background: rgba(16,24,40,.45); display: none; align-items: center; justify-content: center; z-index: 20; padding: 16px; }
+  .dim.show { display: flex; }
+  .modal { background: #fff; border-radius: 14px; padding: 18px 20px; width: min(640px, 100%); max-height: 85vh; overflow: auto; }
+  .modal h3 { margin: 0 0 10px; }
+  .foot { margin-top: 30px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+  .foot button { font-size: 13px; color: var(--sub); }
+  .hidden { display: none !important; }
+
+  @media (max-width: 600px) {
+    header { padding: 10px 12px; } main { padding: 12px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .items { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>실시간 현황판<small id="schoolName"></small></h1>
+  <div class="controls">
+    <select id="grade" aria-label="학년"></select>
+    <select id="classNum" aria-label="반"></select>
+    <input type="date" id="day" aria-label="날짜">
+    <label class="toggle"><input type="checkbox" id="showNames" checked> 이름 보기</label>
+    <span class="dot" id="conn" title="연결 상태"></span>
+    <span id="who"></span>
+    <button id="loginBtn" class="primary">선생님 로그인</button>
+    <button id="logoutBtn" class="hidden">로그아웃</button>
+  </div>
+</header>
+
+<main>
+  <div id="msg" class="notice">불러오는 중…</div>
+
+  <section id="board" class="hidden">
+    <div class="summary">
+      <div class="stat"><div class="k">제출한 학생</div><div class="v" id="stSubmitted">-</div></div>
+      <div class="stat"><div class="k">오늘 제출 횟수</div><div class="v" id="stAttempts">-</div></div>
+      <div class="stat"><div class="k">최근 점수 평균</div><div class="v" id="stAvg">-</div></div>
+      <div class="stat"><div class="k">마지막 제출</div><div class="v" id="stLast">-</div></div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <h2>단계별 문항 오답<small>학생마다 그 단계의 가장 최근 제출만 셉니다</small></h2>
+    <div class="items" id="items"></div>
+
+    <h2>최근 제출<small>새 기록이 위에 옵니다</small></h2>
+    <table class="feed"><thead><tr><th>시각</th><th>번호</th><th>이름</th><th>영역·단계</th><th>점수</th><th>문항</th><th>걸린 시간</th></tr></thead>
+      <tbody id="feed"></tbody></table>
+
+    <div class="foot">
+      <button id="cleanBtn" title="오늘을 뺀 지난 날짜의 현황판 기록을 지웁니다. 시트 기록은 지워지지 않습니다.">지난 날짜 현황판 기록 지우기</button>
+    </div>
+  </section>
+</main>
+
+<div class="dim" id="dim"><div class="modal" id="modal"></div></div>
+
+<script type="module">
+const VER = '10.12.2';
+const base = `https://www.gstatic.com/firebasejs/${VER}/`;
+const cfg = (window.APP_CONFIG && window.APP_CONFIG.FIREBASE) || {};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const store = { get(k, d) { try { return localStorage.getItem('live_' + k) ?? d; } catch (e) { return d; } },
+                set(k, v) { try { localStorage.setItem('live_' + k, v); } catch (e) {} } };
+
+let roster = {};          // { 학년: { 반: { 번호: 이름 } } }
+let db, dbm, auth, authm, user = null;
+let unsub = null;
+let data = {};            // { 번호: { pushId: 기록 } }
+let seenCount = {};       // 깜빡임 표시용: 번호별 지난번 기록 수
+let firstLoad = true;
+
+function msg(html) { $('msg').innerHTML = html; $('msg').classList.remove('hidden'); $('board').classList.add('hidden'); }
+function showBoard() { $('msg').classList.add('hidden'); $('board').classList.remove('hidden'); }
+function setConn(state) { $('conn').className = 'dot' + (state === 'on' ? ' on' : state === 'err' ? ' err' : ''); }
+
+/* ---------- 시작 ---------- */
+init();
+
+async function init() {
+  if (!cfg.apiKey || !cfg.databaseURL) {
+    msg('<b>Firebase 설정이 비어 있습니다.</b><br>config.js의 FIREBASE 항목을 채운 뒤 다시 열어 주세요.<br>(설치 안내서 3단계)');
+    return;
+  }
+  $('day').value = window.liveToday();
+  callApi('getPublicConfig').then((c) => { if (c && c.schoolName) $('schoolName').textContent = c.schoolName; }).catch(() => {});
+
+  try {
+    roster = (await callApi('getStudentList')) || {};
+  } catch (e) {
+    roster = {};
+  }
+  fillGrades();
+
+  const [appm, am, dm] = await Promise.all([
+    import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-database.js')
+  ]);
+  authm = am; dbm = dm;
+  const app = appm.initializeApp(cfg);
+  auth = am.getAuth(app);
+  db = dm.getDatabase(app);
+
+  dm.onValue(dm.ref(db, '.info/connected'), (s) => setConn(s.val() ? 'on' : ''));
+
+  am.onAuthStateChanged(auth, (u) => {
+    user = (u && !u.isAnonymous) ? u : null;
+    $('who').textContent = user ? user.email : '';
+    $('loginBtn').classList.toggle('hidden', !!user);
+    $('logoutBtn').classList.toggle('hidden', !user);
+    if (user) subscribe();
+    else { stop(); msg('<b>선생님 계정으로 로그인해 주세요.</b><br>등록된 선생님 계정만 현황판을 볼 수 있습니다.'); }
+  });
+
+  $('loginBtn').onclick = () => {
+    const p = new am.GoogleAuthProvider();
+    p.setCustomParameters({ prompt: 'select_account' });
+    am.signInWithPopup(auth, p).catch((e) => msg('<b>로그인하지 못했습니다.</b><br>' + esc(e.message)));
+  };
+  $('logoutBtn').onclick = () => am.signOut(auth);
+  $('grade').onchange = () => { store.set('grade', $('grade').value); fillClasses(); subscribe(); };
+  $('classNum').onchange = () => { store.set('class', $('classNum').value); subscribe(); };
+  $('day').onchange = subscribe;
+  $('showNames').checked = store.get('names', '1') === '1';
+  $('showNames').onchange = () => { store.set('names', $('showNames').checked ? '1' : '0'); render(); };
+  $('cleanBtn').onclick = cleanOld;
+  $('dim').onclick = (e) => { if (e.target.id === 'dim') $('dim').classList.remove('show'); };
+  setInterval(render, 30000); // '몇 분 전' 표시 갱신
+}
+
+/* ---------- 학년·반 목록 ---------- */
+function fillGrades() {
+  const gs = Object.keys(roster).sort((a, b) => a - b);
+  $('grade').innerHTML = gs.length ? gs.map((g) => `<option value="${esc(g)}">${esc(g)}학년</option>`).join('')
+                                   : '<option value="">학년</option>';
+  const saved = store.get('grade', '');
+  if (gs.includes(saved)) $('grade').value = saved;
+  fillClasses();
+}
+function fillClasses() {
+  const cs = Object.keys(roster[$('grade').value] || {}).sort();
+  $('classNum').innerHTML = cs.length ? cs.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
+                                      : '<option value="">반</option>';
+  const saved = store.get('class', '');
+  if (cs.includes(saved)) $('classNum').value = saved;
+}
+
+/* ---------- Firebase 구독 ---------- */
+function stop() { if (unsub) { unsub(); unsub = null; } }
+function subscribe() {
+  stop();
+  if (!user) return;
+  const g = $('grade').value, c = $('classNum').value, day = $('day').value;
+  if (!g || !c || !day) { msg('학년과 반을 선택해 주세요. (학생명부에 학생이 있어야 목록이 나옵니다)'); return; }
+  data = {}; seenCount = {}; firstLoad = true;
+  msg('현황을 불러오는 중…');
+  const path = `live/${day}/${window.liveKey(g)}_${window.liveKey(c)}`;
+  unsub = dbm.onValue(dbm.ref(db, path), (snap) => {
+    data = snap.val() || {};
+    showBoard(); render(); firstLoad = false;
+  }, (err) => {
+    setConn('err');
+    if (String(err && err.message).includes('permission')) {
+      msg(`<b>${esc(user.email)}</b> 계정은 현황판을 볼 권한이 없습니다.<br>Firebase 콘솔의 teachers 목록에 이 계정을 등록해 주세요. (설치 안내서 6단계)`);
+    } else {
+      msg('<b>현황을 불러오지 못했습니다.</b><br>' + esc(err && err.message));
+    }
+  });
+}
+
+/* ---------- 화면 그리기 ---------- */
+function attemptsOf(num) {
+  return Object.entries(data[num] || {}).map(([id, r]) => ({ id, ...r }))
+    .filter((r) => typeof r.at === 'number').sort((a, b) => a.at - b.at);
+}
+function shortLevel(lv) { return String(lv || '').split(':')[0].trim(); }
+function colorOf(score) {
+  if (score == null) return 'var(--none)';
+  if (score >= 100) return 'var(--s100)';
+  if (score >= 80) return 'var(--s80)';
+  if (score >= 60) return 'var(--s60)';
+  if (score >= 40) return 'var(--s40)';
+  return 'var(--s20)';
+}
+function ago(ts) {
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 60) return '방금';
+  if (s < 3600) return Math.floor(s / 60) + '분 전';
+  return new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+}
+function clock(ts) { return new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+function mmss(sec) { sec = Number(sec) || 0; return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+function marks(str) { return String(str || '').split('').map((m, i) => `<span class="m ${m}" title="Q${i + 1}">${i + 1}</span>`).join(''); }
+
+function render() {
+  if ($('board').classList.contains('hidden')) return;
+  const names = (roster[$('grade').value] || {})[$('classNum').value] || {};
+  const showNames = $('showNames').checked;
+  const nums = Array.from(new Set([...Object.keys(names), ...Object.keys(data)])).sort((a, b) => Number(a) - Number(b));
+  const nameOf = (n) => showNames ? (names[n] || '') : '';
+
+  let submitted = 0, attempts = 0, sum = 0, last = 0;
+  const all = [];
+  const html = nums.map((n) => {
+    const list = attemptsOf(n);
+    attempts += list.length;
+    list.forEach((r) => all.push({ num: n, ...r }));
+    const changed = !firstLoad && list.length > (seenCount[n] || 0);
+    seenCount[n] = list.length;
+    if (!list.length) {
+      return `<div class="card none"><div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
+              <div class="lv" style="margin-top:14px">아직 제출 없음</div></div>`;
+    }
+    const r = list[list.length - 1];
+    submitted++; sum += r.score; last = Math.max(last, r.at);
+    return `<div class="card${changed ? ' flash' : ''}" data-num="${esc(n)}" style="border-left-color:${colorOf(r.score)}">
+      <div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
+      <div class="lv" title="${esc(r.op + ' ' + r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</div>
+      <div class="score" style="color:${colorOf(r.score)}">${r.score}</div>
+      <div class="marks">${marks(r.results)}</div>
+      <div class="meta"><span>${list.length}회째</span><span>${ago(r.at)}</span></div></div>`;
+  }).join('');
+  $('grid').innerHTML = html || '<div class="notice">이 반의 학생명부가 비어 있습니다.</div>';
+  $('grid').querySelectorAll('.card[data-num]').forEach((el) => { el.onclick = () => openStudent(el.dataset.num, nameOf(el.dataset.num)); });
+
+  $('stSubmitted').textContent = `${submitted} / ${nums.length}`;
+  $('stAttempts').textContent = attempts;
+  $('stAvg').textContent = submitted ? Math.round(sum / submitted) : '-';
+  $('stLast').textContent = last ? ago(last) : '-';
+
+  renderItems(nums, nameOf);
+  all.sort((a, b) => b.at - a.at);
+  $('feed').innerHTML = all.slice(0, 20).map((r) => `<tr><td>${clock(r.at)}</td><td>${esc(r.num)}</td><td>${esc(nameOf(r.num))}</td>
+      <td>${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td><td><div class="marks" style="margin:0">${marks(r.results)}</div></td><td>${mmss(r.sec)}</td></tr>`).join('')
+    || '<tr><td colspan="7" style="color:var(--sub)">아직 제출이 없습니다.</td></tr>';
+}
+
+/* 단계별 문항 오답: 학생마다 그 단계의 가장 최근 기록만 */
+function renderItems(nums, nameOf) {
+  const groups = {}; // key -> { op, level, latest: {num: rec} }
+  nums.forEach((n) => attemptsOf(n).forEach((r) => {
+    const key = r.op + '|' + shortLevel(r.level);
+    const g = groups[key] || (groups[key] = { op: r.op, level: r.level, latest: {}, lastAt: 0 });
+    g.latest[n] = r; g.lastAt = Math.max(g.lastAt, r.at);
+  }));
+  const list = Object.values(groups).sort((a, b) => b.lastAt - a.lastAt);
+  $('items').innerHTML = list.map((g) => {
+    const recs = Object.entries(g.latest);
+    const qn = Math.max(...recs.map(([, r]) => String(r.results || '').length), 0);
+    const rows = [];
+    for (let q = 0; q < qn; q++) {
+      const wrong = recs.filter(([, r]) => String(r.results || '')[q] === 'X').map(([n]) => n).sort((a, b) => a - b);
+      const w = Math.round((wrong.length / recs.length) * 100);
+      rows.push(`<div class="qrow"><span class="q">Q${q + 1}</span><div>
+        <div class="bar"><span class="fill${wrong.length ? '' : ' zero'}" style="width:${wrong.length ? Math.round(w * 0.7) : 2}%"></span>
+          <span>${wrong.length ? `<b>${wrong.length}명</b> 오답` : '모두 정답'}</span></div>
+        ${wrong.length ? `<div class="who-wrong">${wrong.map((n) => esc(n) + '번' + (nameOf(n) ? ' ' + esc(nameOf(n)) : '')).join(', ')}</div>` : ''}
+      </div></div>`);
+    }
+    const avg = Math.round(recs.reduce((s, [, r]) => s + r.score, 0) / recs.length);
+    return `<div class="item"><div class="t">${esc(g.op)} · ${esc(shortLevel(g.level))}</div>
+      <div class="s">${esc(g.level)}<br>${recs.length}명 · 평균 ${avg}점</div>${rows.join('')}</div>`;
+  }).join('') || '<div class="notice">아직 제출이 없습니다.</div>';
+}
+
+function openStudent(num, name) {
+  const list = attemptsOf(num).slice().reverse();
+  $('modal').innerHTML = `<h3>${esc(num)}번 ${esc(name)} <small style="color:var(--sub);font-weight:500">${esc($('day').value)} · ${list.length}회</small></h3>
+    <table class="feed"><thead><tr><th>시각</th><th>영역·단계</th><th>점수</th><th>문항</th><th>걸린 시간</th></tr></thead><tbody>
+    ${list.map((r) => `<tr><td>${clock(r.at)}</td><td title="${esc(r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td>
+      <td><div class="marks" style="margin:0">${marks(r.results)}</div></td><td>${mmss(r.sec)}</td></tr>`).join('')}
+    </tbody></table><div class="foot"><button onclick="document.getElementById('dim').classList.remove('show')">닫기</button></div>`;
+  $('dim').classList.add('show');
+}
+
+/* 지난 날짜 기록 지우기 (오늘 것은 남김). 시트 기록과는 무관 */
+async function cleanOld() {
+  if (!user) return;
+  const today = window.liveToday();
+  try {
+    const snap = await dbm.get(dbm.query(dbm.ref(db, 'live'), dbm.orderByKey(), dbm.endBefore(today)));
+    const days = Object.keys(snap.val() || {});
+    if (!days.length) { alert('지울 지난 기록이 없습니다.'); return; }
+    if (!confirm(`현황판의 지난 기록 ${days.length}일치(${days[0]} ~ ${days[days.length - 1]})를 지웁니다.\n평가데이터 시트의 기록은 그대로 남습니다. 계속할까요?`)) return;
+    const updates = {}; days.forEach((d) => { updates[d] = null; });
+    await dbm.update(dbm.ref(db, 'live'), updates);
+    alert('지웠습니다.');
+  } catch (e) { alert('지우지 못했습니다: ' + e.message); }
+}
+</script>
+</body>
+</html>
