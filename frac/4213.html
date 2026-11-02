@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+
+    <title>진분수의 뺄셈 연습</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #f8fafc;
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .header-text {
+            font-size: 26px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+        .sub-text {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 25px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* 레이아웃 */
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            max-width: 800px; /* 카드가 너무 넓게 퍼지지 않도록 조정 */
+            margin-bottom: 30px;
+        }
+        
+        /* 1번 문제 (풀이과정 포함) 레이아웃 */
+        .row-type-1 {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        /* 2~5번 문제 (2x2 그리드) 레이아웃 */
+        .row-type-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            width: 100%;
+        }
+
+        .quiz-card {
+            background-color: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 30px 20px 20px 20px; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .quiz-number {
+            position: absolute;
+            top: 12px;
+            left: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #475569;
+        }
+
+        /* 수식 관련 스타일 */
+        .equation-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .fraction-group {
+            display: flex;
+            align-items: center;
+            padding: 0;
+        }
+
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 4px;
+        }
+
+        .num, .den {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 38px;
+            padding: 0 10px; 
+            min-width: 34px;
+            font-size: 26px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .frac-line {
+            width: 100%;
+            height: 3px;
+            background-color: #1e293b;
+            margin: 2px 0;
+            border-radius: 2px;
+        }
+
+        .op {
+            font-size: 32px;
+            font-weight: 900;
+            color: #334155;
+            margin: 0 6px;
+            display: inline-block;
+        }
+
+        .mid-step {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0 6px;
+        }
+
+        /* 정답 입력 상자 (이제 분자 1칸만 사용됨) */
+        .ans-box {
+            width: 36px;
+            height: 36px;
+            border: 2px solid #94a3b8;
+            border-radius: 6px;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            background-color: #ffffff;
+            color: #0284c7; /* 입력한 숫자 색상 강조 */
+            transition: all 0.2s;
+            padding: 0;
+        }
+        .ans-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            background-color: #f0f9ff;
+        }
+
+        /* 버튼 */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+        .action-btn {
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            outline: none;
+        }
+        .action-btn:focus { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4); }
+        .action-btn:active { transform: translateY(2px); }
+        .check-btn { background-color: #3b82f6; }
+        .check-btn:hover { background-color: #2563eb; }
+        .reset-btn { background-color: #8b5cf6; }
+        .reset-btn:hover { background-color: #7c3aed; }
+
+    </style>
+</head>
+<body>
+
+<div class="header-text">진분수의 뺄셈 연습</div>
+<div class="sub-text">
+    분모가 같은 진분수의 뺄셈은 분모는 그대로 두고, 분자끼리 뺍니다.<br>
+    <span style="font-size: 13px; color: #94a3b8;">(결과값의 <b>분자</b>만 직접 입력하세요. 입력하면 자동으로 다음 문제로 넘어갑니다.)</span>
+</div>
+
+<div class="quiz-container">
+    <div class="row-type-1" id="container-type1"></div>
+    <div class="row-type-2" id="container-type2"></div>
+</div>
+
+<div class="btn-group">
+    <button class="action-btn reset-btn" onclick="generateProblems()">새로운 문제 🎲</button>
+    <button id="checkBtn" class="action-btn check-btn" onclick="checkAnswers()">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+    let expectedAnswers = [];
+    let allInputs = []; 
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function getValidProblemSet() {
+        let denoms = shuffle([5, 6, 7, 8, 9]);
+        let usedAns = new Set();
+        let usedB = new Set(); 
+        let problems = [];
+
+        for (let i = 0; i < denoms.length; i++) {
+            let C = denoms[i];
+            let combos = [];
+            
+            for (let A = 2; A < C; A++) {
+                for (let B = 1; B < A; B++) {
+                    let ans = A - B;
+                    
+                    if (!usedAns.has(ans)) {
+                        let score = 0;
+                        if (!usedB.has(B)) score += 5; 
+                        if (B <= 2) score -= 15;
+                        if (A >= 5 && A <= 8) score += 10;
+                        if (B >= 3 && B <= 6) score += 10;
+                        
+                        combos.push({ A, B, C, ans, score });
+                    }
+                }
+            }
+            
+            if (combos.length === 0) return null; 
+            
+            let maxScore = Math.max(...combos.map(c => c.score));
+            let bestCombos = combos.filter(c => c.score === maxScore);
+            let picked = bestCombos[Math.floor(Math.random() * bestCombos.length)];
+            
+            problems.push(picked);
+            usedAns.add(picked.ans);
+            usedB.add(picked.B);
+        }
+        return problems;
+    }
+
+    function generateProblems() {
+        const cType1 = document.getElementById('container-type1');
+        const cType2 = document.getElementById('container-type2');
+        cType1.innerHTML = ''; 
+        cType2.innerHTML = '';
+        allInputs = [];
+
+        let generatedProblems = null;
+        while (!generatedProblems) {
+            generatedProblems = getValidProblemSet();
+        }
+        expectedAnswers = generatedProblems;
+
+        for(let i = 0; i < 5; i++) {
+            let data = expectedAnswers[i];
+            let cardHTML = '';
+            
+            if (i === 0) {
+                // 1번 문제: 중간 풀이 과정 포함
+                cardHTML = `
+                    <div class="quiz-card" id="card-${i}">
+                        <div class="quiz-number">문제 ${i + 1}</div>
+                        <div class="equation-row">
+                            <div class="fraction-group">
+                                <div class="fraction">
+                                    <div class="num">${data.A}</div>
+                                    <div class="frac-line"></div>
+                                    <div class="den">${data.C}</div>
+                                </div>
+                                <div class="op">&minus;</div>
+                                <div class="fraction">
+                                    <div class="num">${data.B}</div>
+                                    <div class="frac-line"></div>
+                                    <div class="den">${data.C}</div>
+                                </div>
+                            </div>
+                            <div class="op">=</div>
+                            <div class="fraction">
+                                <div class="num mid-step">
+                                    <span style="font-size: 26px;">${data.A}</span>
+                                    <span class="op" style="font-size: 24px; margin: 0 4px;">&minus;</span>
+                                    <span style="font-size: 26px;">${data.B}</span>
+                                </div>
+                                <div class="frac-line"></div>
+                                <div class="den">${data.C}</div>
+                            </div>
+                            <div class="op">=</div>
+                            <div class="fraction">
+                                <div class="num">
+                                    <input type="text" class="ans-box i-num" maxlength="1">
+                                </div>
+                                <div class="frac-line"></div>
+                                <div class="den">${data.C}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                cType1.innerHTML += cardHTML;
+            } else {
+                // 2~5번 문제: 바로 정답 유도
+                cardHTML = `
+                    <div class="quiz-card" id="card-${i}">
+                        <div class="quiz-number">문제 ${i + 1}</div>
+                        <div class="equation-row">
+                            <div class="fraction-group">
+                                <div class="fraction">
+                                    <div class="num">${data.A}</div>
+                                    <div class="frac-line"></div>
+                                    <div class="den">${data.C}</div>
+                                </div>
+                                <div class="op">&minus;</div>
+                                <div class="fraction">
+                                    <div class="num">${data.B}</div>
+                                    <div class="frac-line"></div>
+                                    <div class="den">${data.C}</div>
+                                </div>
+                            </div>
+                            <div class="op">=</div>
+                            <div class="fraction">
+                                <div class="num">
+                                    <input type="text" class="ans-box i-num" maxlength="1">
+                                </div>
+                                <div class="frac-line"></div>
+                                <div class="den">${data.C}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                cType2.innerHTML += cardHTML;
+            }
+        }
+
+        attachEventListeners();
+    }
+
+    function attachEventListeners() {
+        // 문제당 하나의 입력칸(분자)만 존재하므로 배열을 단순화합니다.
+        for (let i = 0; i < 5; i++) {
+            const input = document.getElementById(`card-${i}`).querySelector('.i-num');
+            allInputs.push(input);
+            
+            input.addEventListener('focus', function() { this.select(); });
+
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, ''); 
+                if (this.value.length === 1) {
+                    if (i < 4) {
+                        allInputs[i + 1].focus(); // 다음 문제로 포커스
+                    } else {
+                        document.getElementById('checkBtn').focus(); // 마지막 문제면 버튼으로 포커스
+                    }
+                }
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === 'ArrowRight') {
+                    e.preventDefault(); 
+                    if (i < 4) allInputs[i + 1].focus();
+                    else document.getElementById('checkBtn').focus();
+                }
+                else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (i > 0) allInputs[i - 1].focus();
+                }
+                else if (e.key === 'Backspace') {
+                    if (this.value === '') {
+                        e.preventDefault();
+                        if (i > 0) allInputs[i - 1].focus();
+                    }
+                }
+            });
+        }
+        
+        if (allInputs.length > 0) allInputs[0].focus();
+    }
+
+    function checkAnswers() {
+        let allCorrect = true;
+        
+        for (let i = 0; i < 5; i++) {
+            const card = document.getElementById(`card-${i}`);
+            const exp = expectedAnswers[i];
+            let valNum = parseInt(card.querySelector('.i-num').value);
+
+            if (valNum === exp.ans) {
+                card.style.borderColor = "#22c55e"; 
+                card.style.boxShadow = "0 4px 12px rgba(34, 197, 94, 0.1)";
+            } else {
+                card.style.borderColor = "#ef4444"; 
+                card.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.1)";
+                allCorrect = false;
+            }
+        }
+
+        if (allCorrect) {
+            alert("완벽하게 이해하셨네요! 정답입니다! 💯");
+        } else {
+            alert("틀린 부분이 있습니다. 빨간색 테두리의 문제를 다시 확인해 보세요.");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", generateProblems);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js)
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: () => expectedAnswers.map((exp, i) => {
+    const card = document.getElementById(`card-${i}`);
+    const inp = card.querySelector('.i-num');
+    const ok = parseInt(inp.value, 10) === exp.ans;
+    card.style.borderColor = ok ? '#22c55e' : '#ef4444';
+    inp.style.borderColor = ok ? '#22c55e' : '#ef4444';
+    return ok;
+  }) });
+</script>
+</body>
+</html>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+
+    <title>대분수의 뺄셈 연습 (가분수 변환)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #f8fafc;
+            font-family: 'Malgun Gothic', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .header-text {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+        .sub-text {
+            font-size: 15px;
+            color: #64748b;
+            margin-bottom: 30px;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .highlight {
+            color: #0284c7;
+            font-weight: bold;
+        }
+
+        /* 레이아웃 */
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
+            max-width: 1050px; /* 수식이 길어지므로 너비를 조금 늘림 */
+            margin-bottom: 40px;
+        }
+
+        .quiz-card {
+            background-color: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 45px 20px 30px 20px; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            overflow-x: auto;
+        }
+
+        .quiz-number {
+            position: absolute;
+            top: 12px;
+            left: 15px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        /* 수식 관련 스타일 */
+        .equation-container {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap; 
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .mixed-frac {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin: 0 4px;
+        }
+
+        .whole-num {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        /* 분모가 고정이므로 일반적인 정방향(column) 배치 사용 */
+        .frac-part {
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            justify-content: center;
+        }
+
+        .frac-num, .frac-den {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 30px;
+            padding: 0 8px; 
+            min-width: 28px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        /* 분모는 고정 텍스트로 시각적 차이를 줌 */
+        .frac-den {
+            color: #64748b;
+        }
+
+        .frac-line {
+            width: 100%;
+            height: 3px;
+            background-color: #1e293b;
+            margin: 2px 0;
+            border-radius: 2px;
+        }
+
+        .op {
+            font-size: 28px;
+            font-weight: 900;
+            color: #334155;
+            margin: 0 6px;
+            display: inline-block;
+        }
+
+        /* 정답 입력 상자 */
+        .ans-box {
+            width: 46px;
+            height: 42px;
+            border: 2px solid #94a3b8;
+            border-radius: 6px;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            background-color: #ffffff;
+            color: #0ea5e9; 
+            transition: all 0.2s;
+            padding: 0;
+            margin-bottom: 2px; /* 분수 선과의 간격 */
+        }
+        /* 자연수용 입력 상자는 여백 조정 */
+        .mixed-frac > .ans-box {
+            margin-bottom: 0;
+        }
+
+        .ans-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            background-color: #f0f9ff;
+        }
+
+        /* 버튼 */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+        .action-btn {
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 28px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            outline: none;
+        }
+        .action-btn:focus { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4); }
+        .action-btn:active { transform: translateY(2px); }
+        .check-btn { background-color: #3b82f6; }
+        .check-btn:hover { background-color: #2563eb; }
+        .reset-btn { background-color: #8b5cf6; }
+        .reset-btn:hover { background-color: #7c3aed; }
+
+    </style>
+</head>
+<body>
+
+<div class="header-text">대분수의 뺄셈 연습 (가분수 변환)</div>
+<div class="sub-text">
+    대분수를 가분수로 바꾸어 계산하는 방법입니다.<br>
+    <span class="highlight">분모는 이미 적혀 있습니다. 빈칸에 알맞은 분자와 자연수만 순서대로 입력하세요!</span>
+</div>
+
+<div class="quiz-container" id="quiz-container">
+    </div>
+
+<div class="btn-group">
+    <button class="action-btn reset-btn" onclick="init()">새로운 문제 🎲</button>
+    <button id="checkBtn" class="action-btn check-btn" onclick="checkAnswers()">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // 1. 일반 텍스트 대분수 생성
+    function createStaticMixedFrac(w, n, d) {
+        return `
+            <div class="mixed-frac">
+                <span class="whole-num">${w}</span>
+                <div class="frac-part">
+                    <span class="frac-num">${n}</span>
+                    <div class="frac-line"></div>
+                    <span class="frac-den">${d}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 2. 가분수 입력칸 생성 (분모는 고정 텍스트)
+    function createImproperInput(n, d) {
+        return `
+            <div class="frac-part">
+                <input type="text" class="ans-box" data-expected="${n}" maxlength="${String(n).length}">
+                <div class="frac-line"></div>
+                <span class="frac-den">${d}</span>
+            </div>
+        `;
+    }
+
+    // 3. 가분수 텍스트 생성 (1번 문제 예시용)
+    function createStaticImproper(n, d) {
+        return `
+            <div class="frac-part">
+                <span class="frac-num">${n}</span>
+                <div class="frac-line"></div>
+                <span class="frac-den">${d}</span>
+            </div>
+        `;
+    }
+
+    // 4. 최종 대분수 입력칸 생성 (자연수 입력, 분자 입력, 분모 고정)
+    function createFinalMixedInput(w, n, d) {
+        return `
+            <div class="mixed-frac">
+                <input type="text" class="ans-box" data-expected="${w}" maxlength="${String(w).length}">
+                <div class="frac-part">
+                    <input type="text" class="ans-box" data-expected="${n}" maxlength="${String(n).length}">
+                    <div class="frac-line"></div>
+                    <span class="frac-den">${d}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function generateProblems() {
+        let denoms = shuffle([5, 6, 7, 8, 9]);
+        let problemsHTML = '';
+
+        for (let i = 0; i < 5; i++) {
+            let c = denoms[i]; 
+            
+            // 문제 조건 생성
+            let A, b, X, y, N1, N2, N3, ansW, ansF;
+            
+            // 무조건 나머지가 떨어지지 않도록 반복 생성 (답이 자연수가 되지 않게)
+            do {
+                A = Math.floor(Math.random() * 3) + 3; // 3~5
+                X = Math.floor(Math.random() * 2) + 1; // 1~2
+                b = Math.floor(Math.random() * (c - 1)) + 1; // 1 ~ c-1
+                y = Math.floor(Math.random() * (c - 1)) + 1; // 1 ~ c-1
+
+                N1 = (A * c) + b;
+                N2 = (X * c) + y;
+                N3 = N1 - N2;
+
+                ansW = Math.floor(N3 / c);
+                ansF = N3 % c;
+            } while (ansF === 0 || N3 <= 0); // 분자가 0이 되거나 음수가 되면 다시 생성
+
+            if (i === 0) {
+                // 1번 문제: 변환 과정은 텍스트로, 최종 대분수 답만 빈칸
+                problemsHTML += `
+                    <div class="quiz-card" id="card-${i}">
+                        <div class="quiz-number">문제 1 (풀이 과정 예시)</div>
+                        <div class="equation-container">
+                            ${createStaticMixedFrac(A, b, c)} <span class="op">&minus;</span> ${createStaticMixedFrac(X, y, c)}
+                            <span class="op">=</span>
+                            ${createStaticImproper(N1, c)} <span class="op">&minus;</span> ${createStaticImproper(N2, c)}
+                            <span class="op">=</span>
+                            ${createStaticImproper(N3, c)}
+                            <span class="op">=</span>
+                            ${createFinalMixedInput(ansW, ansF, c)}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 2~5번 문제: 가분수 변환부터 최종 대분수까지 모두 빈칸
+                problemsHTML += `
+                    <div class="quiz-card" id="card-${i}">
+                        <div class="quiz-number">문제 ${i + 1}</div>
+                        <div class="equation-container">
+                            ${createStaticMixedFrac(A, b, c)} <span class="op">&minus;</span> ${createStaticMixedFrac(X, y, c)}
+                            <span class="op">=</span>
+                            ${createImproperInput(N1, c)} <span class="op">&minus;</span> ${createImproperInput(N2, c)}
+                            <span class="op">=</span>
+                            ${createImproperInput(N3, c)}
+                            <span class="op">=</span>
+                            ${createFinalMixedInput(ansW, ansF, c)}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        document.getElementById('quiz-container').innerHTML = problemsHTML;
+        attachEvents();
+    }
+
+    function attachEvents() {
+        const inputs = document.querySelectorAll('.ans-box');
+        
+        inputs.forEach((input, index) => {
+            // 숫자만 입력 필터링
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                // 설정된 글자 수(maxlength)만큼 입력되면 자동으로 다음 칸 이동
+                if (this.value.length == this.getAttribute('maxlength')) {
+                    if (index < inputs.length - 1) inputs[index + 1].focus();
+                    else document.getElementById('checkBtn').focus();
+                }
+            });
+
+            // 클릭/포커스 시 전체 선택
+            input.addEventListener('focus', function() {
+                this.select();
+            });
+
+            // 방향키 및 백스페이스 이동
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (index < inputs.length - 1) inputs[index + 1].focus();
+                    else document.getElementById('checkBtn').focus();
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (index > 0) inputs[index - 1].focus();
+                } else if (e.key === 'Backspace') {
+                    // 빈칸인 상태에서 지우기를 누르면 이전 칸으로 이동
+                    if (this.value === '') {
+                        e.preventDefault();
+                        if (index > 0) inputs[index - 1].focus();
+                    }
+                }
+            });
+        });
+
+        // 첫 번째 입력칸에 오토포커스
+        if (inputs.length > 0) {
+            inputs[0].focus();
+        }
+    }
+
+    function checkAnswers() {
+        const cards = document.querySelectorAll('.quiz-card');
+        let allCorrect = true;
+
+        cards.forEach(card => {
+            let isCardCorrect = true;
+            const inputs = card.querySelectorAll('.ans-box');
+            
+            inputs.forEach(input => {
+                const expected = parseInt(input.getAttribute('data-expected'), 10);
+                const actual = parseInt(input.value, 10);
+
+                if (isNaN(actual) || actual !== expected) {
+                    isCardCorrect = false;
+                }
+            });
+
+            if (isCardCorrect) {
+                card.style.borderColor = "#22c55e"; 
+                card.style.boxShadow = "0 4px 12px rgba(34, 197, 94, 0.15)";
+            } else {
+                card.style.borderColor = "#ef4444"; 
+                card.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.15)";
+                allCorrect = false;
+            }
+        });
+
+        if (allCorrect) {
+            alert("완벽합니다! 가분수 변환 방법을 완전히 이해했네요. 💯");
+        } else {
+            alert("틀린 부분이 있습니다. 빨간색 테두리의 문제를 다시 확인하고 고쳐보세요!");
+        }
+    }
+
+    function init() {
+        generateProblems();
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js)
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: () => FracKit.gradeCards('.quiz-card', 'data-expected', false) });
+</script>
+</body>
+</html>

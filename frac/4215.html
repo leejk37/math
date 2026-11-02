@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+
+    <title>자연수 - 분수의 뺄셈 (방법 선택형)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #f0f4f8;
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh; /* height: 100vh에서 변경하여 스크롤 가능하게 함 */
+            padding: 15px 20px; 
+            overflow-y: auto; /* ★ 스마트폰 크롬 등에서 위아래 세로 스크롤이 가능하도록 변경 */
+        }
+
+        .header-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 8px; 
+        }
+
+        /* 일괄 선택 컨테이너 */
+        .global-selector {
+            background-color: #e0e7ff;
+            border: 2px solid #818cf8;
+            border-radius: 8px;
+            padding: 6px 14px; 
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 12px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .global-title {
+            font-weight: bold;
+            color: #3730a3;
+            font-size: 14px;
+        }
+        .global-options {
+            display: flex;
+            gap: 16px;
+        }
+        .global-options label {
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            color: #312e81;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 문제 컨테이너 */
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+            gap: 8px; 
+            width: 100%;
+            max-width: 900px; 
+            margin-bottom: 12px;
+            /* 세로 스크롤은 body가 담당하므로 여기선 가로 밀림만 유연하게 처리 */
+        }
+
+        /* 문제 카드 */
+        .quiz-card {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 10px 16px; 
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.04);
+            display: grid;
+            grid-template-columns: 110px 1fr auto; /* ★ 방법 선택 영역(auto)이 필요한 만큼만 차지하도록 설정 */
+            gap: 20px; 
+            width: 100%; 
+            min-width: 680px; /* 가로 해상도가 작은 기기에서 수식이 깨지지 않도록 최소 폭 유지 */
+            align-items: center;
+        }
+
+        .quiz-number {
+            font-size: 13px; 
+            font-weight: bold;
+            color: #0f172a;
+            background: #e2e8f0;
+            padding: 5px 10px; 
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            text-align: center;
+        }
+        .quiz-type {
+            font-size: 11px;
+            color: #475569;
+            font-weight: normal;
+        }
+
+        /* 수식 스타일 */
+        .equation-view {
+            display: flex;
+            align-items: center;
+            justify-content: center; 
+            gap: 6px; 
+            flex-wrap: nowrap; 
+        }
+
+        .mixed-frac {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .whole-num {
+            font-size: 26px; 
+            font-weight: 500; 
+            color: #1e293b;
+        }
+
+        .frac-part {
+            display: inline-flex;
+            flex-direction: column; 
+            align-items: center;
+            justify-content: center;
+        }
+
+        .frac-num, .frac-den {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px; 
+            font-weight: 500; 
+            line-height: 1;
+            padding: 1px 3px;
+        }
+
+        .frac-num { color: #1e293b; }
+        .frac-den { color: #64748b; }
+
+        .frac-line {
+            width: 100%;
+            height: 1.5px; 
+            background-color: #475569;
+            margin: 3px 0;
+        }
+
+        .op {
+            font-size: 26px; 
+            font-weight: normal; 
+            color: #475569;
+            margin: 0 4px;
+        }
+
+        /* 정답 입력 상자 */
+        .ans-box {
+            width: 34px; 
+            height: 36px;
+            border: 1px solid #94a3b8; 
+            border-radius: 4px; 
+            font-size: 24px; 
+            font-weight: normal; 
+            text-align: center;
+            outline: none;
+            background-color: #ffffff;
+            color: #0284c7; 
+            transition: all 0.2s;
+            padding: 0;
+            line-height: 1;
+        }
+        .ans-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            background-color: #f0f9ff;
+        }
+
+        .hidden { display: none !important; }
+
+        /* ★ 방법 선택 토글 버튼: 우측 여백이 불필요하게 넓어지지 않도록 너비와 패딩 균등 조정 */
+        .method-selector {
+            display: flex;
+            flex-direction: column; 
+            gap: 6px;
+            white-space: nowrap;
+            background: #f8fafc;
+            padding: 6px 12px; /* 좌우 패딩을 대칭 구조로 균등 분배 */
+            width: fit-content; /* 내부 글자 길이에 딱 맞게 자동 축소 */
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin: 0; 
+        }
+        .method-selector label {
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: normal;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .method-selector input[type="radio"] {
+            accent-color: #3b82f6;
+            width: 13px;
+            height: 13px;
+            cursor: pointer;
+        }
+
+        /* 하단 버튼 */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 5px;
+            margin-bottom: 20px; /* 아래쪽 스크롤 시 여유 여백 추가 */
+        }
+        .action-btn {
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            outline: none;
+        }
+        .action-btn:hover { transform: translateY(-2px); }
+        .check-btn { background-color: #3b82f6; }
+        .check-btn:focus { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4); }
+        .reset-btn { background-color: #8b5cf6; }
+    </style>
+</head>
+<body>
+
+<div class="header-text">자연수 - 분수의 뺄셈</div>
+
+<div class="global-selector">
+    <div class="global-title">풀이 방법 일괄 선택 :</div>
+    <div class="global-options">
+        <label><input type="radio" name="global-method" value="m1" onchange="applyGlobalMethod('m1')" checked> 전체: 받아내림</label>
+        <label><input type="radio" name="global-method" value="m2" onchange="applyGlobalMethod('m2')"> 전체: 가분수 변환</label>
+    </div>
+</div>
+
+<div class="quiz-container" id="quiz-container">
+    </div>
+
+<div class="btn-group">
+    <button class="action-btn reset-btn" onclick="generateProblems()">새로운 문제 🎲</button>
+    <button id="check-btn" class="action-btn check-btn" onclick="checkAnswers()">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+    // ---------------------------------------------------------
+    // 1. 렌더링 헬퍼 함수
+    // ---------------------------------------------------------
+    function renderTextWhole(w) {
+        return `<span class="whole-num">${w}</span>`;
+    }
+
+    function renderTextProperFrac(n, d) {
+        return `
+            <div class="frac-part">
+                <span class="frac-num">${n}</span>
+                <div class="frac-line"></div>
+                <span class="frac-den">${d}</span>
+            </div>`;
+    }
+
+    function renderTextMixedFrac(w, n, d) {
+        return `
+            <div class="mixed-frac">
+                <span class="whole-num">${w}</span>
+                <div class="frac-part">
+                    <span class="frac-num">${n}</span>
+                    <div class="frac-line"></div>
+                    <span class="frac-den">${d}</span>
+                </div>
+            </div>`;
+    }
+
+    function renderInputMixedFrac(wAns, nAns, dStatic) {
+        return `
+            <div class="mixed-frac">
+                <input type="text" class="ans-box" data-ans="${wAns}" data-focus-order="4" maxlength="${String(wAns).length}">
+                <div class="frac-part">
+                    <input type="text" class="ans-box" data-ans="${nAns}" data-focus-order="5" maxlength="${String(nAns).length}">
+                    <div class="frac-line"></div>
+                    <span class="frac-den">${dStatic}</span>
+                </div>
+            </div>`;
+    }
+
+    function renderInputMixedFracFull(wAns, nAns, dAns) {
+        return `
+            <div class="mixed-frac">
+                <input type="text" class="ans-box" data-ans="${wAns}" data-focus-order="1" maxlength="${String(wAns).length}">
+                <div class="frac-part">
+                    <input type="text" class="ans-box" data-ans="${nAns}" data-focus-order="3" maxlength="${String(nAns).length}">
+                    <div class="frac-line"></div>
+                    <input type="text" class="ans-box" data-ans="${dAns}" data-focus-order="2" maxlength="${String(dAns).length}">
+                </div>
+            </div>`;
+    }
+
+    function renderInputImproperFrac(nAns, dStatic) {
+        return `
+            <div class="frac-part">
+                <input type="text" class="ans-box" data-ans="${nAns}" data-focus-order="3" maxlength="${String(nAns).length}">
+                <div class="frac-line"></div>
+                <span class="frac-den">${dStatic}</span>
+            </div>`;
+    }
+
+    function renderInputImproperFracFull(nAns, dAns) {
+        return `
+            <div class="frac-part">
+                <input type="text" class="ans-box" data-ans="${nAns}" data-focus-order="2" maxlength="${String(nAns).length}">
+                <div class="frac-line"></div>
+                <input type="text" class="ans-box" data-ans="${dAns}" data-focus-order="1" maxlength="${String(dAns).length}">
+            </div>`;
+    }
+
+    // ---------------------------------------------------------
+    // 2. 난수 생성 및 중복 방지 로직
+    // ---------------------------------------------------------
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function generateProblems() {
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = ''; 
+        
+        const globalMethod = document.querySelector('input[name="global-method"]:checked').value;
+        const denoms = [4, 5, 6, 7, 8, 9, 10].sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < 5; i++) {
+            let C = denoms[i]; 
+            
+            let numeratorCandidates = [];
+            for (let num = 1; num < C; num++) {
+                numeratorCandidates.push(num);
+            }
+            shuffleArray(numeratorCandidates);
+
+            if (numeratorCandidates.length > 1 && numeratorCandidates[0] === 1 && Math.random() < 0.7) {
+                let randomIdx = getRandomInt(1, numeratorCandidates.length - 1);
+                [numeratorCandidates[0], numeratorCandidates[randomIdx]] = [numeratorCandidates[randomIdx], numeratorCandidates[0]];
+            }
+            
+            let chosenNumerator = numeratorCandidates[0]; 
+            let cardHTML = '';
+            let isM1Checked = globalMethod === 'm1' ? 'checked' : '';
+            let isM2Checked = globalMethod === 'm2' ? 'checked' : '';
+
+            if (i < 2) {
+                let A = getRandomInt(2, 6); 
+                let b = chosenNumerator; 
+                
+                let wFinal = A - 1;
+                let nFinal = C - b;
+                
+                let impN1 = A * C;
+                let impDiff = impN1 - b;
+
+                cardHTML = `
+                    <div class="quiz-card" id="card-${i}">
+                        <div class="quiz-number">
+                            <span>문제 ${i + 1}</span>
+                            <span class="quiz-type">(자연수-진분수)</span>
+                        </div>
+
+                        <div class="equation-view ${globalMethod === 'm2' ? 'hidden' : ''}" id="eq-m1-${i}">
+                            ${renderTextWhole(A)} <span class="op">&minus;</span> ${renderTextProperFrac(b, C)}
+                            <span class="op">=</span>
+                            ${renderInputMixedFracFull(A - 1, C, C)} <span class="op">&minus;</span> ${renderTextProperFrac(b, C)}
+                            <span class="op">=</span>
+                            ${renderInputMixedFrac(wFinal, nFinal, C)}
+                        </div>
+
+                        <div class="equation-view ${globalMethod === 'm1' ? 'hidden' : ''}" id="eq-m2-${i}">
+                            ${renderTextWhole(A)} <span class="op">&minus;</span> ${renderTextProperFrac(b, C)}
+                            <span class="op">=</span>
+                            ${renderInputImproperFracFull(impN1, C)} <span class="op">&minus;</span> ${renderTextProperFrac(b, C)}
+                            <span class="op">=</span>
+                            ${renderInputImproperFrac(impDiff, C)}
+                            <span class="op">=</span>
+                            ${renderInputMixedFrac(wFinal, nFinal, C)}
+                        </div>
+                        
+                        <div class="method-selector">
+                            <label><input type="radio" name="method-${i}" value="m1" onchange="toggleMethod(${i})" ${isM1Checked}> 받아내림</label>
+                            <label><input type="radio" name="method-${i}" value="m2" onchange="toggleMethod(${i})" ${isM2Checked}> 가분수 변환</label>
+                        </div>
+                    </div>
+                `;
+            } else {
+                let A = getRandomInt(4, 9);
+                let X = getRandomInt(1, A - 2); 
+                let y = chosenNumerator; 
+                
+                let wFinal = (A - 1) - X;
+                let nFinal = C - y;
+                
+                let impN1 = A * C;
+                let impN2 = (X * C) + y;
+                let impDiff = impN1 - impN2;
+
+                cardHTML = `
+                    <div class="quiz-card" id="card-${i}">
+                        <div class="quiz-number">
+                            <span>문제 ${i + 1}</span>
+                            <span class="quiz-type">(자연수-대분수)</span>
+                        </div>
+
+                        <div class="equation-view ${globalMethod === 'm2' ? 'hidden' : ''}" id="eq-m1-${i}">
+                            ${renderTextWhole(A)} <span class="op">&minus;</span> ${renderTextMixedFrac(X, y, C)}
+                            <span class="op">=</span>
+                            ${renderInputMixedFracFull(A - 1, C, C)} <span class="op">&minus;</span> ${renderTextMixedFrac(X, y, C)}
+                            <span class="op">=</span>
+                            ${renderInputMixedFrac(wFinal, nFinal, C)}
+                        </div>
+
+                        <div class="equation-view ${globalMethod === 'm1' ? 'hidden' : ''}" id="eq-m2-${i}">
+                            ${renderTextWhole(A)} <span class="op">&minus;</span> ${renderTextMixedFrac(X, y, C)}
+                            <span class="op">=</span>
+                            ${renderInputImproperFracFull(impN1, C)} <span class="op">&minus;</span> ${renderInputImproperFrac(impN2, C)}
+                            <span class="op">=</span>
+                            ${renderInputImproperFrac(impDiff, C)}
+                            <span class="op">=</span>
+                            ${renderInputMixedFrac(wFinal, nFinal, C)}
+                        </div>
+                        
+                        <div class="method-selector">
+                            <label><input type="radio" name="method-${i}" value="m1" onchange="toggleMethod(${i})" ${isM1Checked}> 받아내림</label>
+                            <label><input type="radio" name="method-${i}" value="m2" onchange="toggleMethod(${i})" ${isM2Checked}> 가분수 변환</label>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML += cardHTML;
+        }
+
+        attachEvents();
+        focusFirstInput();
+    }
+
+    // ---------------------------------------------------------
+    // 3. 포커스 제어 및 정답 확인 로직
+    // ---------------------------------------------------------
+    function getSortedVisibleInputs() {
+        const visibleInputs = Array.from(document.querySelectorAll('.ans-box')).filter(el => el.offsetParent !== null);
+        
+        return visibleInputs.sort((a, b) => {
+            const cardA = a.closest('.quiz-card');
+            const cardB = b.closest('.quiz-card');
+            
+            if (cardA !== cardB) {
+                const cards = Array.from(document.querySelectorAll('.quiz-card'));
+                return cards.indexOf(cardA) - cards.indexOf(cardB);
+            }
+            
+            const orderA = parseInt(a.getAttribute('data-focus-order'), 10) || 0;
+            const orderB = parseInt(b.getAttribute('data-focus-order'), 10) || 0;
+            return orderA - orderB;
+        });
+    }
+
+    function focusFirstInput() {
+        const sorted = getSortedVisibleInputs();
+        if (sorted.length > 0) sorted[0].focus();
+    }
+
+    window.applyGlobalMethod = function(methodVal) {
+        for (let i = 0; i < 5; i++) {
+            const radio = document.querySelector(`input[name="method-${i}"][value="${methodVal}"]`);
+            if (radio) {
+                radio.checked = true;
+                toggleMethod(i, false); 
+            }
+        }
+        focusFirstInput();
+    };
+
+    window.toggleMethod = function(index, setFocus = true) {
+        const isM1 = document.querySelector(`input[name="method-${index}"][value="m1"]`).checked;
+        const eqM1 = document.getElementById(`eq-m1-${index}`);
+        const eqM2 = document.getElementById(`eq-m2-${index}`);
+        
+        if(isM1) {
+            eqM1.classList.remove('hidden');
+            eqM2.classList.add('hidden');
+            if (setFocus) {
+                const sorted = getSortedVisibleInputs().filter(el => el.closest(`#eq-m1-${index}`));
+                if(sorted.length > 0) sorted[0].focus();
+            }
+        } else {
+            eqM1.classList.add('hidden');
+            eqM2.classList.remove('hidden');
+            if (setFocus) {
+                const sorted = getSortedVisibleInputs().filter(el => el.closest(`#eq-m2-${index}`));
+                if(sorted.length > 0) sorted[0].focus();
+            }
+        }
+    };
+
+    function attachEvents() {
+        const inputs = document.querySelectorAll('.ans-box');
+        
+        inputs.forEach((input) => {
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                const sorted = getSortedVisibleInputs();
+                const currentIndex = sorted.indexOf(this);
+
+                if (this.value.length == this.getAttribute('maxlength')) {
+                    if (currentIndex > -1 && currentIndex < sorted.length - 1) {
+                        sorted[currentIndex + 1].focus();
+                    } else if (currentIndex === sorted.length - 1) {
+                        document.getElementById('check-btn').focus();
+                    }
+                }
+                
+                this.style.borderColor = "#94a3b8";
+                this.style.backgroundColor = "#ffffff";
+            });
+
+            input.addEventListener('focus', function() {
+                this.select();
+            });
+
+            input.addEventListener('keydown', function(e) {
+                const sorted = getSortedVisibleInputs();
+                const currentIndex = sorted.indexOf(this);
+
+                if (e.key === 'Enter' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (currentIndex < sorted.length - 1) {
+                        sorted[currentIndex + 1].focus();
+                    } else if (currentIndex === sorted.length - 1) {
+                        document.getElementById('check-btn').focus();
+                    }
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (currentIndex > 0) sorted[currentIndex - 1].focus();
+                } else if (e.key === 'Backspace') {
+                    if (this.value === '') {
+                        e.preventDefault();
+                        if (currentIndex > 0) sorted[currentIndex - 1].focus();
+                    }
+                }
+            });
+        });
+    }
+
+    window.checkAnswers = function() {
+        const cards = document.querySelectorAll('.quiz-card');
+        let allCorrect = true;
+
+        cards.forEach(card => {
+            const visibleInputs = Array.from(card.querySelectorAll('.ans-box')).filter(el => el.offsetParent !== null);
+            let isCardCorrect = true;
+            
+            visibleInputs.forEach(input => {
+                const expected = parseInt(input.getAttribute('data-ans'), 10);
+                const actual = parseInt(input.value, 10);
+
+                if (isNaN(actual) || actual !== expected) {
+                    isCardCorrect = false;
+                    input.style.borderColor = "#ef4444";
+                    input.style.backgroundColor = "#fef2f2";
+                } else {
+                    input.style.borderColor = "#22c55e";
+                    input.style.backgroundColor = "#f0fdf4";
+                }
+            });
+
+            if (isCardCorrect) {
+                card.style.borderColor = "#22c55e";
+            } else {
+                card.style.borderColor = "#ef4444";
+                allCorrect = false;
+            }
+        });
+
+        if (allCorrect) {
+            alert("완벽합니다! 계산 방법을 정확하게 이해했네요! 🎉");
+        } else {
+            alert("틀린 부분이 있습니다. 빨간색 테두리의 칸을 다시 계산해 보세요.");
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", generateProblems);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js)
+FracKit.init({ check: '#check-btn', newBtn: '.reset-btn', grade: () => FracKit.gradeCards('.quiz-card', 'data-ans', true) });
+</script>
+</body>
+</html>
