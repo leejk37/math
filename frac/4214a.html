@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+
+    <title>대분수의 뺄셈 연습</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #f8fafc;
+            font-family: 'Malgun Gothic', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .header-text {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+        .sub-text {
+            font-size: 15px;
+            color: #64748b;
+            margin-bottom: 30px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* 레이아웃 */
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
+            max-width: 1050px; /* 5번 문제가 충분히 들어가도록 너비를 살짝 넓힘 */
+            margin-bottom: 40px;
+        }
+
+        .quiz-card {
+            background-color: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 35px 20px 25px 20px; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            overflow-x: auto; 
+        }
+
+        .quiz-number {
+            position: absolute;
+            top: 12px;
+            left: 15px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        /* 수식 관련 스타일 */
+        .equation-container {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap; /* 무조건 한 줄에 표시 */
+            width: max-content; 
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .mixed-frac {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin: 0 2px;
+        }
+
+        .whole-num {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .frac-part {
+            display: flex;
+            flex-direction: column-reverse; 
+            align-items: center;
+            justify-content: center;
+        }
+
+        .frac-num, .frac-den {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 30px;
+            padding: 0 8px; 
+            min-width: 28px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        
+        .frac-den {
+            color: #64748b;
+        }
+
+        .frac-line {
+            width: 100%;
+            height: 3px;
+            background-color: #1e293b;
+            margin: 2px 0;
+            border-radius: 2px;
+        }
+
+        .op {
+            font-size: 28px;
+            font-weight: 900;
+            color: #334155;
+            margin: 0 6px;
+            display: inline-block;
+        }
+
+        .bracket {
+            font-size: 40px;
+            font-weight: 300;
+            color: #64748b;
+            margin: 0 2px;
+            transform: translateY(-2px);
+        }
+
+        /* 5번 문제 전용 압축(compact) 스타일: 여백을 좁혀 한 줄에 배치 */
+        .equation-container.compact {
+            gap: 3px;
+        }
+        .equation-container.compact .op {
+            margin: 0 3px; /* 연산자 좌우 여백 축소 */
+        }
+        .equation-container.compact .mixed-frac {
+            margin: 0; /* 분수 사이 여백 축소 */
+        }
+        .equation-container.compact .frac-num, 
+        .equation-container.compact .frac-den {
+            padding: 0 4px; /* 숫자 좌우 패딩 축소 */
+        }
+        .equation-container.compact .bracket {
+            margin: 0 1px;
+        }
+
+        /* 정답 입력 상자 */
+        .ans-box {
+            width: 42px;
+            height: 42px;
+            border: 2px solid #94a3b8;
+            border-radius: 6px;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            background-color: #ffffff;
+            color: #0284c7; 
+            transition: all 0.2s;
+            padding: 0;
+        }
+        .ans-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            background-color: #f0f9ff;
+        }
+
+        /* 버튼 */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+        .action-btn {
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 28px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            outline: none;
+        }
+        .action-btn:focus { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4); }
+        .action-btn:active { transform: translateY(2px); }
+        .check-btn { background-color: #3b82f6; }
+        .check-btn:hover { background-color: #2563eb; }
+        .reset-btn { background-color: #8b5cf6; }
+        .reset-btn:hover { background-color: #7c3aed; }
+
+    </style>
+</head>
+<body>
+
+<div class="header-text">대분수의 뺄셈 연습 (방법 1)</div>
+<div class="sub-text">
+    자연수는 자연수끼리, 진분수는 진분수끼리 빼서 더합니다.<br>
+    <span style="font-size: 14px; color: #ef4444; font-weight: bold;">(5번 문제는 빼는 수가 가분수입니다! 대분수로 먼저 바꾸어 계산하세요.)</span><br>
+    <span style="font-size: 14px; color: #0284c7; font-weight: bold;">(정답 칸이 채워지면 자동으로 다음 칸으로 넘어갑니다. 분모는 이미 적혀 있습니다!)</span>
+</div>
+
+<div class="quiz-container" id="quiz-container">
+    </div>
+
+<div class="btn-group">
+    <button class="action-btn reset-btn" onclick="init()">새로운 문제 🎲</button>
+    <button id="checkBtn" class="action-btn check-btn" onclick="checkAnswers()">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // HTML 생성 (분모는 입력칸 대신 span 태그로 변경)
+    function createFracHTML(w, n, d, isInput) {
+        if(isInput) {
+            return `
+                <div class="mixed-frac">
+                    <input type="text" class="ans-box" data-expected="${w}" maxlength="${String(w).length}">
+                    <div class="frac-part">
+                        <span class="frac-den">${d}</span>
+                        <div class="frac-line"></div>
+                        <input type="text" class="ans-box" data-expected="${n}" maxlength="${String(n).length}">
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="mixed-frac">
+                    <span class="whole-num">${w}</span>
+                    <div class="frac-part">
+                        <span class="frac-den">${d}</span>
+                        <div class="frac-line"></div>
+                        <span class="frac-num">${n}</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function createPureFracInputHTML(n, d) {
+        return `
+            <div class="frac-part">
+                <span class="frac-den">${d}</span>
+                <div class="frac-line"></div>
+                <input type="text" class="ans-box" data-expected="${n}" maxlength="${String(n).length}">
+            </div>
+        `;
+    }
+    
+    function createPureFracTextHTML(n, d) {
+        return `
+            <div class="frac-part">
+                <span class="frac-den">${d}</span>
+                <div class="frac-line"></div>
+                <span class="frac-num">${n}</span>
+            </div>
+        `;
+    }
+
+    function generateProblems() {
+        let denoms = shuffle([5, 6, 7, 8, 9]);
+        let problemsHTML = '';
+
+        for (let i = 0; i < 5; i++) {
+            let c = denoms[i]; 
+            
+            if (i < 4) {
+                // 1~4번 문제: 일반 대분수 - 대분수
+                let a = Math.floor(Math.random() * 3) + 3; 
+                let x = Math.floor(Math.random() * 2) + 1; 
+                let b = Math.floor(Math.random() * (c - 2)) + 2; 
+                let y = Math.floor(Math.random() * (b - 1)) + 1; 
+
+                if (i === 0) {
+                    problemsHTML += `
+                        <div class="quiz-card" id="card-${i}">
+                            <div class="quiz-number">문제 ${i + 1} (풀이 과정 예시)</div>
+                            <div class="equation-container">
+                                ${createFracHTML(a, b, c, false)} <span class="op">&minus;</span> ${createFracHTML(x, y, c, false)}
+                                <span class="op">=</span>
+                                <span class="bracket">(</span> <span class="whole-num">${a}</span> <span class="op">&minus;</span> <span class="whole-num">${x}</span> <span class="bracket">)</span>
+                                <span class="op">+</span>
+                                <span class="bracket">(</span> ${createPureFracTextHTML(b, c)} <span class="op">&minus;</span> ${createPureFracTextHTML(y, c)} <span class="bracket">)</span>
+                                <span class="op">=</span>
+                                <span class="whole-num">${a-x}</span> <span class="op" style="font-size:24px;">+</span> ${createPureFracTextHTML(b-y, c)}
+                                <span class="op">=</span>
+                                ${createFracHTML(a-x, b-y, c, true)}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    problemsHTML += `
+                        <div class="quiz-card" id="card-${i}">
+                            <div class="quiz-number">문제 ${i + 1}</div>
+                            <div class="equation-container">
+                                ${createFracHTML(a, b, c, false)} <span class="op">&minus;</span> ${createFracHTML(x, y, c, false)}
+                                <span class="op">=</span>
+                                <span class="bracket">(</span> <input type="text" class="ans-box" data-expected="${a}" maxlength="${String(a).length}"> <span class="op">&minus;</span> <input type="text" class="ans-box" data-expected="${x}" maxlength="${String(x).length}"> <span class="bracket">)</span>
+                                <span class="op">+</span>
+                                <span class="bracket">(</span> ${createPureFracInputHTML(b, c)} <span class="op">&minus;</span> ${createPureFracInputHTML(y, c)} <span class="bracket">)</span>
+                                <span class="op">=</span>
+                                ${createFracHTML(a-x, b-y, c, true)}
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                // 5번 문제: 대분수 - 가분수 (받아내림 없이 계산되도록 생성)
+                let x = Math.floor(Math.random() * 2) + 1; 
+                let a = x + Math.floor(Math.random() * 2) + 1; 
+                let y = Math.floor(Math.random() * (c - 2)) + 1; 
+                let b = Math.floor(Math.random() * (c - 1 - y)) + y + 1; 
+                
+                let n_imp = x * c + y; 
+
+                // 5번 문제는 compact 클래스를 추가하여 연산자 간격을 좁힙니다.
+                problemsHTML += `
+                    <div class="quiz-card" id="card-${i}">
+                        <div class="quiz-number">문제 ${i + 1} (가분수를 대분수로 변환)</div>
+                        <div class="equation-container compact">
+                            ${createFracHTML(a, b, c, false)} <span class="op">&minus;</span> ${createPureFracTextHTML(n_imp, c)}
+                            <span class="op">=</span>
+                            ${createFracHTML(a, b, c, false)} <span class="op">&minus;</span> ${createFracHTML(x, y, c, true)}
+                            <span class="op">=</span>
+                            <span class="bracket">(</span> <input type="text" class="ans-box" data-expected="${a}" maxlength="${String(a).length}"> <span class="op">&minus;</span> <input type="text" class="ans-box" data-expected="${x}" maxlength="${String(x).length}"> <span class="bracket">)</span>
+                            <span class="op">+</span>
+                            <span class="bracket">(</span> ${createPureFracInputHTML(b, c)} <span class="op">&minus;</span> ${createPureFracInputHTML(y, c)} <span class="bracket">)</span>
+                            <span class="op">=</span>
+                            ${createFracHTML(a - x, b - y, c, true)}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        document.getElementById('quiz-container').innerHTML = problemsHTML;
+        attachEvents();
+    }
+
+    function attachEvents() {
+        const inputs = document.querySelectorAll('.ans-box');
+        
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                if (this.value.length == this.getAttribute('maxlength')) {
+                    if (index < inputs.length - 1) inputs[index + 1].focus();
+                    else document.getElementById('checkBtn').focus();
+                }
+            });
+
+            input.addEventListener('focus', function() {
+                this.select();
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (index < inputs.length - 1) inputs[index + 1].focus();
+                    else document.getElementById('checkBtn').focus();
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (index > 0) inputs[index - 1].focus();
+                } else if (e.key === 'Backspace') {
+                    if (this.value === '') {
+                        e.preventDefault();
+                        if (index > 0) inputs[index - 1].focus();
+                    }
+                }
+            });
+        });
+
+        if (inputs.length > 0) {
+            inputs[0].focus();
+        }
+    }
+
+    function checkAnswers() {
+        const cards = document.querySelectorAll('.quiz-card');
+        let allCorrect = true;
+
+        cards.forEach(card => {
+            let isCardCorrect = true;
+            const inputs = card.querySelectorAll('.ans-box');
+            
+            inputs.forEach(input => {
+                const expected = parseInt(input.getAttribute('data-expected'), 10);
+                const actual = parseInt(input.value, 10);
+
+                if (isNaN(actual) || actual !== expected) {
+                    isCardCorrect = false;
+                }
+            });
+
+            if (isCardCorrect) {
+                card.style.borderColor = "#22c55e"; 
+                card.style.boxShadow = "0 4px 12px rgba(34, 197, 94, 0.15)";
+            } else {
+                card.style.borderColor = "#ef4444"; 
+                card.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.15)";
+                allCorrect = false;
+            }
+        });
+
+        if (allCorrect) {
+            alert("완벽합니다! 모든 문제를 정확하게 풀었습니다. 💯");
+        } else {
+            alert("틀린 부분이 있습니다. 빨간색 테두리의 문제를 다시 확인하고 고쳐보세요!");
+        }
+    }
+
+    function init() {
+        generateProblems();
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js)
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: () => FracKit.gradeCards('.quiz-card', 'data-expected', false) });
+</script>
+</body>
+</html>
