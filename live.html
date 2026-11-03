@@ -447,6 +447,10 @@ function resolveHelp(num, id, btn) {
   const cls = `${window.liveKey($('grade').value)}_${window.liveKey($('classNum').value)}`;
   btn.disabled = true;
   dbm.update(dbm.ref(db, `help/${$('day').value}/${cls}/${num}/${id}`), { done: true, doneAt: dbm.serverTimestamp() })
+    .then(() => {
+      // 평가데이터 '도움요청' 시트의 그 줄에 해결·처리일시·대기시간 기록 (실패해도 현황판은 그대로)
+      callApi('markHelpRequest', [{ id, status: 'done' }]).catch((e) => console.warn('도움요청 해결 기록 실패:', e && e.message));
+    })
     .catch((e) => { btn.disabled = false; alert('처리하지 못했습니다: ' + e.message); });
 }
 setInterval(() => {  // 기다린 시간 갱신
