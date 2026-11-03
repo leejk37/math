@@ -40,9 +40,11 @@
     '.eq.cmp-row{flex-wrap:nowrap}' +
     '.choice-group:focus{outline:none}' +
     '.quiz-card.current{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.18)}' +
-    '.help-btn{position:absolute;top:8px;right:10px;border:1.5px solid #fcd34d;background:#fffbeb;color:#92400e;border-radius:14px;padding:3px 10px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit}' +
-    '.help-box{display:none;background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:10px;padding:8px 12px;font-size:15px;color:#78350f;line-height:1.6;text-align:center;width:100%}' +
-    '.help-box.show{display:block}' +
+    '.hint-btn{position:absolute;top:8px;right:10px;border:1.5px solid #fcd34d;background:#fffbeb;color:#92400e;border-radius:14px;padding:3px 10px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit}' +
+    '.quiz-card>.help-bar{position:absolute;top:8px;right:10px;margin:0;flex-direction:row}' +
+    '.quiz-card>.help-bar~.hint-btn{right:92px}' +
+    '.hint-box{display:none;background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:10px;padding:8px 12px;font-size:15px;color:#78350f;line-height:1.6;text-align:center;width:100%}' +
+    '.hint-box.show{display:block}' +
     '.rule-box{display:inline-block;text-align:left;background:#eff6ff;border:2px solid #3b82f6;border-radius:12px;padding:10px 18px;margin-bottom:8px;color:#1e293b}' +
     '.rule-title{font-size:19px;font-weight:bold;color:#1d4ed8;margin-bottom:6px}' +
     '.rule-line{font-size:16px;margin:3px 0}' +
@@ -97,8 +99,8 @@
   // hint가 있으면 오른쪽 위에 '💡 도움' 버튼 → 누르면 카드 아래에 도움말이 나타남
   M.card = function (i, inner, wide, hint) {
     return '<div class="quiz-card' + (wide ? ' wide' : '') + '" id="card-' + i + '"><div class="quiz-number">문제 ' + (i + 1) + '</div>' + inner +
-      (hint ? '<button type="button" class="help-btn" onclick="this.parentNode.querySelector(\'.help-box\').classList.toggle(\'show\')">💡 도움</button>' +
-        '<div class="help-box">' + hint + '</div>' : '') + '</div>';
+      (hint ? '<button type="button" class="hint-btn" tabindex="-1" title="풀이 방법을 봅니다 (선생님께 알리지 않음)" onclick="this.parentNode.querySelector(\'.hint-box\').classList.toggle(\'show\')">💡 도움말</button>' +
+        '<div class="hint-box">' + hint + '</div>' : '') + '</div>';
   };
 
   // 묶음 그림: groups개 묶음, 묶음마다 size개, 앞쪽 shaded묶음 색칠
@@ -300,10 +302,10 @@
   M.render = function (cardsHtml, hints) {
     var html = cardsHtml.map(function (c, i) {
       var h = hints && hints[i];
-      if (!h || c.indexOf('help-btn') !== -1) return c;
+      if (!h || c.indexOf('hint-btn') !== -1) return c;
       var cut = c.lastIndexOf('</div>');
-      return c.slice(0, cut) + '<button type="button" class="help-btn" onclick="this.parentNode.querySelector(\'.help-box\').classList.toggle(\'show\')">💡 도움</button>' +
-        '<div class="help-box">' + h + '</div>' + c.slice(cut);
+      return c.slice(0, cut) + '<button type="button" class="hint-btn" tabindex="-1" title="풀이 방법을 봅니다 (선생님께 알리지 않음)" onclick="this.parentNode.querySelector(\'.hint-box\').classList.toggle(\'show\')">💡 도움말</button>' +
+        '<div class="hint-box">' + h + '</div>' + c.slice(cut);
     });
     document.getElementById('quiz').innerHTML = html.join('');
     M.wire();
