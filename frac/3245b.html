@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 3학년 2학기 분수 공통 화면 -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m324-common.js"></script>
+<title>가분수를 대분수로 나타내기</title>
+</head>
+<body>
+
+<div class="header-text">가분수를 대분수로 나타내기</div>
+<div class="sub-text">분자 안에 분모가 몇 번 들어가는지(자연수 부분) 먼저 찾고, 남은 것을 진분수로 나타내세요.<br><span style="font-size:13px;color:#94a3b8">(자연수를 먼저, 분자를 나중에 입력하세요. 입력하면 자동으로 다음 칸으로 넘어갑니다.)</span></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 3245b — 가분수를 대분수로 나타내기
+// 교과서 3-2-4 98쪽: 5/2를 대분수로(2/2는 1), 11/3, 16/6 → 2 4/6 (약분하지 않음)
+function improperProb(used, wMax, dMin, dMax) {
+  let w, r, d, key;
+  do { d = M.rand(dMin, dMax); w = M.rand(1, wMax); r = M.rand(1, d - 1); key = (w * d + r) + '/' + d; } while (used.has(key));
+  used.add(key);
+  return { w, r, d, N: w * d + r };
+}
+function generate() {
+  const cards = [], used = new Set();
+  // 1번: 원 그림을 보고 (전체 색칠한 원 = 자연수, 남은 칸 = 진분수)
+  let p = improperProb(used, 2, 2, 4);
+  cards.push(M.card(0, M.piecesSvg(p.w + 1, p.d, p.N, true) +
+    `<div class="q-text">${M.frac(p.N, p.d, true)}만큼 색칠했습니다.</div>` +
+    `<div class="eq">${M.frac(p.N, p.d)} <span class="op">=</span> ${M.mixed(M.box(p.w), M.box(p.r), p.d)}</div>`));
+  // 2번: 자연수 부분을 가분수로 떼어 보기
+  p = improperProb(used, 3, 3, 6);
+  cards.push(M.card(1,
+    `<div class="eq" style="font-size:20px">${M.frac(p.N, p.d)} <span class="op">=</span> ${M.frac(M.box(p.w * p.d), p.d, true)} <span class="op">+</span> ${M.frac(p.r, p.d, true)} <span class="op">=</span> ${M.mixed(M.box(p.w), p.r, p.d)}</div>`));
+  // 3~5번: 대분수로 바로
+  for (let i = 2; i < 5; i++) {
+    p = improperProb(used, 4, 2, 9);
+    cards.push(M.card(i, `<div class="eq" style="margin-top:8px">${M.frac(p.N, p.d)} <span class="op">=</span> ${M.mixed(M.box(p.w), M.box(p.r), p.d)}</div>`));
+  }
+  M.render(cards);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

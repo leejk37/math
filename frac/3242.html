@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 3학년 2학기 분수 공통 화면 -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m324-common.js"></script>
+<title>분수만큼은 얼마일까요 (개수)</title>
+</head>
+<body>
+
+<div class="header-text">분수만큼은 얼마일까요 (개수)</div>
+<div class="sub-text">전체를 분모만큼 똑같이 묶은 뒤, 1묶음이 얼마인지 먼저 생각하세요.<br><span style="font-size:13px;color:#94a3b8">(입력하면 자동으로 다음 칸으로 넘어갑니다.)</span></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 3242 — 분수만큼은 얼마일까요 (개수)
+// 교과서 3-2-4 90~91쪽: 꽃 6송이의 1/2, 10의 2/5(1묶음 먼저), 8의 3/4, 12의 2/3
+function generate() {
+  const cards = [], used = new Set();
+  for (let i = 0; i < 5; i++) {
+    let d, u, a, key, tries = 0;
+    do {
+      d = i === 0 ? M.rand(2, 6) : M.rand(3, 6);   // 분모 = 묶음 수
+      u = M.rand(2, i < 2 ? 4 : 5);     // 1묶음의 개수
+      a = i === 0 ? 1 : M.rand(2, Math.max(2, d - 1));   // 1번은 단위분수, 나머지는 분자 2 이상
+      if (a >= d) a = d - 1;
+      key = d + '-' + u + '-' + a;
+      tries++;
+    } while ((used.has(key) || d * u > 24 || (i > 0 && a < 2)) && tries < 300);
+    used.add(key);
+    const N = d * u, ans = u * a;
+    let inner;
+    if (i < 2) {
+      // 그림 문제
+      inner = M.groupsSvg(d, u, 0) +
+        `<div class="q-text">${N}개를 똑같이 ${d}묶음으로 나누었습니다.</div>` +
+        (i === 1 ? `<div class="eq" style="font-size:18px">${N}의 ${M.frac(1, d, true)}${M.josa(1, '은', '는')} <span class="tail">${M.box(u)} 입니다.</span></div>` : '') +
+        `<div class="eq" style="font-size:20px">${N}의 ${M.frac(a, d)}${M.josa(a, '은', '는')} <span class="tail">${M.box(ans)} 입니다.</span></div>`;
+    } else {
+      inner = `<div class="eq" style="font-size:22px;margin-top:10px">${N}의 ${M.frac(a, d)}${M.josa(a, '은', '는')} <span class="tail">${M.box(ans)} 입니다.</span></div>`;
+    }
+    cards.push(M.card(i, inner));
+  }
+  M.render(cards);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 3학년 2학기 분수 공통 화면 -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m324-common.js"></script>
+<title>분모가 같은 분수의 크기 비교</title>
+</head>
+<body>
+
+<div class="header-text">분모가 같은 분수의 크기 비교</div>
+<div class="sub-text">가분수끼리는 분자를, 대분수끼리는 자연수를 먼저 비교하세요. 가분수와 대분수는 한쪽으로 바꾸어 비교합니다.<br><span style="font-size:13px;color:#94a3b8">(가운데 동그라미에서 &gt;, =, &lt; 중 알맞은 것을 고르세요.)</span></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 3246 — 분모가 같은 분수의 크기 비교
+// 교과서 3-2-4 99~101쪽: 5/4와 7/4, 1 3/5와 2 1/5, 1 5/6과 1 2/6, 7/3과 2 2/3, □ 안에 들어갈 자연수
+const CMP = [['>', '&gt;'], ['=', '='], ['<', '&lt;']];
+function sign(a, b) { return a > b ? '>' : a < b ? '<' : '='; }
+function cmpCard(i, L, R) {
+  // L, R = { html, v(크기: 분자 기준 값) } — 좌우를 무작위로 바꿈
+  if (Math.random() < 0.5) { const t = L; L = R; R = t; }
+  return M.card(i, `<div class="eq cmp-row" style="gap:14px">${L.html}${M.choices(sign(L.v, R.v), CMP, 'cmp')}${R.html}</div>`);
+}
+const F = (n, d) => ({ html: M.frac(n, d), v: n });
+const MX = (w, n, d) => ({ html: M.mixed(w, n, d), v: w * d + n });
+function generate() {
+  const cards = [];
+  // 1번: 가분수끼리
+  let d = M.rand(3, 9), a = M.rand(d + 1, 3 * d), b;
+  do { b = M.rand(d + 1, 3 * d); } while (b === a);
+  cards.push(cmpCard(0, F(a, d), F(b, d)));
+  // 2번: 대분수, 자연수가 다름 (자연수가 작은 쪽의 분자가 더 큼 → 분자만 보면 틀리는 함정)
+  d = M.rand(4, 9);
+  let w1 = M.rand(1, 3), w2 = w1 + 1, n1 = M.rand(2, d - 1), n2 = M.rand(1, n1 - 1);
+  cards.push(cmpCard(1, MX(w1, n1, d), MX(w2, n2, d)));
+  // 3번: 대분수, 자연수가 같음
+  d = M.rand(3, 9); w1 = M.rand(1, 4); n1 = M.rand(1, d - 1);
+  do { n2 = M.rand(1, d - 1); } while (n2 === n1);
+  cards.push(cmpCard(2, MX(w1, n1, d), MX(w1, n2, d)));
+  // 4번: 가분수와 대분수 (같은 크기가 나올 때도 있음)
+  d = M.rand(3, 9); w1 = M.rand(1, 3); n1 = M.rand(1, d - 1);
+  let N = w1 * d + n1;
+  if (Math.random() < 0.6) { do { N = w1 * d + n1 + M.pick([-2, -1, 1, 2]); } while (N <= d || N % d === 0); }
+  cards.push(cmpCard(3, F(N, d), MX(w1, n1, d)));
+  // 5번: □/d < 1 n/d 일 때 □ 안에 들어갈 수 있는 1~9의 자연수 개수
+  d = M.rand(3, 5); n1 = M.rand(1, Math.min(d - 1, 9 - d));
+  const limit = d + n1;   // □ < limit
+  cards.push(M.card(4,
+    `<div class="eq" style="gap:12px">${M.frac('□', d)} <span class="op">&lt;</span> ${M.mixed(1, n1, d)}</div>` +
+    `<div class="q-text" style="font-size:16px">1부터 9까지의 자연수 중에서 □ 안에 들어갈 수 있는 수는<br>모두 ${M.box(limit - 1)}개입니다.</div>`));
+  M.render(cards);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
