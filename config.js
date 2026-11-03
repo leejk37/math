@@ -11,7 +11,7 @@
  * TIME_ZONE: 현황판의 '오늘' 날짜 기준입니다.
  */
 window.APP_CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbzii93AdfzuM64bPFk1z_rX-qEn1TomNHbjyUund4Zb1dMh30GtIwkmSpGdRak5j_ZZ/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbxfDr2EDd03v1QN243gqGj1WNCbHgn5uncSh6QGPJqix9LCgF-7xWECYYqwRUlwD4hhBg/exec',
 
   FIREBASE: {
     apiKey: 'AIzaSyDzOBpJcqWcyQ-7qi4zTj_nxn7Gvrv6WOM',
