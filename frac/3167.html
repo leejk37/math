@@ -145,6 +145,17 @@
 /* ===================== 공통 유틸 ===================== */
 function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
+// 한 세트(5문제) 안에서 같은 수가 두 번 나오지 않도록, 지금 쓰고 있는 k를 모아 둔다.
+const usedK = new Set();
+function pickK(min, max, prev) {
+  if (prev !== undefined) usedK.delete(prev);           // 내 이전 값은 돌려놓고
+  const pool = [];
+  for (let v = min; v <= max; v++) if (!usedK.has(v)) pool.push(v);
+  const k = pool.length ? pool[randomInt(0, pool.length - 1)] : randomInt(min, max);
+  usedK.add(k);
+  return k;
+}
+
 const svgNS = "http://www.w3.org/2000/svg";
 function el(tag, attrs) {
   const e = document.createElementNS(svgNS, tag);
@@ -289,7 +300,7 @@ function makeProblem1() {
   }
 
   // 수막대 색칠 범위: 5 이상 9 이하
-  function regenerate() { k = randomInt(5, 9); draw(); }
+  function regenerate() { k = pickK(5, 9, k); draw(); }
   regenerate();
 
   const q1 = document.createElement('div'); q1.className = 'sub-question';
@@ -409,7 +420,7 @@ function makeProblem2() {
     svgWrap.appendChild(svg);
   }
 
-  function regenerate() { k = randomInt(1, 9); draw(); }
+  function regenerate() { k = pickK(1, 9, k); draw(); }
   regenerate();
 
   // 분수, 소수 입력을 한 줄에 배치
@@ -489,7 +500,7 @@ function makeProblem3() {
     svgWrap.appendChild(svg);
   }
 
-  function regenerate() { k = randomInt(1, 9); draw(); }
+  function regenerate() { k = pickK(1, 9, k); draw(); }
   regenerate();
 
   const qRow = document.createElement('div'); qRow.className = 'sub-question';
@@ -567,7 +578,7 @@ function makeUnitDecimalSentenceProblem(num) {
 
   function build() {
     // k=1이면 "0.1은 0.1이 [ ]개입니다."처럼 문장이 어색해지므로 2~9 범위로 제한
-    k = randomInt(2, 9);
+    k = pickK(2, 9, k);
     const decimalStr = '0.' + k;
 
     sentenceRow.innerHTML = '';
