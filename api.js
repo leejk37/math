@@ -64,12 +64,14 @@
         // 학생 기기는 '익명 로그인'으로 쓰기 권한만 얻습니다(읽기는 불가).
         return auth.authStateReady()
           .then(function () { return auth.currentUser || m[1].signInAnonymously(auth); })
-          .then(function () { return { db: m[2].getDatabase(app), d: m[2] }; });
+          .then(function () { return { db: m[2].getDatabase(app), d: m[2], uid: auth.currentUser && auth.currentUser.uid }; });
       });
       liveConn.catch(function () { liveConn = null; }); // 실패하면 다음 제출 때 다시 시도
     }
     return liveConn;
   }
+
+  window.liveConnect = liveConnect; // help.js(도움 버튼)도 같은 연결을 씁니다
 
   function reportLive(data) {
     if (!data) return;

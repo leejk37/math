@@ -87,6 +87,26 @@
   .foot button { font-size: 13px; color: var(--sub); }
   .hidden { display: none !important; }
 
+  /* 도움 요청 */
+  .helpbox { background: #fff8ec; border: 2px solid #f5c26b; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
+  .helpbox.quiet { background: var(--panel); border: 1px solid var(--line); }
+  .helpbox .hd { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .helpbox .hd b { font-size: 17px; }
+  .helpbox .hd .cnt { font-size: 15px; color: var(--sub); }
+  .helpbox .hd .right { margin-left: auto; display: flex; gap: 12px; align-items: center; font-size: 14px; color: var(--sub); }
+  .hrow { display: grid; grid-template-columns: 64px 1fr auto auto; gap: 12px; align-items: center; background: #fff;
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-top: 8px; }
+  .hrow .hn { font-size: 20px; font-weight: 800; }
+  .hrow .what { font-size: 15px; } .hrow .what small { color: var(--sub); }
+  .hrow .wait { font-size: 15px; font-variant-numeric: tabular-nums; color: var(--sub); white-space: nowrap; }
+  .hrow .wait.long { color: var(--x); font-weight: 700; }
+  .hrow button { background: var(--s100); border-color: var(--s100); color: #fff; font-weight: 700; }
+  .tag { display: inline-block; font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-right: 6px; }
+  .tag.unknown { background: #fff4e5; color: #92400e; border: 1px solid #f59e0b; }
+  .tag.check { background: #e8f0fe; color: #1e3a8a; border: 1px solid #3b6fd8; }
+  .card .hb { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .card.asking { box-shadow: 0 0 0 3px #f5c26b; }
+
   @media (max-width: 600px) {
     header { padding: 10px 12px; } main { padding: 12px; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
@@ -113,6 +133,11 @@
   <div id="msg" class="notice">불러오는 중…</div>
 
   <section id="board" class="hidden">
+    <div class="helpbox quiet" id="helpBox">
+      <div class="hd"><b>🙋 도움 요청</b><span class="cnt" id="helpCount">없음</span>
+        <span class="right"><span id="helpDone"></span><label class="toggle"><input type="checkbox" id="helpSound" checked> 알림음</label></span></div>
+      <div id="helpList"></div>
+    </div>
     <div class="summary">
       <div class="stat"><div class="k">제출한 학생</div><div class="v" id="stSubmitted">-</div></div>
       <div class="stat"><div class="k">오늘 제출 횟수</div><div class="v" id="stAttempts">-</div></div>
@@ -149,6 +174,9 @@ const store = { get(k, d) { try { return localStorage.getItem('live_' + k) ?? d;
 let roster = {};          // { 학년: { 반: { 번호: 이름 } } }
 let db, dbm, auth, authm, user = null;
 let unsub = null;
+let unsubHelp = null;
+let helpData = {};        // { 번호: { pushId: 도움요청 } }
+let helpSeen = null;      // 알림음용: 이미 본 요청 id
 let data = {};            // { 번호: { pushId: 기록 } }
 let seenCount = {};       // 깜빡임 표시용: 번호별 지난번 기록 수
 let firstLoad = true;
@@ -228,15 +256,24 @@ function fillClasses() {
 }
 
 /* ---------- Firebase 구독 ---------- */
-function stop() { if (unsub) { unsub(); unsub = null; } }
+function stop() {
+  if (unsub) { unsub(); unsub = null; }
+  if (unsubHelp) { unsubHelp(); unsubHelp = null; }
+}
 function subscribe() {
   stop();
   if (!user) return;
   const g = $('grade').value, c = $('classNum').value, day = $('day').value;
   if (!g || !c || !day) { msg('학년과 반을 선택해 주세요. (학생명부에 학생이 있어야 목록이 나옵니다)'); return; }
-  data = {}; seenCount = {}; firstLoad = true;
+  data = {}; seenCount = {}; firstLoad = true; helpData = {}; helpSeen = null;
   msg('현황을 불러오는 중…');
-  const path = `live/${day}/${window.liveKey(g)}_${window.liveKey(c)}`;
+  const cls = `${window.liveKey(g)}_${window.liveKey(c)}`;
+  const path = `live/${day}/${cls}`;
+  unsubHelp = dbm.onValue(dbm.ref(db, `help/${day}/${cls}`), (snap) => {
+    helpData = snap.val() || {};
+    if (helpSeen === null) helpSeen = new Set(Object.keys(helpData).flatMap(helpsOf).map((h) => h.id)); // 처음 불러온 요청은 알림음 없음
+    render();
+  }, () => { /* 권한 오류는 아래 live 구독에서 안내 */ });
   unsub = dbm.onValue(dbm.ref(db, path), (snap) => {
     data = snap.val() || {};
     showBoard(); render(); firstLoad = false;
@@ -278,7 +315,7 @@ function render() {
   if ($('board').classList.contains('hidden')) return;
   const names = (roster[$('grade').value] || {})[$('classNum').value] || {};
   const showNames = $('showNames').checked;
-  const nums = Array.from(new Set([...Object.keys(names), ...Object.keys(data)])).sort((a, b) => Number(a) - Number(b));
+  const nums = Array.from(new Set([...Object.keys(names), ...Object.keys(data), ...Object.keys(helpData)])).sort((a, b) => Number(a) - Number(b));
   const nameOf = (n) => showNames ? (names[n] || '') : '';
 
   let submitted = 0, attempts = 0, sum = 0, last = 0;
@@ -289,20 +326,23 @@ function render() {
     list.forEach((r) => all.push({ num: n, ...r }));
     const changed = !firstLoad && list.length > (seenCount[n] || 0);
     seenCount[n] = list.length;
+    const asks = pendingOf(n);
+    const hb = asks.length ? `<div class="hb">${asks.map((h) => `<span class="tag ${h.type}">${HELP[h.type].icon} 문제${h.q}</span>`).join('')}</div>` : '';
     if (!list.length) {
-      return `<div class="card none"><div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
-              <div class="lv" style="margin-top:14px">아직 제출 없음</div></div>`;
+      return `<div class="card none${asks.length ? ' asking' : ''}"><div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
+              <div class="lv" style="margin-top:14px">아직 제출 없음</div>${hb}</div>`;
     }
     const r = list[list.length - 1];
     submitted++; sum += r.score; last = Math.max(last, r.at);
-    return `<div class="card${changed ? ' flash' : ''}" data-num="${esc(n)}" style="border-left-color:${colorOf(r.score)}">
+    return `<div class="card${changed ? ' flash' : ''}${asks.length ? ' asking' : ''}" data-num="${esc(n)}" style="border-left-color:${colorOf(r.score)}">
       <div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
       <div class="lv" title="${esc(r.op + ' ' + r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</div>
       <div class="score" style="color:${colorOf(r.score)}">${r.score}</div>
       <div class="marks">${marks(r.results)}</div>
-      <div class="meta"><span>${list.length}회째</span><span>${ago(r.at)}</span></div></div>`;
+      <div class="meta"><span>${list.length}회째</span><span>${ago(r.at)}</span></div>${hb}</div>`;
   }).join('');
   $('grid').innerHTML = html || '<div class="notice">이 반의 학생명부가 비어 있습니다.</div>';
+  renderHelp(nameOf);
   $('grid').querySelectorAll('.card[data-num]').forEach((el) => { el.onclick = () => openStudent(el.dataset.num, nameOf(el.dataset.num)); });
 
   $('stSubmitted').textContent = `${submitted} / ${nums.length}`;
@@ -355,17 +395,77 @@ function openStudent(num, name) {
   $('dim').classList.add('show');
 }
 
+/* ---------- 도움 요청 ---------- */
+const HELP = { unknown: { icon: '🤔', label: '모르겠어요' }, check: { icon: '🙋', label: '확인해 주세요' } };
+function helpsOf(num) {
+  return Object.entries(helpData[num] || {}).map(([id, h]) => ({ id, num, ...h }))
+    .filter((h) => HELP[h.type] && typeof h.at === 'number');
+}
+function pendingOf(num) { return helpsOf(num).filter((h) => !h.done).sort((a, b) => a.at - b.at); }
+function waitText(ts) {
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  return Math.floor(s / 60) + '분 ' + String(s % 60).padStart(2, '0') + '초';
+}
+let audioCtx = null;
+document.addEventListener('click', () => { try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }, { once: true });
+function ding() {
+  if (!$('helpSound').checked || !audioCtx) return;
+  try {
+    [0, 0.18].forEach((t, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = i ? 1046 : 784; o.connect(g); g.connect(audioCtx.destination);
+      const t0 = audioCtx.currentTime + t;
+      g.gain.setValueAtTime(0.001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.25);
+      o.start(t0); o.stop(t0 + 0.26);
+    });
+  } catch (e) {}
+}
+function renderHelp(nameOf) {
+  nameOf = nameOf || ((n) => ($('showNames').checked ? (((roster[$('grade').value] || {})[$('classNum').value] || {})[n] || '') : ''));
+  const all = Object.keys(helpData).flatMap(helpsOf);
+  const pending = all.filter((h) => !h.done).sort((a, b) => a.at - b.at);
+  const doneCount = all.length - pending.length;
+
+  // 새 요청이면 알림음 (처음 불러올 때는 울리지 않음)
+  if (helpSeen) {
+    if (pending.some((h) => !helpSeen.has(h.id))) ding();
+    pending.forEach((h) => helpSeen.add(h.id));
+  }
+
+  $('helpBox').classList.toggle('quiet', !pending.length);
+  $('helpCount').textContent = pending.length ? `${pending.length}명 기다리는 중` : '없음';
+  $('helpDone').textContent = doneCount ? `오늘 해결 ${doneCount}건` : '';
+  $('helpList').innerHTML = pending.map((h) => `<div class="hrow">
+      <span class="hn">${esc(h.num)}번</span>
+      <span class="what"><span class="tag ${h.type}">${HELP[h.type].icon} ${HELP[h.type].label}</span>${esc(nameOf(h.num))}
+        <small>· ${esc(h.op)} · ${esc(shortLevel(h.level))} · <b>문제 ${h.q}</b></small></span>
+      <span class="wait${Date.now() - h.at > 120000 ? ' long' : ''}" data-at="${h.at}">${waitText(h.at)}</span>
+      <button data-num="${esc(h.num)}" data-id="${esc(h.id)}">해결</button></div>`).join('');
+  $('helpList').querySelectorAll('button[data-id]').forEach((b) => { b.onclick = () => resolveHelp(b.dataset.num, b.dataset.id, b); });
+}
+function resolveHelp(num, id, btn) {
+  const cls = `${window.liveKey($('grade').value)}_${window.liveKey($('classNum').value)}`;
+  btn.disabled = true;
+  dbm.update(dbm.ref(db, `help/${$('day').value}/${cls}/${num}/${id}`), { done: true, doneAt: dbm.serverTimestamp() })
+    .catch((e) => { btn.disabled = false; alert('처리하지 못했습니다: ' + e.message); });
+}
+setInterval(() => {  // 기다린 시간 갱신
+  document.querySelectorAll('#helpList .wait[data-at]').forEach((el) => {
+    const at = Number(el.dataset.at); el.textContent = waitText(at); el.classList.toggle('long', Date.now() - at > 120000);
+  });
+}, 1000);
+
 /* 지난 날짜 기록 지우기 (오늘 것은 남김). 시트 기록과는 무관 */
 async function cleanOld() {
   if (!user) return;
   const today = window.liveToday();
   try {
-    const snap = await dbm.get(dbm.query(dbm.ref(db, 'live'), dbm.orderByKey(), dbm.endBefore(today)));
-    const days = Object.keys(snap.val() || {});
+    const [snap, snapH] = await Promise.all(['live', 'help'].map((k) => dbm.get(dbm.query(dbm.ref(db, k), dbm.orderByKey(), dbm.endBefore(today)))));
+    const days = Array.from(new Set([...Object.keys(snap.val() || {}), ...Object.keys(snapH.val() || {})])).sort();
     if (!days.length) { alert('지울 지난 기록이 없습니다.'); return; }
     if (!confirm(`현황판의 지난 기록 ${days.length}일치(${days[0]} ~ ${days[days.length - 1]})를 지웁니다.\n평가데이터 시트의 기록은 그대로 남습니다. 계속할까요?`)) return;
     const updates = {}; days.forEach((d) => { updates[d] = null; });
-    await dbm.update(dbm.ref(db, 'live'), updates);
+    await Promise.all([dbm.update(dbm.ref(db, 'live'), updates), dbm.update(dbm.ref(db, 'help'), updates)]);
     alert('지웠습니다.');
   } catch (e) { alert('지우지 못했습니다: ' + e.message); }
 }

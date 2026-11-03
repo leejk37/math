@@ -14,6 +14,8 @@
  *   grade   : 채점 함수. 문제별 맞음/틀림을 [true,false,...] 배열로 돌려줘야 함
  *   hideInDiagnostic : 진단 모드에서 숨길 요소 선택자 배열 (문제별 개별 확인 버튼 등)
  *   activity: true면 채점 없는 활동 페이지 (제출 버튼 없음)
+ *   methods : (선택) 문제별로 고른 풀이 방법을 ['받아내림','가분수 변환',...] 배열로 돌려주는 함수.
+ *             주면 시트 '종합평가결과'의 '풀이방법' 칸에 함께 저장됩니다. (4215·4216은 FracKit.cardMethods 사용)
  */
 (function () {
   var SESSION_KEY = 'frac_session';
@@ -100,7 +102,7 @@
   }
 
   // ---------- 시트로 저장 ----------
-  function submit(results, onDone) {
+  function submit(results, onDone, methods) {
     var s = K.session;
     var correct = results.filter(Boolean).length;
     var score = Math.round(correct / results.length * 100);
@@ -112,6 +114,7 @@
       score: score, timeString: fmt(sec), timeSeconds: sec,
       results: results.map(function (r) { return r ? 'O' : 'X'; })
     };
+    if (Array.isArray(methods) && methods.length) payload.methods = methods.map(function (m) { return String(m || '').slice(0, 20); });
     setMsg('저장 중입니다... ⏳', 'info');
     callApi('submitDiagnostic', [payload]).then(function () {
       setMsg(results.length + '문제 중 ' + correct + '개 정답 · ' + score + '점 · ' + fmt(sec) + ' — 저장되었습니다 ✔', 'ok');
@@ -208,6 +211,8 @@
         submitted = true;
         clearInterval(timerId);
         var results = opts.grade();
+        var methods = null;
+        if (typeof opts.methods === 'function') { try { methods = opts.methods(); } catch (e) { methods = null; } }
         lockPage();
         checkBtn.classList.add('fk-hidden');
 
@@ -217,11 +222,11 @@
             if (retryBtn) retryBtn.remove();
             addAction('🔄 이번 단계 다시 풀기', 'fk-btn-blue', function () { location.reload(); });
           } else if (!retryBtn) {
-            retryBtn = addAction('💾 다시 저장', 'fk-btn-main', function () { submit(results, afterSave); });
+            retryBtn = addAction('💾 다시 저장', 'fk-btn-main', function () { submit(results, afterSave, methods); });
           }
           reportHeight();
         }
-        submit(results, afterSave);
+        submit(results, afterSave, methods);
       };
     }
 
@@ -229,6 +234,15 @@
     reportHeight();
     if (window.ResizeObserver) new ResizeObserver(reportHeight).observe(document.body);
     window.addEventListener('load', reportHeight);
+  };
+
+  // ---------- 풀이 방법 읽기: 카드마다 name="method-N" 라디오(m1 받아내림 / m2 가분수 변환)가 있는 4215·4216용 ----------
+  var METHOD_NAMES = { m1: '받아내림', m2: '가분수 변환' };
+  K.cardMethods = function (cardSel) {
+    return Array.prototype.map.call(document.querySelectorAll(cardSel), function (card) {
+      var r = card.querySelector('input[type="radio"][name^="method-"]:checked');
+      return r ? (METHOD_NAMES[r.value] || r.value) : '';
+    });
   };
 
   // ---------- 채점 도우미: 입력칸에 정답이 data-속성으로 들어 있는 카드형 페이지(4213~4216)용 ----------

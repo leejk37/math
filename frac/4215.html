@@ -7,6 +7,7 @@
 <script src="../config.js"></script>
 <script src="../api.js"></script>
 <script src="frac-kit.js"></script>
+<script src="../help.js"></script>
 
     <title>자연수 - 분수의 뺄셈 (방법 선택형)</title>
     <style>
@@ -617,7 +618,7 @@
 </script>
 <script>
 // 진단시스템 연결 (frac-kit.js)
-FracKit.init({ check: '#check-btn', newBtn: '.reset-btn', grade: () => FracKit.gradeCards('.quiz-card', 'data-ans', true) });
+FracKit.init({ check: '#check-btn', newBtn: '.reset-btn', grade: () => FracKit.gradeCards('.quiz-card', 'data-ans', true), methods: () => FracKit.cardMethods('.quiz-card') });
 </script>
 </body>
 </html>
