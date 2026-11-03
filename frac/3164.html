@@ -199,9 +199,10 @@ function makeFractionInputBox() {
   denInput.className = 'cell'; denInput.type = 'text'; denInput.inputMode = 'numeric'; denInput.placeholder = '분모';
   blockNonNatural(numInput); blockNonNatural(denInput);
 
-  // 분자 칸에 포커스가 들어오면 분모 칸으로 되돌려 보냄 (분모 우선 입력)
+  // 분모가 아직 비어 있을 때만 분자 칸에서 분모 칸으로 되돌려 보냄 (분모 우선 입력)
+  // (예전 코드는 무조건 되돌려 보내서, 분모를 쓴 뒤에도 분자 칸에 들어갈 수 없었음)
   numInput.addEventListener('focus', () => {
-    denInput.focus();
+    if (denInput.value.trim() === '') denInput.focus();
   });
 
   // 분모를 입력하면 자동으로 분자 칸으로 포커스 이동
