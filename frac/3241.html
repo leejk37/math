@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 3학년 2학기 분수 공통 화면 -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m324-common.js"></script>
+<title>분수로 나타내어 볼까요</title>
+</head>
+<body>
+
+<div class="header-text">분수로 나타내어 볼까요</div>
+<div class="sub-text">전체를 똑같이 묶었을 때, 부분은 전체 몇 묶음 중의 몇 묶음인지 생각하여 분수로 나타내세요.<br><span style="font-size:13px;color:#94a3b8">(분자를 먼저, 분모를 나중에 입력하세요. 입력하면 자동으로 다음 칸으로 넘어갑니다.)</span></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 3241 — 분수로 나타내어 볼까요
+// 교과서 3-2-4 88~89쪽: 의자 8개를 똑같이 나누기 / 색칠한 묶음을 분수로 / 귤 20개를 4개씩 묶어 4는 20의 얼마?
+const ITEMS = ['귤', '사과', '구슬', '쿠키', '사탕'];
+function generate() {
+  const cards = [], used = new Set();
+  for (let i = 0; i < 5; i++) {
+    let g, m, k, key, tries = 0;
+    do {
+      g = M.rand(2, 6);              // 묶음 수 = 분모
+      m = M.rand(2, i < 3 ? 4 : 5);  // 한 묶음의 개수
+      k = i === 0 ? 1 : M.rand(1, g - 1);  // 1번은 '1묶음'(단위분수)
+      if (i >= 3 && k === 1 && g > 2) k = M.rand(2, g - 1);  // 글 문제는 몇 묶음(8은 20의 2/5 꼴) 위주
+      key = g + '-' + m + '-' + k;
+      tries++;
+    } while ((used.has(key) || g * m > 24) && tries < 200);
+    used.add(key);
+    const N = g * m, part = k * m, item = M.pick(ITEMS);
+    let inner;
+    if (i < 3) {
+      // 그림 문제: 묶음을 보고 분수로
+      const lead = i === 2
+        ? `<div class="eq" style="font-size:18px">색칠한 부분은 전체 ${g}묶음 중에서 ${M.box(k)} 묶음이므로</div>`
+        : '';
+      inner = M.groupsSvg(g, m, k) +
+        `<div class="q-text">${item} ${N}개를 ${m}개씩 묶었습니다.</div>` + lead +
+        `<div class="eq" style="font-size:18px">색칠한 ${item} ${part}개는 전체의 <span class="tail">${M.frac(M.box(k), M.box(g))} 입니다.</span></div>`;
+    } else {
+      // 글 문제: 그림 없이 'N을 m씩 묶으면 part는 N의 얼마'
+      inner = `<div class="q-text">${item} ${N}개를 ${m}개씩 묶으면</div>` +
+        `<div class="eq" style="font-size:20px">${part}${M.josa(part, '은', '는')} ${N}의 <span class="tail">${M.frac(M.box(k), M.box(g))} 입니다.</span></div>`;
+    }
+    cards.push(M.card(i, inner));
+  }
+  M.render(cards);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

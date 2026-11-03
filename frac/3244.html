@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 3학년 2학기 분수 공통 화면 -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m324-common.js"></script>
+<title>진분수와 가분수</title>
+</head>
+<body>
+
+<div class="header-text">진분수와 가분수</div>
+<div class="sub-text"><b>진분수</b>: 분자가 분모보다 작은 분수 &nbsp;·&nbsp; <b>가분수</b>: 분자가 분모와 같거나 분모보다 큰 분수<br><span style="font-size:13px;color:#94a3b8">(분수를 보고 알맞은 말을 고르거나, 빈칸에 수를 입력하세요.)</span></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 3244 — 진분수와 가분수
+// 교과서 3-2-4 94~95쪽: 1/4이 5개 → 5/4, 진분수·가분수 분류, 4/4는 1(자연수), 수직선 0~2
+function generate() {
+  const cards = [];
+  // 1번: 수직선 위 화살표가 가리키는 분수 (1보다 큰 곳 → 가분수)
+  const d1 = M.rand(3, 5), at = M.rand(d1 + 1, 2 * d1 - 1);
+  cards.push(M.card(0, M.numberLineSvg(2, d1, at) +
+    `<div class="eq" style="font-size:18px">화살표가 가리키는 곳은 ${M.frac(1, d1, true)}이 ${M.box(at)}개이므로 <span class="tail">${M.frac(M.box(at), d1)} 입니다.</span></div>`));
+  // 2~4번: 분류 (진분수 1개, 분자=분모 1개, 분자>분모 1개를 섞어서)
+  const kinds = M.shuffle(['진', '같음', '큼']), usedF = new Set();
+  kinds.forEach((kind, j) => {
+    let n, d, key;
+    do {
+      d = M.rand(3, 12);
+      n = kind === '진' ? M.rand(1, d - 1) : kind === '같음' ? d : M.rand(d + 1, Math.min(2 * d + 3, 25));
+      key = n + '/' + d;
+    } while (usedF.has(key));
+    usedF.add(key);
+    cards.push(M.card(j + 1, `<div class="eq" style="font-size:24px">${M.frac(n, d)}</div>` +
+      M.choices(kind === '진' ? '진' : '가', [['진', '진분수'], ['가', '가분수']])));
+  });
+  // 5번: 분자와 분모가 같은(또는 두 배인) 가분수는 자연수
+  const d5 = M.rand(2, 9), w5 = M.pick([1, 1, 2]);
+  cards.push(M.card(4, `<div class="q-text">자연수로 나타내어 보세요.</div>` +
+    `<div class="eq" style="font-size:24px">${M.frac(d5 * w5, d5)} <span class="op">=</span> ${M.box(w5)}</div>`));
+  M.render(cards);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
