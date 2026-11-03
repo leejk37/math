@@ -27,6 +27,7 @@
 // 교과서 3-2-4 88~89쪽: 의자 8개를 똑같이 나누기 / 색칠한 묶음을 분수로 / 귤 20개를 4개씩 묶어 4는 20의 얼마?
 const ITEMS = ['귤', '사과', '구슬', '쿠키', '사탕'];
 function generate() {
+  const hints = [];
   const cards = [], used = new Set();
   for (let i = 0; i < 5; i++) {
     let g, m, k, key, tries = 0;
@@ -55,8 +56,11 @@ function generate() {
         `<div class="eq" style="font-size:20px">${part}${M.josa(part, '은', '는')} ${N}의 <span class="tail">${M.frac(M.box(k), M.box(g))} 입니다.</span></div>`;
     }
     cards.push(M.card(i, inner));
+    hints.push(i < 3
+      ? '묶음 테두리를 하나씩 세어 보세요. <b>전체 묶음 수</b>가 분모, 그중 <b>색칠한 묶음 수</b>가 분자예요. 낱개의 개수를 쓰는 것이 아니에요.'
+      : `${N}개를 ${m}개씩 뛰어 세며 묶어 보세요. 모두 <b>몇 묶음</b>이 되는지가 분모, ${part}개는 그중 <b>몇 묶음</b>인지가 분자예요.`);
   }
-  M.render(cards);
+  M.render(cards, hints);
 }
 document.addEventListener('DOMContentLoaded', generate);
 </script>

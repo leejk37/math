@@ -296,8 +296,16 @@
   };
 
   // 페이지 뼈대 HTML 이후 공통 시작: generate()를 만들어 두면 첫 화면에서 자동 실행
-  M.render = function (cardsHtml) {
-    document.getElementById('quiz').innerHTML = cardsHtml.join('');
+  // hints[i]가 있으면 i번 카드에 '💡 도움' 버튼을 붙임 (카드에 이미 도움이 있으면 그대로 둠)
+  M.render = function (cardsHtml, hints) {
+    var html = cardsHtml.map(function (c, i) {
+      var h = hints && hints[i];
+      if (!h || c.indexOf('help-btn') !== -1) return c;
+      var cut = c.lastIndexOf('</div>');
+      return c.slice(0, cut) + '<button type="button" class="help-btn" onclick="this.parentNode.querySelector(\'.help-box\').classList.toggle(\'show\')">💡 도움</button>' +
+        '<div class="help-box">' + h + '</div>' + c.slice(cut);
+    });
+    document.getElementById('quiz').innerHTML = html.join('');
     M.wire();
   };
 })();

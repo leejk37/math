@@ -32,6 +32,7 @@ function mixedProb(used, wMax, dMin, dMax) {
   return { w, n, d, N: w * d + n };
 }
 function generate() {
+  const hints = [];
   const cards = [], used = new Set();
   // 1번: 진·가·대분수 고르기
   const kind = M.pick(['진', '가', '대', '대']);
@@ -41,21 +42,25 @@ function generate() {
   else { const p = mixedProb(used, 4, 3, 12); shown = M.mixed(p.w, p.n, p.d); }
   cards.push(M.card(0, `<div class="eq" style="font-size:24px">${shown}</div>` +
     M.choices(kind, [['진', '진분수'], ['가', '가분수'], ['대', '대분수']])));
+  hints.push('<b>자연수와 진분수</b>가 함께 있으면 대분수예요. 분수만 있다면 분자와 분모를 비교해요: 분자가 작으면 진분수, 같거나 크면 가분수.');
   // 2번: 그림을 보고 대분수로
   let p = mixedProb(used, 2, 2, 6);
   cards.push(M.card(1, M.piecesSvg(p.w + 1, p.d, p.N, false) +
     `<div class="q-text">색칠한 부분을 대분수로 나타내세요.</div>` +
     `<div class="eq">${M.mixed(M.box(p.w), M.box(p.n), p.d)}</div>`));
+  hints.push('<b>모두 색칠한</b> 도형은 자연수 1이에요. 그런 도형이 몇 개인지가 자연수, <b>일부만 색칠한</b> 도형은 색칠한 칸 수가 분자예요.');
   // 3번: 단위분수가 몇 개인지 생각하며 가분수로
   p = mixedProb(used, 3, 2, 6);
   cards.push(M.card(2, `<div class="eq" style="font-size:18px">${M.mixed(p.w, p.n, p.d, true)}${M.josa(p.n, '은', '는')}&nbsp;${M.frac(1, p.d, true)}이 ${M.box(p.N)}개</div>` +
     `<div class="eq">${M.mixed(p.w, p.n, p.d)} <span class="op">=</span> ${M.frac(M.box(p.N), p.d)}</div>`));
+  hints.push(`자연수 1은 ${M.frac(p.d, p.d, true)}, 곧 ${M.frac(1, p.d, true)}이 ${p.d}개예요. 자연수 부분과 진분수 부분에 ${M.frac(1, p.d, true)}이 각각 몇 개인지 세어 더해 보세요.`);
   // 4~5번: 가분수로 바로
   for (let i = 3; i < 5; i++) {
     p = mixedProb(used, 4, 2, 9);
     cards.push(M.card(i, `<div class="eq" style="margin-top:8px">${M.mixed(p.w, p.n, p.d)} <span class="op">=</span> ${M.frac(M.box(p.N), p.d)}</div>`));
+    hints.push(`자연수 1은 ${M.frac(p.d, p.d, true)}${M.josa(p.d, '이에요', '예요')}. 자연수 ${p.w}은(는) 분자가 얼마인 분수일까요? 거기에 진분수의 분자 ${p.n}을(를) 더해요.`.replace('은(는)', M.josa(p.w, '은', '는')).replace('을(를)', M.josa(p.n, '을', '를')));
   }
-  M.render(cards);
+  M.render(cards, hints);
 }
 document.addEventListener('DOMContentLoaded', generate);
 </script>

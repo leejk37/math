@@ -32,22 +32,26 @@ function improperProb(used, wMax, dMin, dMax) {
   return { w, r, d, N: w * d + r };
 }
 function generate() {
+  const hints = [];
   const cards = [], used = new Set();
   // 1번: 원 그림을 보고 (전체 색칠한 원 = 자연수, 남은 칸 = 진분수)
   let p = improperProb(used, 2, 2, 4);
   cards.push(M.card(0, M.piecesSvg(p.w + 1, p.d, p.N, true) +
     `<div class="q-text">${M.frac(p.N, p.d, true)}만큼 색칠했습니다.</div>` +
     `<div class="eq">${M.frac(p.N, p.d)} <span class="op">=</span> ${M.mixed(M.box(p.w), M.box(p.r), p.d)}</div>`));
+  hints.push('<b>모두 색칠한 원</b>의 수가 자연수, <b>일부만 색칠한 원</b>의 색칠한 칸 수가 분자예요.');
   // 2번: 자연수 부분을 가분수로 떼어 보기
   p = improperProb(used, 3, 3, 6);
   cards.push(M.card(1,
     `<div class="eq" style="font-size:20px">${M.frac(p.N, p.d)} <span class="op">=</span> ${M.frac(M.box(p.w * p.d), p.d, true)} <span class="op">+</span> ${M.frac(p.r, p.d, true)} <span class="op">=</span> ${M.mixed(M.box(p.w), p.r, p.d)}</div>`));
+  hints.push(`분자 ${p.N}에서 분모 ${p.d}만큼씩 덜어 내어 자연수가 되는 부분을 먼저 떼어 보세요. ${M.frac(p.d, p.d, true)}${M.josa(p.d, '은', '는')} 1이에요.`);
   // 3~5번: 대분수로 바로
   for (let i = 2; i < 5; i++) {
     p = improperProb(used, 4, 2, 9);
     cards.push(M.card(i, `<div class="eq" style="margin-top:8px">${M.frac(p.N, p.d)} <span class="op">=</span> ${M.mixed(M.box(p.w), M.box(p.r), p.d)}</div>`));
+    hints.push(`분자 ${p.N}에서 분모 ${p.d}만큼씩 몇 번 덜어 낼 수 있나요? 덜어 낸 <b>횟수</b>가 자연수, 덜어 내고 <b>남은 수</b>가 분자예요.`);
   }
-  M.render(cards);
+  M.render(cards, hints);
 }
 document.addEventListener('DOMContentLoaded', generate);
 </script>

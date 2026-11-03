@@ -46,6 +46,7 @@ function clockProblem(usedKey, needA2) {
   return { d, a, u: 12 / d, ans: (12 / d) * a };
 }
 function generate() {
+  const hints = [];
   const cards = [], used = new Set();
   // 1번: m 띠 + 자 (색칠한 그림, 1부분 먼저)
   let p = lengthProblem(12, used);
@@ -53,24 +54,29 @@ function generate() {
     `<div class="q-text">길이가 ${p.L} m인 천을 똑같이 ${p.d}부분으로 나누었습니다.</div>` +
     `<div class="eq" style="font-size:18px">1부분은 ${M.box(p.u)} m이고,</div>` +
     `<div class="eq" style="font-size:20px">${p.L} m의 ${M.frac(p.a, p.d)}${M.josa(p.a, '은', '는')} <span class="tail">${M.box(p.ans)} m입니다.</span></div>`));
+  hints.push('색칠한 띠의 한 칸이 <b>1부분</b>이에요. 자의 눈금으로 한 칸이 몇 m인지 읽고, 색칠한 칸이 몇 개인지 세어 보세요.');
   // 2번: cm 띠 + 자 (나눈 선 없이)
   p = lengthProblem(12, used);
   cards.push(M.card(1, M.rulerTapeSvg(p.L, 'cm', 1, 0) +
     `<div class="eq" style="font-size:20px">${p.L} cm의 ${M.frac(p.a, p.d)}${M.josa(p.a, '은', '는')} <span class="tail">${M.box(p.ans)} cm입니다.</span></div>`));
+  hints.push(`띠를 자의 눈금에 맞추어 똑같이 ${p.d}부분으로 나누어 보세요. <b>1부분</b>이 몇 cm인지 구한 뒤, 그것이 <b>${p.a}개</b>면 몇 cm인지 생각해요.`);
   // 3번: 12시간 시계 (나눈 선·색칠 있음)
   let c = clockProblem(used, true);
   cards.push(M.card(2, M.clockSvg(c.u * c.a, c.d) +
     `<div class="eq" style="font-size:18px">1부분은 ${M.box(c.u)} 시간이고,</div>` +
     `<div class="eq" style="font-size:20px">12시간의 ${M.frac(c.a, c.d)}${M.josa(c.a, '은', '는')} <span class="tail">${M.box(c.ans)} 시간입니다.</span></div>`));
+  hints.push('빨간 선으로 나뉜 한 조각이 <b>1부분</b>이에요. 한 조각 안에 시계 숫자가 몇 칸(몇 시간) 들어 있는지 세어 보세요.');
   // 4번: 12시간 시계 (그림만)
   c = clockProblem(used, false);
   cards.push(M.card(3, M.clockSvg(0, 0) +
     `<div class="eq" style="font-size:20px">12시간의 ${M.frac(c.a, c.d)}${M.josa(c.a, '은', '는')} <span class="tail">${M.box(c.ans)} 시간입니다.</span></div>`));
+  hints.push(`시계 한 바퀴는 12시간이에요. 시계 숫자를 따라 12시간을 똑같이 ${c.d}부분으로 묶어 보고, <b>1부분</b>이 몇 시간인지 구한 뒤 <b>${c.a}부분</b>이면 몇 시간인지 생각해요.`);
   // 5번: 글로만 (조금 큰 길이)
   p = lengthProblem(20, used);
   const unit = M.pick(['cm', 'm']);
   cards.push(M.card(4, `<div class="eq" style="font-size:22px;margin-top:10px">${p.L} ${unit}의 ${M.frac(p.a, p.d)}${M.josa(p.a, '은', '는')} <span class="tail">${M.box(p.ans)} ${unit}입니다.</span></div>`));
-  M.render(cards);
+  hints.push(`${p.L} ${unit}를 똑같이 ${p.d}부분으로 나누면 <b>1부분</b>은 몇 ${unit}일까요? 그 1부분이 <b>${p.a}개</b> 있으면 얼마인가요?`);
+  M.render(cards, hints);
 }
 document.addEventListener('DOMContentLoaded', generate);
 </script>
