@@ -66,6 +66,7 @@
 
   // 정답이 들어 있는 입력칸. 칸 크기(maxlength)는 정답 자릿수에 맞춤 → 다 쓰면 자동으로 다음 칸
   M.box = function (ans) {
+    // 칸은 정답 자릿수만큼만 받음 (3241처럼 분모·분자가 한 자리면 한 자리씩, 다 쓰면 바로 다음 칸)
     var s = String(ans);
     return '<input type="text" inputmode="numeric" autocomplete="off" class="ans-box' + (s.length === 1 ? ' w1' : '') +
       '" maxlength="' + s.length + '" data-ans="' + s + '">';
@@ -203,7 +204,15 @@
 
   // 입력칸·버튼 동작 연결 (문제를 새로 그린 뒤 매번 호출)
   M.wire = function () {
-    var inputs = Array.prototype.slice.call(document.querySelectorAll('.ans-box'));
+    // 입력 순서: 화면 순서대로 하되, 분자·분모가 모두 빈칸인 분수는 분모 → 분자 순서 (분수를 쓰는 순서와 같게)
+    var inputs = [];
+    Array.prototype.forEach.call(document.querySelectorAll('.ans-box'), function (inp) {
+      if (inputs.indexOf(inp) !== -1) return;
+      var fr = inp.closest('.fraction');
+      var num = fr && fr.querySelector(':scope > .num .ans-box'), den = fr && fr.querySelector(':scope > .den .ans-box');
+      if (num && den && inp === num) { inputs.push(den, num); return; }
+      inputs.push(inp);
+    });
     var checkBtn = document.getElementById('checkBtn');
     function go(i) { if (i < inputs.length) inputs[i].focus(); else if (checkBtn) checkBtn.focus(); }
     inputs.forEach(function (inp, i) {
@@ -213,7 +222,7 @@
         if (this.value.length >= this.maxLength) go(i + 1);
       });
       inp.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); go(i + 1); }
+        if (e.key === 'Enter' || e.key === 'ArrowRight' || e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); go(i + 1); }
         else if (e.key === 'ArrowLeft') { e.preventDefault(); if (i > 0) inputs[i - 1].focus(); }
         else if (e.key === 'Backspace' && this.value === '' && i > 0) { e.preventDefault(); inputs[i - 1].focus(); }
       });
