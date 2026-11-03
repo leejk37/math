@@ -47,7 +47,7 @@
     '.rule-title{font-size:19px;font-weight:bold;color:#1d4ed8;margin-bottom:6px}' +
     '.rule-line{font-size:16px;margin:3px 0}' +
     '.rule-tag{display:inline-block;min-width:44px;text-align:center;border-radius:6px;padding:1px 6px;margin-right:6px;font-weight:bold;color:#fff}' +
-    '.rule-tag.den{background:#2563eb}.rule-tag.num{background:#ea580c}' +
+    '.rule-tag.den{background:#2563eb}.rule-tag.num{background:#ea580c}.rule-tag.etc{background:#16a34a}' +
     '.btn-group{display:flex;gap:12px}' +
     '.action-btn{color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,.1);font-family:inherit}' +
     '.check-btn{background:#3b82f6}.check-btn:hover{background:#2563eb}' +
