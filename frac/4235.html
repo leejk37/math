@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 4학년 소수 공통 화면(💡 도움말 포함) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>소수 한 자리 수의 덧셈</title>
+</head>
+<body>
+
+<div class="header-text">소수 한 자리 수의 덧셈을 해요</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 0.1이 몇 개인지 생각하면 자연수의 덧셈과 같아요!</div>
+  <div class="rule-line"><span class="rule-tag">원리</span> 1.4 + 2.7 → 0.1이 14개 + 27개 = 41개 → <b>4.1</b></div>
+  <div class="rule-line"><span class="rule-tag t2">① 맞추기</span> 세로셈은 <b>소수점의 위치를 맞추어</b> 써요.</div>
+  <div class="rule-line"><span class="rule-tag t3">② 더하기</span> 같은 자리 수끼리 더하고, 10이 되면 윗자리로 <b>받아올림</b>해요(노란 작은 칸에 1).</div>
+  <div class="rule-line"><span class="rule-tag t4">③ 소수점</span> 소수점을 그대로 내려 찍어요. (세로셈에는 소수점이 미리 찍혀 있어요)</div>
+</div><br><span style="font-size:13px;color:#94a3b8">(세로셈은 오른쪽 칸부터 써요. 받아올림이 없으면 노란 칸은 비워 두어요.)</span><br><span style="font-size:13px;color:#92400e">막히면 <b>💡 도움말</b>로 풀이 방법을 먼저 보고, 그래도 모르겠으면 <b>🤔 도움</b>으로 선생님을 부르세요.</span></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 4235 — 소수 한 자리 수의 덧셈 (교과서 4-2-3 66~67쪽, 성취기준 [4수01-16])
+const P = 1;
+const f = n => M.fmt(n, P);
+const STORIES = [
+  { unit: 'cm', make: () => { const A = M.rand(18, 23) * 10 + M.rand(1, 9), B = M.rand(5, 25);
+      return { A, B, text: `작년에 하준이의 발 길이는 ${f(A)} cm였고, 올해는 작년보다 ${f(B)} cm 더 자랐습니다. 올해 하준이의 발 길이는 몇 cm인가요?` }; } },
+  { unit: 'cm', make: () => { const A = M.rand(125, 145) * 10 + M.rand(1, 9), B = M.rand(12, 49);
+      return { A, B, text: `지난봄에 은우의 키는 ${f(A)} cm였습니다. 그동안 ${f(B)} cm 더 자랐다면, 지금 은우의 키는 몇 cm인가요?` }; } },
+  { unit: 'km', make: () => { const A = M.rand(10, 29), B = M.rand(10, 29);
+      return { A, B, text: `집에서 도서관까지는 ${f(A)} km이고, 도서관에서 공원까지는 ${f(B)} km입니다. 집에서 도서관을 거쳐 공원까지 가면 모두 몇 km인가요?` }; } },
+  { unit: 'L', make: () => { const A = M.rand(12, 48), B = M.rand(5, 29);
+      return { A, B, text: `물통에 물이 ${f(A)} L 들어 있습니다. 여기에 물을 ${f(B)} L 더 부었다면, 물통에 든 물은 모두 몇 L인가요?` }; } }
+];
+
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 우유 합치기 — 그림으로 덧셈의 의미 (0.a + 0.b, 합 ≤ 1)
+  let a1, b1; do { a1 = M.rand(1, 8); b1 = M.rand(1, 8); } while (a1 + b1 > 10);
+  cards.push(M.card(0, `<div class="q-text">재윤이가 짠 우유는 ${f(a1)} L, 동생이 짠 우유는 ${f(b1)} L입니다. 두 사람이 짠 우유는 모두 몇 L인가요?</div>` +
+    `<div class="row" style="align-items:flex-end"><div><div class="vlabel">${f(a1)} L</div>${M.bar(a1, true, '1 L')}</div><div style="font-size:28px;font-weight:bold;align-self:center">+</div>` +
+    `<div><div class="vlabel">${f(b1)} L</div>${M.bar(b1, true, '1 L', '#c4b5fd')}</div><div style="font-size:28px;font-weight:bold;align-self:center">→</div>` +
+    `<div><div class="vlabel">합한 만큼 색칠</div>${M.barPick(a1 + b1, true, '1 L')}</div></div>` +
+    `<div class="eq">${f(a1)} + ${f(b1)} = <span class="tail">${M.dbox(a1 + b1, P)} L</span></div>`, true));
+  hints.push(`그릇 한 칸이 0.1 L예요. ${f(a1)} L는 ${a1}칸, ${f(b1)} L는 ${b1}칸이에요.<br>두 그릇의 칸을 모두 합하면 몇 칸인지 세어 오른쪽 그릇에 아래부터 색칠해요.`);
+
+  // 2번: 0.1의 개수로 계산 (소수 첫째 자리끼리 합이 10 이상)
+  let x2, y2; do { x2 = M.rand(1, 4) * 10 + M.rand(1, 9); y2 = M.rand(1, 4) * 10 + M.rand(1, 9); } while ((x2 % 10) + (y2 % 10) < 10 || x2 === y2);
+  cards.push(M.card(1, `<div class="q-text">0.1의 개수를 이용하여 ${f(x2)} + ${f(y2)}${M.josa(f(y2), '을', '를')} 계산해 보세요.</div>` +
+    `<div class="eq" style="font-size:18px">${f(x2)}${M.josa(f(x2), '은', '는')} 0.1이 <span class="tail">${M.box(x2)}개</span></div>` +
+    `<div class="eq" style="font-size:18px">${f(y2)}${M.josa(f(y2), '은', '는')} 0.1이 <span class="tail">${M.box(y2)}개</span></div>` +
+    `<div class="eq" style="font-size:18px">${f(x2)} + ${f(y2)}${M.josa(f(y2), '은', '는')} 0.1이 <span class="tail">${M.box(x2 + y2)}개</span></div>` +
+    `<div class="eq">${f(x2)} + ${f(y2)} = <span class="tail">${M.dbox(x2 + y2, P)}</span></div>`));
+  hints.push('1.4는 1이 1개(0.1이 10개)와 0.1이 4개 → 0.1이 <b>14개</b>예요.<br>개수끼리 더한 다음, 0.1이 그만큼 있는 소수로 바꾸어요.');
+
+  // 3번: 세로셈, 받아올림 없음 (① 0.a + b.c  ② a.b + c.d)
+  let a3, y3; do { a3 = M.rand(1, 8); y3 = M.rand(1, 9) * 10 + M.rand(1, 8); } while (a3 + y3 % 10 > 9);
+  let x3b, y3b; do { x3b = M.rand(1, 8) * 10 + M.rand(1, 8); y3b = M.rand(1, 8) * 10 + M.rand(1, 8); }
+  while (Math.floor(x3b / 10) + Math.floor(y3b / 10) > 9 || (x3b % 10) + (y3b % 10) > 9);
+  cards.push(M.card(2, `<div class="q-text">세로로 계산해 보세요.</div><div class="row">` +
+    M.vBlock(`① ${f(a3)} + ${f(y3)}`, M.vAdd(a3, y3, P)) + M.vBlock(`② ${f(x3b)} + ${f(y3b)}`, M.vAdd(x3b, y3b, P)) + `</div>`));
+  hints.push('소수점끼리 위아래로 맞추어져 있어요. 오른쪽(소수 첫째 자리)부터 같은 자리끼리 더해요.<br>답의 일의 자리가 0이어도 <b>0</b>을 써요.');
+
+  // 4번: 세로셈, 받아올림 (① 1회: 소수 첫째 → 일의 자리  ② 2회: 합이 10 이상)
+  let a, b, c, d;
+  do { a = M.rand(1, 7); b = M.rand(1, 9); c = M.rand(1, 7); d = M.rand(1, 9); } while (b + d < 10 || a + c + 1 > 9);
+  const one = [a * 10 + b, c * 10 + d];
+  do { a = M.rand(2, 9); b = M.rand(1, 9); c = M.rand(2, 9); d = M.rand(1, 9); } while (b + d < 10 || a + c + 1 < 10);
+  const two = [a * 10 + b, c * 10 + d];
+  cards.push(M.card(3, `<div class="q-text">세로로 계산해 보세요.</div><div class="row">` +
+    M.vBlock(`① ${f(one[0])} + ${f(one[1])}`, M.vAdd(one[0], one[1], P)) + M.vBlock(`② ${f(two[0])} + ${f(two[1])}`, M.vAdd(two[0], two[1], P)) + `</div>`));
+  hints.push('소수 첫째 자리끼리 더한 값이 10 이상이면, 0.1이 10개 = 1이므로 일의 자리 위 노란 칸에 <b>1</b>을 쓰고 함께 더해요.<br>일의 자리 합도 10 이상이면 십의 자리로 받아올림해요.');
+
+  // 5번: 문장제 — 식(두 수, 순서는 바뀌어도 됨)과 답
+  const st = M.pick(STORIES);
+  let q; do { q = st.make(); } while ((q.A % 10) + (q.B % 10) < 10);
+  cards.push(M.card(4, `<div class="q-text" style="font-weight:normal;text-align:left">${q.text}</div>` +
+    `<div class="eq" style="font-size:19px">식: ${M.pairbox('s', q.A, P)} + ${M.pairbox('s', q.B, P)}</div>` +
+    `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(q.A + q.B, P)} ${st.unit}</span></div>`, true));
+  hints.push('문제에 나온 두 수를 <b>더하는</b> 상황이에요. 소수점을 맞추어 세로로 계산해 보세요.<br>답이 23.0처럼 나오면 23이라고 써도 돼요.');
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

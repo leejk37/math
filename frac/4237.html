@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 4학년 소수 공통 화면(💡 도움말 포함) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>소수 한 자리 수의 뺄셈</title>
+</head>
+<body>
+
+<div class="header-text">소수 한 자리 수의 뺄셈을 해요</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 0.1이 몇 개인지 생각하면 자연수의 뺄셈과 같아요!</div>
+  <div class="rule-line"><span class="rule-tag">원리</span> 6.5 − 2.8 → 0.1이 65개 − 28개 = 37개 → <b>3.7</b></div>
+  <div class="rule-line"><span class="rule-tag t2">① 맞추기</span> 세로셈은 <b>소수점의 위치를 맞추어</b> 써요.</div>
+  <div class="rule-line"><span class="rule-tag t3">② 받아내림</span> 뺄 수 없으면 윗자리에서 1을 빌려 와요. 일의 자리 1 = 0.1이 <b>10</b>개<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;보라 칸: 빌려준 자리에는 <b>(숫자 − 1)</b>, 받은 자리에는 <b>10</b></div>
+  <div class="rule-line"><span class="rule-tag t4">주의</span> 큰 숫자에서 작은 숫자를 빼는 것이 아니에요. 7.2 − 4.9 ≠ 3.7 · 7.2 − 4.9 = <b>2.3</b></div>
+</div><br><span style="font-size:13px;color:#94a3b8">(세로셈은 오른쪽 칸부터 써요. 보라 칸에 숫자를 쓰면 윗수에 빗금이 그어져요.)</span><br><span style="font-size:13px;color:#92400e">막히면 <b>💡 도움말</b>로 풀이 방법을 먼저 보고, 그래도 모르겠으면 <b>🤔 도움</b>으로 선생님을 부르세요.</span></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 4237 — 소수 한 자리 수의 뺄셈 (교과서 4-2-3 70~71쪽, 성취기준 [4수01-16])
+const P = 1;
+const f = n => M.fmt(n, P);
+const STORIES = [
+  { unit: 'km', make: () => { const A = M.rand(1, 3) * 10, B = M.rand(1, 9) + (A > 10 ? M.rand(0, 1) * 10 : 0);
+      return { A, B, text: `은우는 ${M.fmt0(A, 1)} km를 달리는 지역 행사에 참가했습니다. 지금까지 ${f(B)} km를 달렸다면, 도착점까지 몇 km를 더 달려야 하나요?` }; } },
+  { unit: 'L', make: () => { const A = M.rand(1, 3) * 10, B = M.rand(1, 9) + (A > 10 ? M.rand(0, 1) * 10 : 0);
+      return { A, B, text: `${M.fmt0(A, 1)} L들이 물병에 물이 가득 들어 있었습니다. 그중 ${f(B)} L를 마셨다면, 물병에 남은 물은 몇 L인가요?` }; } },
+  { unit: 'm', make: () => { const A = M.rand(1, 3) * 10, B = M.rand(1, 9) + (A > 10 ? M.rand(0, 1) * 10 : 0);
+      return { A, B, text: `길이가 ${M.fmt0(A, 1)} m인 끈에서 ${f(B)} m를 잘라 썼습니다. 남은 끈은 몇 m인가요?` }; } }
+];
+
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 두 지팡이 길이의 차 — 막대 그림으로 뺄셈의 의미
+  let a1, b1; do { a1 = M.rand(3, 9); b1 = M.rand(1, 8); } while (a1 <= b1 || a1 - b1 > 4);
+  cards.push(M.card(0, `<div class="q-text">할아버지의 지팡이는 ${f(a1)} m, 할머니의 지팡이는 ${f(b1)} m입니다. 두 지팡이 길이의 차는 몇 m인가요?</div>` +
+    `<div class="vlabel">${f(a1)} m</div>${M.bar(a1, false, '1 m')}<div class="vlabel">${f(b1)} m</div>${M.bar(b1, false, '1 m', '#c4b5fd')}` +
+    `<div class="eq" style="font-size:18px">0.1 m씩 <span class="tail">${M.box(a1 - b1)}칸 차이</span></div>` +
+    `<div class="eq">${f(a1)} − ${f(b1)} = <span class="tail">${M.dbox(a1 - b1, P)} m</span></div>`, true));
+  hints.push('막대 한 칸이 0.1 m예요. 두 막대에서 색칠한 칸 수의 <b>차이</b>를 세어 보세요.');
+
+  // 2번: 0.1의 개수로 계산 (받아내림 상황: b < d)
+  let x2, y2; do { x2 = M.rand(3, 9) * 10 + M.rand(1, 8); y2 = M.rand(1, 6) * 10 + M.rand(1, 9); } while (x2 % 10 >= y2 % 10 || Math.floor(x2 / 10) <= Math.floor(y2 / 10));
+  cards.push(M.card(1, `<div class="q-text">0.1의 개수를 이용하여 ${f(x2)} − ${f(y2)}${M.josa(f(y2), '을', '를')} 계산해 보세요.</div>` +
+    `<div class="eq" style="font-size:18px">${f(x2)}${M.josa(f(x2), '은', '는')} 0.1이 <span class="tail">${M.box(x2)}개</span></div>` +
+    `<div class="eq" style="font-size:18px">${f(y2)}${M.josa(f(y2), '은', '는')} 0.1이 <span class="tail">${M.box(y2)}개</span></div>` +
+    `<div class="eq" style="font-size:18px">차는 0.1이 <span class="tail">${M.box(x2 - y2)}개</span></div>` +
+    `<div class="eq">${f(x2)} − ${f(y2)} = <span class="tail">${M.dbox(x2 - y2, P)}</span></div>`));
+  hints.push('두 수를 0.1의 개수로 바꾼 다음 자연수처럼 빼요. 그 개수만큼 0.1이 있는 소수가 답이에요.');
+
+  // 3번: 세로셈, 받아내림 없음 (① a.b − c.d  ② a.b − 0.c)
+  let a3, b3; do { a3 = M.rand(2, 9) * 10 + M.rand(1, 9); b3 = M.rand(1, 8) * 10 + M.rand(1, 9); } while (a3 % 10 < b3 % 10 || Math.floor(a3 / 10) <= Math.floor(b3 / 10));
+  let c3, d3; do { c3 = M.rand(1, 9) * 10 + M.rand(1, 9); d3 = M.rand(1, 9); } while (c3 % 10 < d3);
+  cards.push(M.card(2, `<div class="q-text">세로로 계산해 보세요.</div><div class="row">` +
+    M.vBlock(`① ${f(a3)} − ${f(b3)}`, M.vSub(a3, b3, P)) + M.vBlock(`② ${f(c3)} − ${f(d3)}`, M.vSub(c3, d3, P)) + `</div>`));
+  hints.push('소수점이 맞추어져 있어요. 오른쪽(소수 첫째 자리)부터 같은 자리끼리 빼요.');
+
+  // 4번: 세로셈, 받아내림 1회 (① a.b − c.d  ② a.b − 0.c)
+  let a4, b4; do { a4 = M.rand(3, 9) * 10 + M.rand(1, 8); b4 = M.rand(1, 8) * 10 + M.rand(1, 9); } while (a4 % 10 >= b4 % 10 || Math.floor(a4 / 10) - 1 < Math.floor(b4 / 10) || Math.floor(a4 / 10) === Math.floor(b4 / 10));
+  let c4, d4; do { c4 = M.rand(2, 9) * 10 + M.rand(1, 8); d4 = M.rand(1, 9); } while (c4 % 10 >= d4);
+  cards.push(M.card(3, `<div class="q-text">세로로 계산해 보세요.</div><div class="row">` +
+    M.vBlock(`① ${f(a4)} − ${f(b4)}`, M.vSub(a4, b4, P)) + M.vBlock(`② ${f(c4)} − ${f(d4)}`, M.vSub(c4, d4, P)) + `</div>`));
+  hints.push('소수 첫째 자리에서 뺄 수 없으면 일의 자리에서 1을 빌려 와요. 일의 자리 1은 0.1이 10개예요.<br>보라 칸: 일의 자리 위에는 <b>(숫자 − 1)</b>, 소수 첫째 자리 위에는 <b>10</b>을 쓰고, 10과 원래 숫자를 더한 수에서 빼요.');
+
+  // 5번: 문장제 — 자연수 − 소수 (식은 순서대로)
+  const st = M.pick(STORIES);
+  const q = st.make();
+  cards.push(M.card(4, `<div class="q-text" style="font-weight:normal;text-align:left">${q.text}</div>` +
+    `<div class="eq" style="font-size:19px">식: ${M.dbox(q.A, P)} − ${M.dbox(q.B, P)}</div>` +
+    `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(q.A - q.B, P)} ${st.unit}</span></div>`, true));
+  hints.push(`${M.fmt0(q.A, 1)}${M.josa(q.A / 10, '은', '는')} ${f(q.A)}과 같아요. 소수 첫째 자리에 <b>0</b>이 있다고 생각하고 받아내림해요.<br>(전체) − (한 만큼) = (남은 만큼)`);
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
