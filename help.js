@@ -101,6 +101,15 @@
     var h = clear(card);
     setIdle(card);
     if (h && h.fb && h.ref) h.fb.d.remove(h.ref).catch(function () {});
+    if (h && h.id && window.callApi) { // 시트의 그 줄에 '취소' 표시
+      window.callApi('markHelpRequest', [{ id: h.id, status: 'cancel' }])
+        .catch(function (e) { if (window.console) console.warn('도움요청 취소 기록 실패:', e && e.message); });
+    }
+  }
+
+  /* 요청마다 하나씩: 시트의 줄과 Firebase 기록을 잇는 무작위 ID (Firebase 키로 쓸 수 있는 글자만) */
+  function newId() {
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
   }
 
   function send(card, type, q, meta) {
@@ -117,8 +126,9 @@
     });
 
     // ② 시트 기록 (실패해도 버튼 동작에는 영향 없음)
+    var id = newId();
     if (window.callApi) {
-      window.callApi('submitHelpRequest', [{ grade: g, classNum: c, studentNum: n, operation: meta.op, level: level, q: q, type: type }])
+      window.callApi('submitHelpRequest', [{ grade: g, classNum: c, studentNum: n, operation: meta.op, level: level, q: q, type: type, id: id }])
         .catch(function (e) { if (window.console) console.warn('도움요청 시트 기록 실패:', e && e.message); });
     }
 
@@ -126,14 +136,14 @@
     var conn = window.liveConnect && window.liveConnect();
     if (!conn) { // Firebase 설정이 비어 있으면 시트 기록만
       setSent(card, type);
-      card._help = { type: type };
+      card._help = { type: type, id: id };
       return;
     }
     conn.then(function (fb) {
       var d = fb.d;
       var path = 'help/' + window.liveToday() + '/' + window.liveKey(g) + '_' + window.liveKey(c) + '/' + window.liveKey(n);
-      var ref = d.push(d.ref(fb.db, path));
-      var h = { fb: fb, ref: ref, type: type, unsub: null };
+      var ref = d.ref(fb.db, path + '/' + id);
+      var h = { fb: fb, ref: ref, type: type, id: id, unsub: null };
       card._help = h;
       return d.set(ref, {
         type: type,
