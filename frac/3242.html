@@ -26,6 +26,7 @@
 // 3242 — 분수만큼은 얼마일까요 (개수)
 // 교과서 3-2-4 90~91쪽: 꽃 6송이의 1/2, 10의 2/5(1묶음 먼저), 8의 3/4, 12의 2/3
 function generate() {
+  const hints = [];
   const cards = [], used = new Set();
   for (let i = 0; i < 5; i++) {
     let d, u, a, key, tries = 0;
@@ -50,8 +51,9 @@ function generate() {
       inner = `<div class="eq" style="font-size:22px;margin-top:10px">${N}의 ${M.frac(a, d)}${M.josa(a, '은', '는')} <span class="tail">${M.box(ans)} 입니다.</span></div>`;
     }
     cards.push(M.card(i, inner));
+    hints.push(`${N}을(를) 똑같이 ${d}묶음으로 나누면 <b>1묶음</b>은 얼마일까요? 그다음 그 1묶음이 <b>${a}개</b> 있으면 얼마인지 구하세요.`.replace('을(를)', M.josa(N, '을', '를')));
   }
-  M.render(cards);
+  M.render(cards, hints);
 }
 document.addEventListener('DOMContentLoaded', generate);
 </script>

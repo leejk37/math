@@ -26,11 +26,13 @@
 // 3244 — 진분수와 가분수
 // 교과서 3-2-4 94~95쪽: 1/4이 5개 → 5/4, 진분수·가분수 분류, 4/4는 1(자연수), 수직선 0~2
 function generate() {
+  const hints = [];
   const cards = [];
   // 1번: 수직선 위 화살표가 가리키는 분수 (1보다 큰 곳 → 가분수)
   const d1 = M.rand(3, 5), at = M.rand(d1 + 1, 2 * d1 - 1);
   cards.push(M.card(0, M.numberLineSvg(2, d1, at) +
     `<div class="eq" style="font-size:18px">화살표가 가리키는 곳은 ${M.frac(1, d1, true)}이 ${M.box(at)}개이므로 <span class="tail">${M.frac(M.box(at), d1)} 입니다.</span></div>`));
+  hints.push(`0과 1 사이가 똑같이 ${d1}칸으로 나뉘어 있어서 한 칸은 ${M.frac(1, d1, true)}이에요. 0부터 화살표까지 <b>칸 수</b>를 세어 보세요. 1을 넘어도 계속 세어요.`);
   // 2~4번: 분류 (진분수 1개, 분자=분모 1개, 분자>분모 1개를 섞어서)
   const kinds = M.shuffle(['진', '같음', '큼']), usedF = new Set();
   kinds.forEach((kind, j) => {
@@ -43,12 +45,14 @@ function generate() {
     usedF.add(key);
     cards.push(M.card(j + 1, `<div class="eq" style="font-size:24px">${M.frac(n, d)}</div>` +
       M.choices(kind === '진' ? '진' : '가', [['진', '진분수'], ['가', '가분수']])));
+    hints.push('분자와 분모를 비교해 보세요. 분자가 분모보다 <b>작으면</b> 진분수, 분자가 분모와 <b>같거나 크면</b> 가분수예요.');
   });
   // 5번: 분자와 분모가 같은(또는 두 배인) 가분수는 자연수
   const d5 = M.rand(2, 9), w5 = M.pick([1, 1, 2]);
   cards.push(M.card(4, `<div class="q-text">자연수로 나타내어 보세요.</div>` +
     `<div class="eq" style="font-size:24px">${M.frac(d5 * w5, d5)} <span class="op">=</span> ${M.box(w5)}</div>`));
-  M.render(cards);
+  hints.push(`${M.frac(d5, d5, true)}처럼 분자와 분모가 같으면 <b>1</b>이에요. 분자 ${d5 * w5} 안에 ${d5}이(가) 몇 번 들어 있는지 생각해 보세요.`.replace('이(가)', M.josa(d5, '이', '가')));
+  M.render(cards, hints);
 }
 document.addEventListener('DOMContentLoaded', generate);
 </script>

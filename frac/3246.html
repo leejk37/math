@@ -35,6 +35,7 @@ function cmpCard(i, L, R, hint) {
 const F = (n, d) => ({ html: M.frac(n, d), v: n });
 const MX = (w, n, d) => ({ html: M.mixed(w, n, d), v: w * d + n });
 function generate() {
+  const hints = [];
   const cards = [];
   // 1번: 가분수끼리
   let d = M.rand(3, 9), a = M.rand(d + 1, 3 * d), b;
@@ -60,7 +61,7 @@ function generate() {
     `<div class="eq" style="gap:12px">${M.frac('□', d)} <span class="op">&lt;</span> ${M.mixed(1, n1, d)}</div>` +
     `<div class="q-text" style="font-size:16px">1부터 9까지의 자연수 중에서 □ 안에 들어갈 수 있는 수는<br>모두 ${M.box(limit - 1)}개입니다.</div>`, false,
     `먼저 ${M.mixed(1, n1, d, true)}${M.josa(n1, "을", "를")} 가분수로 바꾸어 보세요. 그다음 □에 1부터 차례로 넣어 보며, 더 작은 분수가 되는 수를 세어 보세요.`));
-  M.render(cards);
+  M.render(cards, hints);
 }
 document.addEventListener('DOMContentLoaded', generate);
 </script>
