@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>4학년 2학기 소수 검토</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f1f5f9; font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; color: #1e293b; }
+  header { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 2px solid #e2e8f0; padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  header h1 { font-size: 19px; margin: 0 12px 0 0; }
+  header .note { font-size: 13px; color: #64748b; flex-basis: 100%; }
+  nav a { display: inline-block; font-size: 13px; padding: 5px 10px; border-radius: 14px; background: #e2e8f0; color: #334155; text-decoration: none; margin: 2px; }
+  nav a.done { background: #dcfce7; color: #166534; }
+  main { max-width: 1020px; margin: 0 auto; padding: 16px; }
+  section { background: #fff; border: 2px solid #cbd5e1; border-radius: 14px; margin-bottom: 22px; overflow: hidden; }
+  section.done { border-color: #86efac; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+  .bar h2 { font-size: 17px; margin: 0; flex: 1 1 260px; }
+  .bar .tb { font-size: 12px; color: #64748b; font-weight: normal; display: block; margin-top: 2px; }
+  button { border: none; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-weight: bold; cursor: pointer; font-family: inherit; }
+  .b-new { background: #8b5cf6; color: #fff; }
+  .b-ans { background: #f59e0b; color: #fff; }
+  .b-ans.on { background: #b45309; }
+  iframe { width: 100%; border: none; display: block; min-height: 400px; }
+  .review { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #fffbeb; }
+  .review label { font-weight: bold; font-size: 14px; display: flex; gap: 6px; align-items: center; }
+  .review textarea { flex: 1 1 400px; min-height: 54px; font-size: 14px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; }
+  .copy { background: #0ea5e9; color: #fff; }
+  #copied { font-size: 13px; color: #15803d; font-weight: bold; }
+</style>
+</head>
+<body>
+<header>
+  <h1>4학년 2학기 3단원 소수의 덧셈과 뺄셈(M423) 검토</h1>
+  <nav id="nav"></nav>
+  <button class="copy" onclick="copyNotes()">검토 의견 모두 복사</button>
+  <span id="copied"></span>
+  <div class="note">문제는 연습 모드라 기록이 저장되지 않습니다. '정답 보기'를 누르면 칸에 정답이 들어가고, 이어서 '정답 확인하기'를 누르면 채점까지 확인됩니다.
+    검토 의견과 체크는 이 컴퓨터의 브라우저에만 남으니, 다 쓰면 '검토 의견 모두 복사'로 Claude에게 붙여 넣어 주세요.</div>
+</header>
+<main id="main"></main>
+
+<script>
+const LEVELS = [
+  ['4231', '8단계(4231) 소수 두 자리 수', '교과서 54~57쪽'],
+  ['4232', '9단계(4232) 소수 세 자리 수', '교과서 58~61쪽'],
+  ['4233', '10단계(4233) 소수의 크기 비교', '교과서 62~63쪽'],
+  ['4234', '11단계(4234) 소수 사이의 관계', '교과서 64~65쪽'],
+  ['4235', '12단계(4235) 소수 한 자리 수의 덧셈', '교과서 66~67쪽'],
+  ['4236', '13단계(4236) 소수 두 자리 수의 덧셈', '교과서 68~69쪽'],
+  ['4237', '14단계(4237) 소수 한 자리 수의 뺄셈', '교과서 70~71쪽'],
+  ['4238', '15단계(4238) 소수 두 자리 수의 뺄셈', '교과서 72~73쪽']
+];
+const KEY = 'm423-review';
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} }
+
+const main = document.getElementById('main'), nav = document.getElementById('nav');
+LEVELS.forEach(([code, title, tb]) => {
+  const s = saved[code] || {};
+  main.insertAdjacentHTML('beforeend', `
+  <section id="sec-${code}" class="${s.ok ? 'done' : ''}">
+    <div class="bar">
+      <h2>${title}<span class="tb">${tb} · 파일 frac/${code}.html</span></h2>
+      <button class="b-new" onclick="newSet('${code}')">새 문제 🎲</button>
+      <button class="b-ans" id="ans-${code}" onclick="toggleAns('${code}')">정답 보기</button>
+    </div>
+    <iframe id="f-${code}" src="${code}.html" title="${title}"></iframe>
+    <div class="review">
+      <label><input type="checkbox" id="ok-${code}" ${s.ok ? 'checked' : ''} onchange="mark('${code}')"> 검토 완료</label>
+      <textarea id="memo-${code}" placeholder="고칠 점 (예: 3번 문제 숫자가 너무 큼, 문장 바꾸기 …)" oninput="memo('${code}')">${s.memo || ''}</textarea>
+    </div>
+  </section>`);
+  nav.insertAdjacentHTML('beforeend', `<a href="#sec-${code}" id="nav-${code}" class="${s.ok ? 'done' : ''}">${title.split(' ')[0]}</a>`);
+});
+
+function frameDoc(code) { const f = document.getElementById('f-' + code); return f && f.contentDocument; }
+function newSet(code) {
+  const d = frameDoc(code); if (!d) return;
+  const btn = d.querySelector('.reset-btn'); if (btn) btn.click();
+  const b = document.getElementById('ans-' + code); b.classList.remove('on'); b.textContent = '정답 보기';
+}
+function toggleAns(code) {
+  const f = document.getElementById('f-' + code), w = f && f.contentWindow;
+  if (!w || !w.M || !w.M.fill) return;
+  const b = document.getElementById('ans-' + code), on = !b.classList.contains('on');
+  w.M.fill(on);
+  b.classList.toggle('on', on); b.textContent = on ? '정답 지우기' : '정답 보기';
+}
+function mark(code) {
+  const ok = document.getElementById('ok-' + code).checked;
+  (saved[code] = saved[code] || {}).ok = ok; save();
+  document.getElementById('sec-' + code).classList.toggle('done', ok);
+  document.getElementById('nav-' + code).classList.toggle('done', ok);
+}
+function memo(code) { (saved[code] = saved[code] || {}).memo = document.getElementById('memo-' + code).value; save(); }
+function copyNotes() {
+  const text = LEVELS.map(([code, title]) => {
+    const s = saved[code] || {};
+    return `[${title}] ${s.ok ? '검토 완료' : '검토 전'}${s.memo ? '\n- ' + s.memo.trim().replace(/\n/g, '\n- ') : ''}`;
+  }).join('\n\n');
+  const done = () => { document.getElementById('copied').textContent = '복사했습니다 ✔'; setTimeout(() => document.getElementById('copied').textContent = '', 2500); };
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => prompt('아래 내용을 복사하세요', text));
+  else prompt('아래 내용을 복사하세요', text);
+}
+// 문제 화면(iframe)이 보내는 높이에 맞춰 늘이기
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data || e.data.type !== 'frac-height') return;
+  LEVELS.forEach(([code]) => { const f = document.getElementById('f-' + code); if (f.contentWindow === e.source) f.style.height = Math.max(400, e.data.h) + 'px'; });
+});
+</script>
+</body>
+</html>

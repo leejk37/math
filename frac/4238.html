@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 4학년 소수 공통 화면(💡 도움말 포함) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>소수 두 자리 수의 뺄셈</title>
+</head>
+<body>
+
+<div class="header-text">소수 두 자리 수의 뺄셈을 해요</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 빈 자리는 0이 있다고 생각하고 받아내림해요!</div>
+  <div class="rule-line"><span class="rule-tag">원리</span> 2.2 − 1.35 → 0.01이 220개 − 135개 = 85개 → <b>0.85</b></div>
+  <div class="rule-line"><span class="rule-tag t2">① 맞추기</span> <b>소수점</b>을 맞추어 써요. 2.2는 2.20과 같아요.</div>
+  <div class="rule-line"><span class="rule-tag t3">② 받아내림</span> 0에서는 빼지 못하니 윗자리에서 차례로 빌려 와요.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;보라 칸: 빌려주기만 한 자리 <b>(숫자 − 1)</b>, 받기만 한 자리 <b>10</b>, 받고 또 빌려준 자리 <b>(숫자 + 9)</b></div>
+  <div class="rule-line"><span class="rule-tag t4">주의</span> 빈 자리의 수를 그대로 내려 쓰면 안 돼요. 2.2 − 1.35 ≠ 1.15</div>
+</div><br><span style="font-size:13px;color:#94a3b8">(세로셈은 오른쪽 칸부터 써요. 보라 칸에 숫자를 쓰면 윗수에 빗금이 그어져요.)</span><br><span style="font-size:13px;color:#92400e">막히면 <b>💡 도움말</b>로 풀이 방법을 먼저 보고, 그래도 모르겠으면 <b>🤔 도움</b>으로 선생님을 부르세요.</span></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 4238 — 소수 두 자리 수의 뺄셈 (교과서 4-2-3 72~73쪽, 성취기준 [4수01-16])
+const P = 2;
+const f = n => M.fmt(n, P), f1 = n => M.fmt(n / 10, 1);
+
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 수직선 — 0.ab만큼 갔다가 0.cd 돌아온 거리 (받아내림 없음)
+  let a1, b1; do { a1 = M.rand(41, 89); b1 = M.rand(11, 39); } while (a1 % 10 === 0 || b1 % 10 === 0 || a1 % 10 < b1 % 10 || Math.floor(a1 / 10) <= Math.floor(b1 / 10));
+  cards.push(M.card(0, `<div class="q-text">재윤이와 동생은 할아버지 댁에서 ${f(a1)} km 떨어진 밭에 갔다가 ${f(b1)} km를 돌아왔습니다. 할아버지 댁까지 남은 거리는 몇 km인가요?</div>` +
+    M.lineSvg({ start: 0, unit: 1, p: P, ticks: 100, major: 10, mid: 5, trim: true, suffix: 'km', arrows: [{ at: a1, label: '밭' }, { at: a1 - b1, color: '#2563eb', label: '지금' }], width: 640 }) +
+    `<div class="eq" style="font-size:19px">식: ${M.dbox(a1, P)} − ${M.dbox(b1, P)}</div>` +
+    `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(a1 - b1, P)} km</span></div>`, true));
+  hints.push(`할아버지 댁(0)에서 밭까지 ${f(a1)} km 가고, 거기서 ${f(b1)} km를 되돌아왔어요.<br>남은 거리 = 간 거리 − 돌아온 거리`);
+
+  // 2번: 0.01의 개수로 계산 (a.b − c.de, 피감수가 소수 한 자리)
+  let x2, y2; do { x2 = (M.rand(2, 5) * 10 + M.rand(1, 9)) * 10; y2 = M.rand(1, 4) * 100 + M.rand(0, 9) * 10 + M.rand(1, 9); } while (y2 >= x2 || Math.floor(x2 / 100) === Math.floor(y2 / 100));
+  cards.push(M.card(1, `<div class="q-text">0.01의 개수를 이용하여 ${f1(x2)} − ${f(y2)}${M.josa(f(y2), '을', '를')} 계산해 보세요.</div>` +
+    `<div class="eq" style="font-size:18px">${f1(x2)}${M.josa(f1(x2), '은', '는')} 0.01이 <span class="tail">${M.box(x2)}개</span></div>` +
+    `<div class="eq" style="font-size:18px">${f(y2)}${M.josa(f(y2), '은', '는')} 0.01이 <span class="tail">${M.box(y2)}개</span></div>` +
+    `<div class="eq" style="font-size:18px">차는 0.01이 <span class="tail">${M.box(x2 - y2)}개</span></div>` +
+    `<div class="eq">${f1(x2)} − ${f(y2)} = <span class="tail">${M.dbox(x2 - y2, P)}</span></div>`));
+  hints.push(`${f1(x2)}${M.josa(f1(x2), '은', '는')} ${f(x2)}과 같아요. 그래서 0.01이 <b>${x2}개</b>예요.`);
+
+  // 3번: 세로셈, 자릿수 같음, 소수 둘째 자리에서만 받아내림 (① a.bc − d.ef  ② 0.ab − 0.cd)
+  let A, B; do { A = M.rand(2, 9) * 100 + M.rand(1, 9) * 10 + M.rand(0, 8); B = M.rand(1, 8) * 100 + M.rand(0, 8) * 10 + M.rand(1, 9); }
+  while (A % 10 >= B % 10 || Math.floor(A / 10) % 10 - 1 < Math.floor(B / 10) % 10 || Math.floor(A / 100) < Math.floor(B / 100) || A - B < 100);
+  let C, D; do { C = M.rand(30, 98); D = M.rand(11, 89); } while (C % 10 >= D % 10 || Math.floor(C / 10) - 1 < Math.floor(D / 10) || D % 10 === 0);
+  cards.push(M.card(2, `<div class="q-text">세로로 계산해 보세요.</div><div class="row">` +
+    M.vBlock(`① ${f(A)} − ${f(B)}`, M.vSub(A, B, P)) + M.vBlock(`② ${f(C)} − ${f(D)}`, M.vSub(C, D, P)) + `</div>`));
+  hints.push('소수 둘째 자리에서 뺄 수 없으면 소수 첫째 자리에서 1을 빌려 와요. 0.1은 0.01이 10개예요.<br>보라 칸: 빌려준 자리에는 (숫자 − 1), 받은 자리에는 10을 써요.');
+
+  // 4번: 세로셈, 0에서 받아내림 (① a.b − c.de: 윗수 소수 둘째 자리가 빈칸  ② a.0b − c.de)
+  let x4, y4; do { x4 = (M.rand(2, 9) * 10 + M.rand(1, 9)) * 10; y4 = M.rand(1, 8) * 100 + M.rand(0, 9) * 10 + M.rand(1, 9); }
+  while (y4 >= x4 || Math.floor(x4 / 10) % 10 - 1 >= Math.floor(y4 / 10) % 10 || Math.floor(x4 / 100) - 1 < Math.floor(y4 / 100));
+  let u4, v4; do { u4 = M.rand(2, 9) * 100 + M.rand(1, 9); v4 = M.rand(1, 8) * 100 + M.rand(1, 9) * 10 + M.rand(1, 9); }
+  while (u4 % 10 >= v4 % 10 || Math.floor(u4 / 100) - 1 < Math.floor(v4 / 100));
+  cards.push(M.card(3, `<div class="q-text">세로로 계산해 보세요.</div><div class="row">` +
+    M.vBlock(`① ${f1(x4)} − ${f(y4)}`, M.vSub(x4, y4, P, 1, 2)) + M.vBlock(`② ${f(u4)} − ${f(v4)}`, M.vSub(u4, v4, P)) + `</div>`));
+  hints.push('① 윗수의 빈 자리는 <b>0</b>이에요(2.2 = 2.20). 0에서 뺄 수 없으니 왼쪽 자리에서 빌려 와요.<br>' +
+    '빌려줄 자리도 부족하면 그 왼쪽에서 먼저 빌려 와요. 받고 또 빌려준 자리는 <b>(숫자 + 9)</b>가 돼요. 예) 2.20 − 1.35 → 1, 11, 10');
+
+  // 5번: □ 안에 들어갈 수 있는 수 모두 고르기  (a.bc − d.e < f.□g)
+  //   차 = f.pq (p = 3~7) → 정답: p+1 ~ 9, 그리고 g > q 이면 p도 포함
+  let diff, sub, top, g;
+  do {
+    const fI = M.rand(1, 5), pD = M.rand(3, 7), qD = M.rand(0, 9);
+    diff = fI * 100 + pD * 10 + qD;
+    sub = M.rand(11, 59) * 10;                 // d.e (0.01 단위)
+    top = diff + sub;
+    g = Math.random() < 0.5 ? qD : M.rand(0, 9);
+  } while (top >= 1000 || top % 10 === 0 || sub % 100 === 0);
+  const fI = Math.floor(diff / 100), pD = Math.floor(diff / 10) % 10, qD = diff % 10;
+  const ans5 = []; for (let k = 0; k <= 9; k++) if (k * 10 + g > pD * 10 + qD) ans5.push(k);
+  cards.push(M.card(4, `<div class="q-text">0부터 9까지의 수 중에서 □ 안에 들어갈 수 있는 수를 모두 골라 보세요.</div>` +
+    `<div class="eq" style="font-size:23px">${f(top)} − ${f1(sub)} &lt; ${fI}.□${g}</div>` + M.multi(ans5), true));
+  hints.push(`먼저 ${f(top)} − ${f1(sub)}${M.josa(f1(sub), '을', '를')} 계산해요. 그다음 계산한 값과 ${fI}.□${g}의 자리를 하나씩 비교해요.<br>□에 숫자를 하나씩 넣어 보며, <b>같은 숫자</b>를 넣었을 때도 성립하는지 꼭 확인해요.`);
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
