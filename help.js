@@ -16,14 +16,14 @@
     'div-quizGrid': { op: '나눗셈', prefix: 'div' }
   };
   var TYPES = {
-    unknown: { icon: '🤔', label: '모르겠어요' },
-    check: { icon: '🙋', label: '확인해 주세요' }
+    unknown: { icon: '🤔', label: '도움', tip: '모르겠어요 — 선생님께 도움을 요청합니다' },
+    check: { icon: '🙋', label: '확인', tip: '다 풀었어요 — 선생님께 확인을 요청합니다' }
   };
 
   var css = document.createElement('style');
   css.textContent =
     '.help-bar{display:flex;gap:4px;align-self:stretch;justify-content:flex-end;margin:-2px 0 6px;flex-wrap:wrap}' +
-    '.help-btn{font:inherit;font-size:11px;line-height:1.2;padding:3px 7px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;color:#334155;cursor:pointer;white-space:nowrap}' +
+    '.help-btn{font:inherit;font-size:12px;line-height:1.2;padding:3px 8px;min-width:58px;text-align:center;border-radius:999px;border:1px solid #cbd5e1;background:#fff;color:#334155;cursor:pointer;white-space:nowrap}' +
     '.help-btn:hover{border-color:#94a3b8}' +
     '.help-btn.sending{opacity:.6;cursor:wait}' +
     '.help-btn.sent.unknown{background:#fff4e5;border-color:#f59e0b;color:#92400e;font-weight:bold}' +
@@ -53,7 +53,7 @@
       b.disabled = false;
       b.style.display = '';
       b.textContent = t.icon + ' ' + t.label;
-      b.title = '';
+      b.title = t.tip;
     });
   }
   function setSent(card, type) {
@@ -63,11 +63,12 @@
       b.disabled = false;
       if (b.dataset.type === type) {
         b.className = 'help-btn sent ' + type;
-        b.textContent = t.icon + ' 요청됨 ⏳';
-        b.title = '다시 누르면 요청을 취소합니다';
+        b.textContent = '⏳ 대기';
+        b.title = '선생님을 기다리는 중 · 다시 누르면 취소';
       } else {
         b.className = 'help-btn';
         b.textContent = t.icon + ' ' + t.label;
+        b.title = t.tip;
       }
     });
   }
@@ -75,10 +76,10 @@
     card.classList.remove('help-waiting');
     card.querySelectorAll('.help-btn').forEach(function (b, i) {
       b.disabled = true;
-      if (i === 0) { b.className = 'help-btn done'; b.textContent = '✓ 선생님이 확인했어요'; }
+      if (i === 0) { b.className = 'help-btn done'; b.textContent = '✓ 완료'; b.title = '선생님이 확인했어요'; }
       else b.style.display = 'none';
     });
-    setTimeout(function () { if (!card._help) setIdle(card); }, 4000);
+    setTimeout(function () { if (!card._help) setIdle(card); }, 3000);
   }
 
   /* 요청 정리: 감시 끊기 */
@@ -171,6 +172,7 @@
         b.dataset.type = type;
         b.tabIndex = -1; // 답 칸 사이 Tab 이동을 방해하지 않게
         b.textContent = TYPES[type].icon + ' ' + TYPES[type].label;
+        b.title = TYPES[type].tip;
         b.addEventListener('click', function (ev) {
           ev.preventDefault();
           var h = card._help;
