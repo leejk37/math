@@ -1,6 +1,6 @@
 /*
- * help.js — 문제 옆 도움 버튼 (🤔 모르겠어요 / 🙋 확인해 주세요)
- *  - 사칙연산 문제 칸(.math-card)이 화면에 나타나면 자동으로 버튼 두 개를 붙입니다. (각 단계 코드는 고치지 않음)
+ * help.js — 문제 옆 도움 버튼 (🤔 도움 버튼 · 기본은 🤔 도움 하나)
+ *  - 사칙연산 문제 칸(.math-card)이 화면에 나타나면 자동으로 도움 버튼을 붙입니다. (각 단계 코드는 고치지 않음)
  *  - 누르면: ① Firebase로 교사 현황판(live.html)에 바로 알림  ② GAS로 평가데이터 '도움요청' 시트에 한 줄 기록
  *  - 다시 누르면 취소. 선생님이 현황판에서 [해결]을 누르면 "선생님이 확인했어요"가 뜨고 버튼이 원래대로 돌아옵니다.
  *  - 다른 학생은 누가 요청했는지 볼 수 없습니다. Firebase에는 이름을 보내지 않습니다.
@@ -20,6 +20,12 @@
     check: { icon: '🙋', label: '확인', tip: '다 풀었어요 — 선생님께 확인을 요청합니다' }
   };
 
+  // 학생 화면에 보일 버튼. 기본은 '도움' 하나.
+  // 채점 없는 활동 페이지처럼 '확인'도 필요하면, help.js보다 먼저 window.HELP_BUTTONS = ['unknown', 'check']; 를 적어 둡니다.
+  var SHOW = (Array.isArray(window.HELP_BUTTONS) ? window.HELP_BUTTONS : ['unknown'])
+    .filter(function (t) { return TYPES[t]; });
+  if (!SHOW.length) SHOW = ['unknown'];
+
   var css = document.createElement('style');
   css.textContent =
     '.help-bar{display:flex;gap:4px;align-self:stretch;justify-content:flex-end;margin:-2px 0 6px;flex-wrap:wrap}' +
@@ -30,6 +36,7 @@
     '.help-btn.sent.check{background:#e8f0fe;border-color:#3b6fd8;color:#1e3a8a;font-weight:bold}' +
     '.help-btn.done{background:#dcfce7;border-color:#16a34a;color:#166534;font-weight:bold}' +
     '.math-card.help-waiting{box-shadow:0 0 0 2px #f59e0b inset}' +
+    '.math-card{position:relative}.math-card>.help-bar{position:absolute;top:5px;right:5px;margin:0}' +
     '.quiz-card.help-waiting{box-shadow:0 0 0 3px #f59e0b inset!important}' +
     '.quiz-card .help-bar{margin:0;align-self:center;flex:0 0 auto;flex-direction:column;align-items:stretch;gap:4px}' +
     '.quiz-card .help-btn{font-size:13px;padding:4px 10px}';
@@ -165,7 +172,7 @@
       var q = Number(m[1]);
       var bar = document.createElement('div');
       bar.className = 'help-bar';
-      ['unknown', 'check'].forEach(function (type) {
+      SHOW.forEach(function (type) {
         var b = document.createElement('button');
         b.type = 'button';
         b.className = 'help-btn';
