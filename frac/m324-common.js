@@ -38,6 +38,16 @@
     '.choice-btn.cmp{width:42px;height:34px;border-radius:17px;padding:0;font-size:20px;min-width:0}' +
     '.choice-group:has(.cmp){flex-direction:column;flex-wrap:nowrap;gap:4px}' +
     '.eq.cmp-row{flex-wrap:nowrap}' +
+    '.choice-group:focus{outline:none}' +
+    '.quiz-card.current{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.18)}' +
+    '.help-btn{position:absolute;top:8px;right:10px;border:1.5px solid #fcd34d;background:#fffbeb;color:#92400e;border-radius:14px;padding:3px 10px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit}' +
+    '.help-box{display:none;background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:10px;padding:8px 12px;font-size:15px;color:#78350f;line-height:1.6;text-align:center;width:100%}' +
+    '.help-box.show{display:block}' +
+    '.rule-box{display:inline-block;text-align:left;background:#eff6ff;border:2px solid #3b82f6;border-radius:12px;padding:10px 18px;margin-bottom:8px;color:#1e293b}' +
+    '.rule-title{font-size:19px;font-weight:bold;color:#1d4ed8;margin-bottom:6px}' +
+    '.rule-line{font-size:16px;margin:3px 0}' +
+    '.rule-tag{display:inline-block;min-width:44px;text-align:center;border-radius:6px;padding:1px 6px;margin-right:6px;font-weight:bold;color:#fff}' +
+    '.rule-tag.den{background:#2563eb}.rule-tag.num{background:#ea580c}' +
     '.btn-group{display:flex;gap:12px}' +
     '.action-btn{color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,.1);font-family:inherit}' +
     '.check-btn{background:#3b82f6}.check-btn:hover{background:#2563eb}' +
@@ -80,18 +90,21 @@
   };
   // 고르기 버튼 묶음: options = [[값, 보이는 글자], ...]
   M.choices = function (ans, options, cls) {
-    return '<div class="choice-group" data-ans="' + ans + '">' + options.map(function (o) {
+    return '<div class="choice-group" tabindex="-1" data-ans="' + ans + '">' + options.map(function (o) {
       return '<button type="button" class="choice-btn' + (cls ? ' ' + cls : '') + '" data-v="' + o[0] + '">' + o[1] + '</button>';
     }).join('') + '</div>';
   };
-  M.card = function (i, inner, wide) {
-    return '<div class="quiz-card' + (wide ? ' wide' : '') + '" id="card-' + i + '"><div class="quiz-number">문제 ' + (i + 1) + '</div>' + inner + '</div>';
+  // hint가 있으면 오른쪽 위에 '💡 도움' 버튼 → 누르면 카드 아래에 도움말이 나타남
+  M.card = function (i, inner, wide, hint) {
+    return '<div class="quiz-card' + (wide ? ' wide' : '') + '" id="card-' + i + '"><div class="quiz-number">문제 ' + (i + 1) + '</div>' + inner +
+      (hint ? '<button type="button" class="help-btn" onclick="this.parentNode.querySelector(\'.help-box\').classList.toggle(\'show\')">💡 도움</button>' +
+        '<div class="help-box">' + hint + '</div>' : '') + '</div>';
   };
 
   // 묶음 그림: groups개 묶음, 묶음마다 size개, 앞쪽 shaded묶음 색칠
   M.groupsSvg = function (groups, size, shaded, color) {
     var cell = 22, pad = 7, gap = 10;
-    var cols = Math.min(size, 3), rows = Math.ceil(size / 3);
+    var cols = size === 4 ? 2 : Math.min(size, 3), rows = Math.ceil(size / cols);
     var gw = cols * cell + pad * 2, gh = rows * cell + pad * 2;
     var perRow = groups <= 4 ? groups : Math.ceil(groups / 2);
     var lines = Math.ceil(groups / perRow);
@@ -100,9 +113,10 @@
     for (var g = 0; g < groups; g++) {
       var gx = 2 + (g % perRow) * (gw + gap), gy = 2 + Math.floor(g / perRow) * (gh + gap);
       var on = g < shaded;
-      s += '<rect x="' + gx + '" y="' + gy + '" width="' + gw + '" height="' + gh + '" rx="10" fill="none" stroke="#64748b" stroke-width="1.6" stroke-dasharray="4 3"/>';
+      // 묶음 테두리를 굵고 선명하게: 색칠한 묶음은 빨간 테두리·연한 바탕, 나머지는 진한 회색 테두리
+      s += '<rect x="' + gx + '" y="' + gy + '" width="' + gw + '" height="' + gh + '" rx="10" fill="' + (on ? '#fee2e2' : '#f8fafc') + '" stroke="' + (on ? '#dc2626' : '#475569') + '" stroke-width="2.6"/>';
       for (var k = 0; k < size; k++) {
-        var cx = gx + pad + (k % 3) * cell + cell / 2, cy = gy + pad + Math.floor(k / 3) * cell + cell / 2;
+        var cx = gx + pad + (k % cols) * cell + cell / 2, cy = gy + pad + Math.floor(k / cols) * cell + cell / 2;
         s += '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="' + (on ? (color || '#f87171') : '#fff') + '" stroke="#334155" stroke-width="1.5"/>';
       }
     }
@@ -204,38 +218,58 @@
 
   // 입력칸·버튼 동작 연결 (문제를 새로 그린 뒤 매번 호출)
   M.wire = function () {
-    // 입력 순서: 화면 순서대로 하되, 분자·분모가 모두 빈칸인 분수는 분모 → 분자 순서 (분수를 쓰는 순서와 같게)
-    var inputs = [];
-    Array.prototype.forEach.call(document.querySelectorAll('.ans-box'), function (inp) {
-      if (inputs.indexOf(inp) !== -1) return;
-      var fr = inp.closest('.fraction');
+    // 이동 순서(stops): 화면 순서대로 입력칸과 고르기 묶음을 이어 붙임
+    //  - 분자·분모가 모두 빈칸인 분수는 분모 → 분자 순서 (분수를 쓰는 순서와 같게)
+    //  - 고르기 문제(진분수/가분수, >·=·< 등)도 한 칸으로 쳐서, 고르면 다음 문제로 넘어감
+    var stops = [];
+    Array.prototype.forEach.call(document.querySelectorAll('.ans-box, .choice-group'), function (el) {
+      if (stops.indexOf(el) !== -1) return;
+      var fr = el.classList.contains('ans-box') && el.closest('.fraction');
       var num = fr && fr.querySelector(':scope > .num .ans-box'), den = fr && fr.querySelector(':scope > .den .ans-box');
-      if (num && den && inp === num) { inputs.push(den, num); return; }
-      inputs.push(inp);
+      if (num && den && el === num) { stops.push(den, num); return; }
+      stops.push(el);
     });
     var checkBtn = document.getElementById('checkBtn');
-    function go(i) { if (i < inputs.length) inputs[i].focus(); else if (checkBtn) checkBtn.focus(); }
-    inputs.forEach(function (inp, i) {
-      inp.addEventListener('focus', function () { this.select(); });
-      inp.addEventListener('input', function () {
+    function go(i) {
+      if (i < 0) return;
+      if (i < stops.length) stops[i].focus(); else if (checkBtn) checkBtn.focus();
+    }
+    // 지금 풀고 있는 문제 카드에 파란 테두리
+    if (!M._focusBound) {
+      M._focusBound = true;
+      document.addEventListener('focusin', function (e) {
+        var card = e.target.closest && e.target.closest('.quiz-card');
+        document.querySelectorAll('.quiz-card.current').forEach(function (c) { if (c !== card) c.classList.remove('current'); });
+        if (card) card.classList.add('current');
+      });
+    }
+    stops.forEach(function (el, i) {
+      if (el.classList.contains('choice-group')) {
+        el.querySelectorAll('.choice-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            el.querySelectorAll('.choice-btn').forEach(function (b) { b.classList.remove('selected'); });
+            btn.classList.add('selected');
+            go(i + 1);
+          });
+        });
+        el.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); go(i + 1); }
+          else if (e.key === 'Backspace' || e.key === 'Tab' && e.shiftKey) { e.preventDefault(); go(i - 1); }
+        });
+        return;
+      }
+      el.addEventListener('focus', function () { this.select(); });
+      el.addEventListener('input', function () {
         this.value = this.value.replace(/[^0-9]/g, '');
         if (this.value.length >= this.maxLength) go(i + 1);
       });
-      inp.addEventListener('keydown', function (e) {
+      el.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === 'ArrowRight' || e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); go(i + 1); }
-        else if (e.key === 'ArrowLeft') { e.preventDefault(); if (i > 0) inputs[i - 1].focus(); }
-        else if (e.key === 'Backspace' && this.value === '' && i > 0) { e.preventDefault(); inputs[i - 1].focus(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); go(i - 1); }
+        else if (e.key === 'Backspace' && this.value === '') { e.preventDefault(); go(i - 1); }
       });
     });
-    document.querySelectorAll('.choice-group').forEach(function (grp) {
-      grp.querySelectorAll('.choice-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          grp.querySelectorAll('.choice-btn').forEach(function (b) { b.classList.remove('selected'); });
-          btn.classList.add('selected');
-        });
-      });
-    });
-    if (inputs.length) inputs[0].focus();
+    go(0);
   };
 
   // 채점: 카드 안의 모든 입력칸·고르기가 맞아야 그 문제 정답

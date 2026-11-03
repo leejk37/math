@@ -27,10 +27,10 @@
 // 교과서 3-2-4 99~101쪽: 5/4와 7/4, 1 3/5와 2 1/5, 1 5/6과 1 2/6, 7/3과 2 2/3, □ 안에 들어갈 자연수
 const CMP = [['>', '&gt;'], ['=', '='], ['<', '&lt;']];
 function sign(a, b) { return a > b ? '>' : a < b ? '<' : '='; }
-function cmpCard(i, L, R) {
+function cmpCard(i, L, R, hint) {
   // L, R = { html, v(크기: 분자 기준 값) } — 좌우를 무작위로 바꿈
   if (Math.random() < 0.5) { const t = L; L = R; R = t; }
-  return M.card(i, `<div class="eq cmp-row" style="gap:14px">${L.html}${M.choices(sign(L.v, R.v), CMP, 'cmp')}${R.html}</div>`);
+  return M.card(i, `<div class="eq cmp-row" style="gap:14px">${L.html}${M.choices(sign(L.v, R.v), CMP, 'cmp')}${R.html}</div>`, false, hint);
 }
 const F = (n, d) => ({ html: M.frac(n, d), v: n });
 const MX = (w, n, d) => ({ html: M.mixed(w, n, d), v: w * d + n });
@@ -39,26 +39,27 @@ function generate() {
   // 1번: 가분수끼리
   let d = M.rand(3, 9), a = M.rand(d + 1, 3 * d), b;
   do { b = M.rand(d + 1, 3 * d); } while (b === a);
-  cards.push(cmpCard(0, F(a, d), F(b, d)));
+  cards.push(cmpCard(0, F(a, d), F(b, d), '분모가 같은 가분수는 <b>분자</b>가 클수록 큰 분수입니다. 두 분수의 분자를 비교해 보세요.'));
   // 2번: 대분수, 자연수가 다름 (자연수가 작은 쪽의 분자가 더 큼 → 분자만 보면 틀리는 함정)
   d = M.rand(4, 9);
   let w1 = M.rand(1, 3), w2 = w1 + 1, n1 = M.rand(2, d - 1), n2 = M.rand(1, n1 - 1);
-  cards.push(cmpCard(1, MX(w1, n1, d), MX(w2, n2, d)));
+  cards.push(cmpCard(1, MX(w1, n1, d), MX(w2, n2, d), '대분수는 <b>자연수</b>부터 비교합니다. 자연수가 더 크면, 분자와 관계없이 더 큰 분수예요.'));
   // 3번: 대분수, 자연수가 같음
   d = M.rand(3, 9); w1 = M.rand(1, 4); n1 = M.rand(1, d - 1);
   do { n2 = M.rand(1, d - 1); } while (n2 === n1);
-  cards.push(cmpCard(2, MX(w1, n1, d), MX(w1, n2, d)));
+  cards.push(cmpCard(2, MX(w1, n1, d), MX(w1, n2, d), '자연수가 같으면 진분수 부분의 <b>분자</b>를 비교합니다.'));
   // 4번: 가분수와 대분수 (같은 크기가 나올 때도 있음)
   d = M.rand(3, 9); w1 = M.rand(1, 3); n1 = M.rand(1, d - 1);
   let N = w1 * d + n1;
   if (Math.random() < 0.6) { do { N = w1 * d + n1 + M.pick([-2, -1, 1, 2]); } while (N <= d || N % d === 0); }
-  cards.push(cmpCard(3, F(N, d), MX(w1, n1, d)));
+  cards.push(cmpCard(3, F(N, d), MX(w1, n1, d), `대분수를 가분수로 바꾸어 분자끼리 비교해 보세요. 자연수 1은 ${M.frac(d, d, true)}${M.josa(d, '과', '와')} 같아요.`));
   // 5번: □/d < 1 n/d 일 때 □ 안에 들어갈 수 있는 1~9의 자연수 개수
   d = M.rand(3, 5); n1 = M.rand(1, Math.min(d - 1, 9 - d));
   const limit = d + n1;   // □ < limit
   cards.push(M.card(4,
     `<div class="eq" style="gap:12px">${M.frac('□', d)} <span class="op">&lt;</span> ${M.mixed(1, n1, d)}</div>` +
-    `<div class="q-text" style="font-size:16px">1부터 9까지의 자연수 중에서 □ 안에 들어갈 수 있는 수는<br>모두 ${M.box(limit - 1)}개입니다.</div>`));
+    `<div class="q-text" style="font-size:16px">1부터 9까지의 자연수 중에서 □ 안에 들어갈 수 있는 수는<br>모두 ${M.box(limit - 1)}개입니다.</div>`, false,
+    `먼저 ${M.mixed(1, n1, d, true)}${M.josa(n1, "을", "를")} 가분수로 바꾸어 보세요. 그다음 □에 1부터 차례로 넣어 보며, 더 작은 분수가 되는 수를 세어 보세요.`));
   M.render(cards);
 }
 document.addEventListener('DOMContentLoaded', generate);
