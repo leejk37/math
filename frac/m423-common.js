@@ -392,6 +392,28 @@
     PICKS.push({ kind: 'bar', base: 0, val: 0, max: 10 });
     return '<div class="pick" data-pick="' + id + '" data-ans="' + ans + '" tabindex="-1">' + barSvg(0, vertical, topLabel, true) + '</div>';
   };
+  // 같은 길이로 맞춘 가로 막대 색칠 (cells칸: 10이면 한 칸 0.1, 100이면 한 칸 0.01)
+  // 두 막대를 위아래로 놓으면 0과 1이 맞아서, 색칠이 끝나는 위치로 크기를 비교할 수 있음
+  M.stripPick = function (ans, cells, W) {
+    var id = PICKS.length;
+    PICKS.push({ kind: 'bar', base: 0, val: 0, max: cells });
+    W = W || 720;
+    var H = 40, cw = W / cells, s = svgOpen(W + 24, H + 28), k, x;
+    for (k = 0; k < cells; k++) {
+      x = 12 + k * cw;
+      s += '<rect class="pick-cell" data-k="' + k + '" x="' + x.toFixed(2) + '" y="4" width="' + cw.toFixed(2) + '" height="' + H + '" fill="#fff" stroke="#cbd5e1" stroke-width="' + (cells > 10 ? 0.5 : 1) + '"/>';
+    }
+    if (cells > 10) for (k = 10; k < cells; k += 10) { // 0.1마다 굵은 눈금
+      x = 12 + k * cw;
+      s += '<line x1="' + x.toFixed(2) + '" y1="4" x2="' + x.toFixed(2) + '" y2="' + (H + 4) + '" stroke="#475569" stroke-width="1.5" pointer-events="none"/>';
+    } else for (k = 1; k < cells; k++) {
+      x = 12 + k * cw;
+      s += '<line x1="' + x.toFixed(2) + '" y1="4" x2="' + x.toFixed(2) + '" y2="' + (H + 4) + '" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3" pointer-events="none"/>';
+    }
+    s += '<rect x="12" y="4" width="' + W + '" height="' + H + '" fill="none" stroke="#1e293b" stroke-width="2" pointer-events="none"/>';
+    s += '<text x="12" y="' + (H + 22) + '" font-size="14" text-anchor="middle" fill="#334155">0</text><text x="' + (W + 12) + '" y="' + (H + 22) + '" font-size="14" text-anchor="middle" fill="#334155">1</text>';
+    return '<div class="pick" data-pick="' + id + '" data-ans="' + ans + '" tabindex="-1">' + s + '</svg></div>';
+  };
   // 색칠된 10칸 막대 그림 (보기용)
   M.bar = function (n, vertical, topLabel, color) { return barSvg(n, vertical, topLabel, false, color); };
   function barSvg(n, vertical, topLabel, pick, color) {
