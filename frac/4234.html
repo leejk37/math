@@ -56,14 +56,14 @@ function generate() {
 
   // 2번: 0.abc의 10배, 100배
   const d2 = [M.rand(1, 9), M.rand(1, 9), M.rand(1, 9)], v2 = (d2[0] * 100 + d2[1] * 10 + d2[2]) * 10;
-  cards.push(M.card(1, `<div class="q-text">${s4(v2)}의 10배와 100배를 구해 보세요.</div>` +
+  cards.push(M.card(1, `<div class="q-text">빈칸에 알맞은 수를 써넣으세요.</div>` +
     M.line(`<div class="eq">${s4(v2)}의 10배는 <span class="tail">${M.dbox(v2 * 10, P)}</span></div>`,
       `<div class="eq">${s4(v2)}의 100배는 <span class="tail">${M.dbox(v2 * 100, P)}</span></div>`), true));
   hints.push('10배를 하면 숫자가 <b>왼쪽으로 한 자리</b>, 100배를 하면 <b>두 자리</b> 옮겨요.<br>소수점이 오른쪽으로 옮겨진다고 생각해도 돼요.');
 
   // 3번: a.b의 1/10, 1/100
   const a3 = M.rand(1, 9), b3 = M.rand(1, 9), v3 = (a3 * 10 + b3) * 1000;
-  cards.push(M.card(2, `<div class="q-text">${s4(v3)}의 ${INV(10)} 과 ${INV(100)} 을 구해 보세요.</div>` +
+  cards.push(M.card(2, `<div class="q-text">빈칸에 알맞은 수를 써넣으세요.</div>` +
     M.line(`<div class="eq">${s4(v3)}의 ${M.frac(1, 10)} 은 <span class="tail">${M.dbox(v3 / 10, P)}</span></div>`,
       `<div class="eq">${s4(v3)}의 ${M.frac(1, 100)} 은 <span class="tail">${M.dbox(v3 / 100, P)}</span></div>`), true));
   hints.push('1/10을 하면 숫자가 <b>오른쪽으로 한 자리</b>, 1/100을 하면 <b>두 자리</b> 옮겨요.<br>빈 자리에는 0을 써요. 예) 3.5의 1/100 → 0.035');
