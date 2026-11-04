@@ -67,7 +67,7 @@ function generate() {
   // 4번: 자리 이름과 나타내는 값 (소수 둘째·셋째 자리)
   let d4; do { d4 = [M.rand(1, 9), M.rand(1, 9), M.rand(1, 9), M.rand(1, 9)]; } while (new Set(d4).size < 4);
   const s4 = d4[0] + '.' + d4[1] + d4[2] + d4[3];
-  cards.push(M.card(3, `<div class="q-text">숫자가 나타내는 자리와 값을 알아보세요.</div>` +
+  cards.push(M.card(3, `<div class="q-text">네모 안의 소수가 나타내는 자리와 값을 알아보세요.</div>` +
     M.placeBlock(s4, [M.placeLine(s4, d4[2], 2, 3, d4[2] * 10, P), M.placeLine(s4, d4[3], 3, 3, d4[3], P)]), true));
   hints.push('소수점 오른쪽으로 첫째(0.■), 둘째(0.0■), 셋째(0.00■) 자리예요.<br>예) 1.853에서 5는 0.05, 3은 0.003을 나타내요.');
 
