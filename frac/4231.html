@@ -7,7 +7,7 @@
 <script src="../config.js"></script>
 <script src="../api.js"></script>
 <script src="frac-kit.js"></script>
-<script src="m423-common.js?v=20261104-1510"></script>
+<script src="m423-common.js?v=20261104-1515"></script>
 <!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
 <script src="../help.js"></script>
 <title>소수 두 자리 수</title>
@@ -88,8 +88,7 @@ function generate() {
     M.places(placeIdx, 2) +
     `<span class="tail">숫자이고, ${M.dbox(val, P)}${M.josa(dg, '을', '를')} 나타냅니다.</span></div>`;
   cards.push(M.card(4, `<div class="q-text">숫자가 나타내는 자리와 값을 알아보세요.</div>` +
-    `<div class="eq" style="font-size:34px;letter-spacing:2px">${s5}</div>` +
-    placeLine(d5[1], 1, d5[1] * 10) + placeLine(d5[2], 2, d5[2]), true));
+    M.placeBlock(s5, [placeLine(d5[1], 1, d5[1] * 10), placeLine(d5[2], 2, d5[2])]), true));
   hints.push('소수점 바로 오른쪽이 <b>소수 첫째 자리</b>(0.■), 그다음이 <b>소수 둘째 자리</b>(0.0■)예요.<br>예) 1.76에서 7은 0.7, 6은 0.06을 나타내요.');
 
   M.render(cards, hints);
