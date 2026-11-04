@@ -41,7 +41,7 @@
     '#fk-msg{flex-basis:100%;font-weight:bold;display:none}' +
     '#fk-msg.ok{display:block;color:#15803d}#fk-msg.bad{display:block;color:#b91c1c}#fk-msg.info{display:block;color:#334155}' +
     '.fk-btn{border:none;border-radius:8px;padding:8px 14px;font-size:14px;font-weight:bold;cursor:pointer;font-family:inherit}' +
-    '.fk-btn-main{background:#ea580c;color:#fff}.fk-btn-sub{background:#e2e8f0;color:#334155}.fk-btn-blue{background:#3b82f6;color:#fff}' +
+    '.fk-btn-main{background:#ea580c;color:#fff}.fk-btn-sub{background:#e2e8f0;color:#334155}.fk-btn-blue{background:#3b82f6;color:#fff}.fk-btn:disabled{opacity:.5;cursor:wait}' +
     '#fk-actions{display:flex;gap:8px;flex-wrap:wrap}' +
     '#fk-bottom{margin:22px 0 10px;display:flex;justify-content:center}' +
     '#fk-bottom .fk-btn{font-size:17px;padding:12px 28px}' +
@@ -102,7 +102,9 @@
   }
 
   // ---------- 시트로 저장 ----------
-  function submit(results, onDone, methods) {
+  // 제출 순간의 결과(점수·소요 시간)를 한 번만 만들어 두고, 다시 저장할 때도 똑같이 보냅니다.
+  // (예전에는 다시 저장할 때마다 소요 시간을 새로 재서, 기다린 시간이 더해지고 서버의 중복 막기가 작동하지 않았음)
+  function makePayload(results, methods) {
     var s = K.session;
     var correct = results.filter(Boolean).length;
     var score = Math.round(correct / results.length * 100);
@@ -115,13 +117,26 @@
       results: results.map(function (r) { return r ? 'O' : 'X'; })
     };
     if (Array.isArray(methods) && methods.length) payload.methods = methods.map(function (m) { return String(m || '').slice(0, 20); });
+    return { payload: payload, summary: results.length + '문제 중 ' + correct + '개 정답 · ' + score + '점 · ' + fmt(sec) };
+  }
+  var saving = false;
+  function submit(pack, onDone) {
+    if (saving) return;            // 저장 중에는 다시 보내지 않음
+    saving = true;
+    onDone('saving');
     setMsg('저장 중입니다... ⏳', 'info');
-    callApi('submitDiagnostic', [payload]).then(function () {
-      setMsg(results.length + '문제 중 ' + correct + '개 정답 · ' + score + '점 · ' + fmt(sec) + ' — 저장되었습니다 ✔', 'ok');
+    callApi('submitDiagnostic', [pack.payload], {
+      onRetry: function (n, max, wait) {
+        setMsg('친구들이 한꺼번에 저장하고 있어요. ' + wait + '초 뒤에 자동으로 다시 저장합니다 (' + n + '/' + max + ') ⏳ — 버튼을 누르지 말고 기다려 주세요', 'info');
+      }
+    }).then(function () {
+      saving = false;
+      setMsg(pack.summary + ' — 저장되었습니다 ✔', 'ok');
       onDone(true);
     }).catch(function (err) {
-      setMsg('저장하지 못했습니다: ' + err.message + ' (다시 저장 버튼을 눌러 주세요)', 'bad');
-      onDone(false, payload);
+      saving = false;
+      setMsg('저장하지 못했습니다: ' + err.message + ' (잠시 뒤 💾 다시 저장을 한 번만 눌러 주세요)', 'bad');
+      onDone(false);
     });
   }
 
@@ -216,17 +231,21 @@
         lockPage();
         checkBtn.classList.add('fk-hidden');
 
+        var pack = makePayload(results, methods);
         var retryBtn = null;
-        function afterSave(ok, payload) {
-          if (ok) {
+        function afterSave(state) {
+          if (state === 'saving') { if (retryBtn) retryBtn.disabled = true; return; }
+          if (state === true) {
             if (retryBtn) retryBtn.remove();
             addAction('🔄 이번 단계 다시 풀기', 'fk-btn-blue', function () { location.reload(); });
           } else if (!retryBtn) {
-            retryBtn = addAction('💾 다시 저장', 'fk-btn-main', function () { submit(results, afterSave, methods); });
+            retryBtn = addAction('💾 다시 저장', 'fk-btn-main', function () { submit(pack, afterSave); });
+          } else {
+            retryBtn.disabled = false;
           }
           reportHeight();
         }
-        submit(results, afterSave, methods);
+        submit(pack, afterSave);
       };
     }
 

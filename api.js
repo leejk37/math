@@ -96,10 +96,8 @@
     });
   }
 
-  window.callApi = function (action, args) {
-    if (action === 'submitDiagnostic') {
-      try { reportLive(args && args[0]); } catch (e) { /* 무시 */ }
-    }
+  // 서버에 한 번 요청
+  function callOnce(action, args) {
     var url = getApiUrl();
     if (!url) return Promise.reject(new Error('서버 주소가 설정되지 않았습니다. config.js의 API_URL을 채워 주세요.'));
     return fetch(url, {
@@ -108,13 +106,43 @@
       body: JSON.stringify({ action: action, args: args || [], adminPassword: getAdminPassword() })
     })
       .then(function (r) {
-        if (!r.ok) throw new Error('서버 연결에 실패했습니다 (' + r.status + ')');
+        if (!r.ok) { var e = new Error('서버 연결에 실패했습니다 (' + r.status + ')'); e.retryable = (r.status === 429 || r.status >= 500); throw e; }
         return r.json();
+      }, function (netErr) {
+        var e = new Error('인터넷 연결이 잠깐 끊겼습니다.'); e.retryable = true; throw e; // 네트워크 오류
       })
       .then(function (res) {
-        if (!res || !res.ok) throw new Error((res && res.error) || '서버 응답이 올바르지 않습니다.');
+        if (!res || !res.ok) {
+          var msg = (res && res.error) || '서버 응답이 올바르지 않습니다.';
+          var e = new Error(msg);
+          // 서버가 '한꺼번에 저장 중'(LOCK_BUSY)이거나 잠깐 탈이 난 경우만 다시 시도
+          e.retryable = /한꺼번에|잠시 후 다시/.test(msg);
+          throw e;
+        }
         return res.result;
       });
+  }
+
+  // 진단 결과 저장(submitDiagnostic)은 실패해도 자동으로 몇 번 더 시도합니다. (2026-11-04)
+  //  - 반 전체가 동시에 제출해 서버가 붐빌 때, 학생이 '다시 저장'을 연달아 눌러 요청이 폭주하지 않도록
+  //  - 기다리는 간격을 점점 늘리고(4→8→15→25→40초), 기기마다 조금씩 어긋나게(±30%) 해서 한꺼번에 몰리지 않게 함
+  //  - 같은 결과를 그대로 다시 보내므로 서버의 '2분 안 같은 결과는 한 번만 저장'이 작동해 중복 줄이 생기지 않음
+  var RETRY_WAIT = [4, 8, 15, 25, 40];
+  window.callApi = function (action, args, opts) {
+    opts = opts || {};
+    if (action !== 'submitDiagnostic') return callOnce(action, args);
+    try { reportLive(args && args[0]); } catch (e) { /* 무시 — 현황판은 한 번만 보냄 */ }
+    var attempt = 0;
+    function run() {
+      return callOnce(action, args).catch(function (err) {
+        if (!err.retryable || attempt >= RETRY_WAIT.length) throw err;
+        var wait = Math.round(RETRY_WAIT[attempt] * (0.7 + Math.random() * 0.6));
+        attempt++;
+        if (typeof opts.onRetry === 'function') { try { opts.onRetry(attempt, RETRY_WAIT.length, wait, err); } catch (e) {} }
+        return new Promise(function (ok) { setTimeout(ok, wait * 1000); }).then(run);
+      });
+    }
+    return run();
   };
 
   // ---- google.script.run 대체품 ----
