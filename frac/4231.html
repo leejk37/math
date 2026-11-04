@@ -82,9 +82,14 @@ function generate() {
   // 5번: 자리 이름과 나타내는 값
   let d5; do { d5 = [M.rand(1, 9), M.rand(1, 9), M.rand(1, 9)]; } while (new Set(d5).size < 3);
   const s5 = d5[0] + '.' + d5[1] + d5[2];
-  cards.push(M.card(4, `<div class="q-text">${s5}에서</div>` +
-    `<div class="eq" style="font-size:18px">${d5[1]}${M.josa(d5[1], '은', '는')}</div>${M.places(1, 2)}<div class="eq" style="font-size:18px">자리 숫자이고, <span class="tail">${M.dbox(d5[1] * 10, P)}${M.josa(d5[1], '을', '를')} 나타냅니다.</span></div>` +
-    `<div class="eq" style="font-size:18px;margin-top:8px">${d5[2]}${M.josa(d5[2], '은', '는')}</div>${M.places(2, 2)}<div class="eq" style="font-size:18px">자리 숫자이고, <span class="tail">${M.dbox(d5[2], P)}${M.josa(d5[2], '을', '를')} 나타냅니다.</span></div>`, true));
+  // 한 줄: 'N은 [자리 이름 세로 선택지] 숫자이고, □을(를) 나타냅니다.'
+  const placeLine = (dg, placeIdx, val) =>
+    `<div class="pick-v" style="font-size:18px;font-weight:bold;color:#1e293b">${dg}${M.josa(dg, '은', '는')}` +
+    M.places(placeIdx, 2) +
+    `<span class="tail">숫자이고, ${M.dbox(val, P)}${M.josa(dg, '을', '를')} 나타냅니다.</span></div>`;
+  cards.push(M.card(4, `<div class="q-text">숫자가 나타내는 자리와 값을 알아보세요.</div>` +
+    `<div class="eq" style="font-size:34px;letter-spacing:2px">${s5}</div>` +
+    placeLine(d5[1], 1, d5[1] * 10) + placeLine(d5[2], 2, d5[2]), true));
   hints.push('소수점 바로 오른쪽이 <b>소수 첫째 자리</b>(0.■), 그다음이 <b>소수 둘째 자리</b>(0.0■)예요.<br>예) 1.76에서 7은 0.7, 6은 0.06을 나타내요.');
 
   M.render(cards, hints);
