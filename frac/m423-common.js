@@ -57,6 +57,14 @@
     // 수 옆에 선택지를 세로로 (예: 4231 4번 읽기)
     '.pick-v{display:flex;align-items:center;gap:18px}' +
     '.line1{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:14px 40px}' +
+    // 한 덩어리(식 하나, 비교 한 쌍)를 옅은 상자로 묶기
+    '.qbox{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:8px 18px}' +
+    // 말풍선을 직접 눌러 고르기
+    '.speech-pick{gap:14px}' +
+    '.speech-pick .choice-btn{background:#f1f5f9;border:2px solid #e2e8f0;border-radius:14px;padding:10px 16px;min-width:160px;font-size:16px;line-height:1.5}' +
+    '.speech-pick .choice-btn .who{display:block;font-size:13px;color:#64748b;margin-bottom:4px}' +
+    '.speech-pick .choice-btn.selected{border-color:#3b82f6;background:#dbeafe;color:#1e293b}' +
+    '.speech-pick .choice-btn.selected .who{color:#1d4ed8;font-weight:bold}' +
     // 자리 문제: 왼쪽에 큰 수(상자), 오른쪽에 'X에서 N은 …' 줄들
     '.place-wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px 36px}' +
     '.big-num{font-size:40px;font-weight:bold;color:#1e293b;letter-spacing:2px;border:3px solid #2563eb;background:#eff6ff;border-radius:14px;padding:10px 24px}' +
