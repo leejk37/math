@@ -53,6 +53,7 @@
     '.hint-box.show{display:block}' +
     // 수 옆에 선택지를 세로로 (예: 4231 4번 읽기)
     '.pick-v{display:flex;align-items:center;gap:18px}' +
+    '.line1{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:14px 40px}' +
     '.pick-v .choice-group{flex-direction:column;align-items:stretch;gap:4px}' +
     '.pick-v .choice-btn{padding:3px 10px;font-size:14px;min-height:0;line-height:1.4}' +
     '.pick-v .ans-box.dec{width:64px;height:34px}' +
@@ -210,6 +211,16 @@
     var s = '<div class="multi-group" tabindex="-1" data-ans="' + ansArr.slice().sort().join(',') + '">';
     for (var d = 0; d <= 9; d++) s += '<button type="button" class="choice-btn" data-v="' + d + '">' + d + '</button>';
     return s + '</div>';
+  };
+
+  /* ---------- 한 줄 배치 ---------- */
+  // 여러 식·문장을 한 줄에 나란히 (화면이 좁으면 자연스럽게 다음 줄로)
+  M.line = function () { return '<div class="line1">' + Array.prototype.join.call(arguments, '') + '</div>'; };
+  // 'X에서 N은 [자리 이름 세로 선택지] 숫자이고, □을(를) 나타냅니다.' (4231 5번과 같은 꼴)
+  M.placeLine = function (numStr, dg, placeIdx, maxPlace, val, p) {
+    return '<div class="pick-v" style="font-size:18px;font-weight:bold;color:#1e293b">' + numStr + '에서 ' + dg + M.josa(dg, '은', '는') +
+      M.places(placeIdx, maxPlace) +
+      '<span class="tail">숫자이고, ' + M.dbox(val, p) + M.josa(dg, '을', '를') + ' 나타냅니다.</span></div>';
   };
 
   /* ---------- 카드 ---------- */

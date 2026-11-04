@@ -53,17 +53,17 @@ function generate() {
   let a1, b1; do { a1 = M.rand(3, 9); b1 = M.rand(1, 8); } while (a1 <= b1 || a1 - b1 > 4);
   cards.push(M.card(0, `<div class="q-text">할아버지의 지팡이는 ${f(a1)} m, 할머니의 지팡이는 ${f(b1)} m입니다. 두 지팡이 길이의 차는 몇 m인가요?</div>` +
     `<div class="vlabel">${f(a1)} m</div>${M.bar(a1, false, '1 m')}<div class="vlabel">${f(b1)} m</div>${M.bar(b1, false, '1 m', '#c4b5fd')}` +
-    `<div class="eq" style="font-size:18px">0.1 m씩 <span class="tail">${M.box(a1 - b1)}칸 차이</span></div>` +
-    `<div class="eq">${f(a1)} − ${f(b1)} = <span class="tail">${M.dbox(a1 - b1, P)} m</span></div>`, true));
+    M.line(`<div class="eq" style="font-size:18px">0.1 m씩 <span class="tail">${M.box(a1 - b1)}칸 차이</span></div>`,
+      `<div class="eq">→ ${f(a1)} − ${f(b1)} = <span class="tail">${M.dbox(a1 - b1, P)} m</span></div>`), true));
   hints.push('막대 한 칸이 0.1 m예요. 두 막대에서 색칠한 칸 수의 <b>차이</b>를 세어 보세요.');
 
   // 2번: 0.1의 개수로 계산 (받아내림 상황: b < d)
   let x2, y2; do { x2 = M.rand(3, 9) * 10 + M.rand(1, 8); y2 = M.rand(1, 6) * 10 + M.rand(1, 9); } while (x2 % 10 >= y2 % 10 || Math.floor(x2 / 10) <= Math.floor(y2 / 10));
   cards.push(M.card(1, `<div class="q-text">0.1의 개수를 이용하여 ${f(x2)} − ${f(y2)}${M.josa(f(y2), '을', '를')} 계산해 보세요.</div>` +
-    `<div class="eq" style="font-size:18px">${f(x2)}${M.josa(f(x2), '은', '는')} 0.1이 <span class="tail">${M.box(x2)}개</span></div>` +
-    `<div class="eq" style="font-size:18px">${f(y2)}${M.josa(f(y2), '은', '는')} 0.1이 <span class="tail">${M.box(y2)}개</span></div>` +
-    `<div class="eq" style="font-size:18px">차는 0.1이 <span class="tail">${M.box(x2 - y2)}개</span></div>` +
-    `<div class="eq">${f(x2)} − ${f(y2)} = <span class="tail">${M.dbox(x2 - y2, P)}</span></div>`));
+    M.line(`<div class="eq" style="font-size:18px">${f(x2)}${M.josa(f(x2), '은', '는')} 0.1이 <span class="tail">${M.box(x2)}개,</span></div>`,
+      `<div class="eq" style="font-size:18px">${f(y2)}${M.josa(f(y2), '은', '는')} 0.1이 <span class="tail">${M.box(y2)}개</span></div>`) +
+    M.line(`<div class="eq" style="font-size:18px">차는 0.1이 <span class="tail">${M.box(x2 - y2)}개</span></div>`,
+      `<div class="eq">→ ${f(x2)} − ${f(y2)} = <span class="tail">${M.dbox(x2 - y2, P)}</span></div>`), true));
   hints.push('두 수를 0.1의 개수로 바꾼 다음 자연수처럼 빼요. 그 개수만큼 0.1이 있는 소수가 답이에요.');
 
   // 3번: 세로셈, 받아내림 없음 (① a.b − c.d  ② a.b − 0.c)
@@ -84,8 +84,8 @@ function generate() {
   const st = M.pick(STORIES);
   const q = st.make();
   cards.push(M.card(4, `<div class="q-text" style="font-weight:normal;text-align:left">${q.text}</div>` +
-    `<div class="eq" style="font-size:19px">식: ${M.dbox(q.A, P)} − ${M.dbox(q.B, P)}</div>` +
-    `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(q.A - q.B, P)} ${st.unit}</span></div>`, true));
+    M.line(`<div class="eq" style="font-size:19px">식: ${M.dbox(q.A, P)} − ${M.dbox(q.B, P)}</div>`,
+      `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(q.A - q.B, P)} ${st.unit}</span></div>`), true));
   hints.push(`${M.fmt0(q.A, 1)}${M.josa(q.A / 10, '은', '는')} ${f(q.A)}과 같아요. 소수 첫째 자리에 <b>0</b>이 있다고 생각하고 받아내림해요.<br>(전체) − (한 만큼) = (남은 만큼)`);
 
   M.render(cards, hints);

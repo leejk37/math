@@ -64,16 +64,16 @@ function generate() {
   let a1, b1; do { a1 = M.rand(11, 99); b1 = M.rand(11, 99); } while (a1 % 10 === 0 || b1 % 10 === 0 || Math.abs(a1 - b1) < 5 || Math.abs(a1 - b1) > 40);
   cards.push(M.card(0, `<div class="q-text">흰토끼는 ${f2(a1)} kg, 검은토끼는 ${f2(b1)} kg입니다. 두 수만큼 각각 색칠하고 비교해 보세요.</div>` +
     `<div class="row"><div><div class="vlabel">${f2(a1)}</div>${M.gridPick(a1, 0, 160)}</div><div><div class="vlabel">${f2(b1)}</div>${M.gridPick(b1, 0, 160)}</div></div>` +
-    `<div class="eq" style="font-size:17px">${f2(a1)}${M.josa(f2(a1), '은', '는')} 0.01이 ${M.box(a1)}개, ${f2(b1)}${M.josa(f2(b1), '은', '는')} 0.01이 <span class="tail">${M.box(b1)}개</span></div>` +
-    `<div class="eq" style="font-size:17px">더 무거운 토끼의 무게는 <span class="tail">${M.dbox(Math.max(a1, b1), 2)} kg</span></div>`, true));
+    M.line(`<div class="eq" style="font-size:17px">${f2(a1)}${M.josa(f2(a1), '은', '는')} 0.01이 ${M.box(a1)}개, ${f2(b1)}${M.josa(f2(b1), '은', '는')} 0.01이 <span class="tail">${M.box(b1)}개</span></div>`,
+      `<div class="eq" style="font-size:17px">더 무거운 토끼의 무게는 <span class="tail">${M.dbox(Math.max(a1, b1), 2)} kg</span></div>`), true));
   hints.push('모눈 한 칸은 0.01이에요. 왼쪽 세로줄부터 위에서 아래로 칸을 눌러 색칠해요.<br>0.01이 <b>더 많은</b> 수가 더 큰 수예요.');
 
   // 2번: 0.a 와 0.a0 — 끝자리 0
   const a2 = M.rand(1, 9);
   cards.push(M.card(1, `<div class="q-text">0.${a2}${M.josa(a2, '과', '와')} 0.${a2}0만큼 각각 색칠하고 크기를 비교해 보세요.</div>` +
-    `<div class="vlabel">0.${a2} (막대 한 칸 = 0.1)</div>${M.barPick(a2, false, '1')}` +
-    `<div class="vlabel">0.${a2}0 (모눈 한 칸 = 0.01)</div>${M.gridPick(a2 * 10, 0, 150)}` +
-    `<div class="cmp-row">0.${a2} ${M.cmp(1, 1)} 0.${a2}0</div>`, true));
+    M.line(`<div><div class="vlabel">0.${a2} (막대 한 칸 = 0.1)</div>${M.barPick(a2, false, '1')}</div>`,
+      `<div><div class="vlabel">0.${a2}0 (모눈 한 칸 = 0.01)</div>${M.gridPick(a2 * 10, 0, 150)}</div>`,
+      `<div class="cmp-row">0.${a2} ${M.cmp(1, 1)} 0.${a2}0</div>`), true));
   hints.push(`색칠한 넓이를 비교해 보세요. 0.${a2}은 0.1이 ${a2}개, 0.${a2}0은 0.01이 ${a2 * 10}개예요.<br>소수 <b>오른쪽 끝자리의 0</b>은 붙이거나 빼도 크기가 같아요.`);
 
   // 3번: 자리별 비교 표 — 처음 달라지는 자리 고르기
@@ -83,8 +83,8 @@ function generate() {
   const tb = n => `<tr><td>${dig(n)[0]}</td><td style="width:16px;border:none">.</td><td>${dig(n)[1]}</td><td>${dig(n)[2]}</td><td>${dig(n)[3]}</td></tr>`;
   cards.push(M.card(2, `<div class="q-text">${f3(x3)}${M.josa(f3(x3), '과', '와')} ${f3(y3)}의 크기를 비교해 보세요.</div>` +
     `<table class="place-table"><tr><th>일의 자리</th><th style="border:none;background:none"></th><th>소수 첫째</th><th>소수 둘째</th><th>소수 셋째</th></tr>${tb(x3)}${tb(y3)}</table>` +
-    `<div class="q-small">처음으로 숫자가 다른 자리는 어디인가요?</div>${M.places(pos3, 3)}` +
-    `<div class="eq" style="font-size:18px">더 큰 수는 <span class="tail">${M.dbox(Math.max(x3, y3), 3, true)}</span></div>`, true));
+    M.line(`<div class="pick-v" style="font-size:17px;font-weight:bold;color:#1e293b">처음으로 숫자가 다른 자리는${M.places(pos3, 3)}</div>`,
+      `<div class="eq" style="font-size:18px">더 큰 수는 <span class="tail">${M.dbox(Math.max(x3, y3), 3, true)}</span></div>`), true));
   hints.push('표에서 왼쪽(일의 자리)부터 위아래 숫자를 차례로 비교해요. 같으면 오른쪽 자리로 넘어가요.<br>처음으로 다른 자리에서 숫자가 큰 쪽이 더 큰 수예요.');
 
   // 4번: 자릿수가 같은 3쌍 (소수 두 자리 1쌍, 세 자리 2쌍 · 처음 달라지는 자리가 서로 다르게)
