@@ -285,7 +285,7 @@
       <button id="btn-mul" class="nav-btn active" onclick="switchScreen('mul')">✖️ 곱셈 진단</button>
       <button id="btn-div" class="nav-btn" onclick="switchScreen('div')">➗ 나눗셈 진단</button>
       <button id="btn-frac3" class="nav-btn" onclick="switchScreen('frac3')">🍕 3학년 분수·소수</button>
-      <button id="btn-frac4" class="nav-btn" onclick="switchScreen('frac4')">🍰 4학년 분수</button>
+      <button id="btn-frac4" class="nav-btn" onclick="switchScreen('frac4')">🍰 4학년 분수·소수</button>
     </div>
 
     <div style="background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 25px; width: calc(100% - 30px); display: flex; gap: 10px; align-items: center; justify-content: center; border: 2px solid #cbd5e1;">
@@ -430,7 +430,7 @@
           <select id="frac4-subLevel" data-op="4학년 분수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
         </div>
         <div id="frac4-startSection" style="text-align: center;">
-          <button class="submit-btn" id="frac4-startBtn" style="background-color: #be185d; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac4')">4학년 분수 진단 시작</button>
+          <button class="submit-btn" id="frac4-startBtn" style="background-color: #be185d; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac4')">4학년 분수·소수 진단 시작</button>
         </div>
       </div>
       <iframe id="frac4-frame" title="4학년 분수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
@@ -563,14 +563,24 @@
           "4단계(4214): 대분수의 뺄셈 (자연수끼리·분수끼리)",
           "5단계(4214): 대분수의 뺄셈 (가분수로 바꾸어)",
           "6단계(4215): 자연수 − 분수",
-          "7단계(4216): 받아내림이 있는 대분수의 뺄셈"]
+          "7단계(4216): 받아내림이 있는 대분수의 뺄셈",
+          // 4학년 2학기 3단원 소수의 덧셈과 뺄셈(M423) — 검토용 화면: frac/m423-review.html
+          "8단계(4231): 소수 두 자리 수",
+          "9단계(4232): 소수 세 자리 수",
+          "10단계(4233): 소수의 크기 비교",
+          "11단계(4234): 소수 사이의 관계",
+          "12단계(4235): 소수 한 자리 수의 덧셈",
+          "13단계(4236): 소수 두 자리 수의 덧셈",
+          "14단계(4237): 소수 한 자리 수의 뺄셈",
+          "15단계(4238): 소수 두 자리 수의 뺄셈"]
       };
 
     // 단계 → 문제 페이지 파일 (web/frac 폴더)
     const FRAC_FILES = {
       "3학년 분수·소수": ["3161.html","3162.html","3163.html","3164.html","3165.html","3166.html","3167.html","3168.html","3169.html",
                      "3241.html","3242.html","3243.html","3244.html","3245a.html","3245b.html","3246.html"],
-      "4학년 분수": ["4213.html","4214a.html","4214b.html","4215.html","4216.html"]
+      "4학년 분수": ["4213.html","4214a.html","4214b.html","4215.html","4216.html",
+                 "4231.html","4232.html","4233.html","4234.html","4235.html","4236.html","4237.html","4238.html"]
     };
 
 
