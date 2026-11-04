@@ -44,18 +44,18 @@ function generate() {
   let a1, b1; do { a1 = M.rand(11, 69); b1 = M.rand(11, 39); } while (a1 % 10 === 0 || b1 % 10 === 0 || a1 + b1 > 99 || (a1 % 10) + (b1 % 10) >= 10);
   cards.push(M.card(0, `<div class="q-text">동생은 대추를 ${f(a1)} kg 수확했고, 재윤이는 동생보다 ${f(b1)} kg 더 많이 수확했습니다. 재윤이가 수확한 대추는 몇 kg인가요?</div>` +
     `<div class="q-small">분홍색이 동생이 수확한 ${f(a1)}이에요. ${f(b1)}만큼 이어서 더 색칠해 보세요.</div>` +
-    M.gridPick(a1 + b1, a1, 170) +
-    `<div class="eq">${f(a1)} + ${f(b1)} = <span class="tail">${M.dbox(a1 + b1, P)} kg</span></div>`));
+    M.line(M.gridPick(a1 + b1, a1, 170),
+      `<div class="eq">${f(a1)} + ${f(b1)} = <span class="tail">${M.dbox(a1 + b1, P)} kg</span></div>`), true));
   hints.push(`모눈 한 칸은 0.01이에요. ${f(b1)}은 0.01이 ${b1}칸이에요.<br>분홍 칸 바로 다음 칸부터 ${b1}칸을 더 칠한 뒤, 색칠한 칸을 모두 세어 보세요.`);
 
   // 2번: 0.01의 개수로 계산 (a.bc + d.e, 자릿수가 다름, 소수 첫째 자리에서 받아올림)
   let x2, e2; do { x2 = M.rand(1, 4) * 100 + M.rand(1, 9) * 10 + M.rand(1, 9); e2 = M.rand(1, 9); } while (Math.floor(x2 / 10) % 10 + e2 < 10);
   const y2 = e2 * 10; // 0.e → 0.01이 e0개
   cards.push(M.card(1, `<div class="q-text">0.01의 개수를 이용하여 ${f(x2)} + ${f1(y2)}${M.josa(e2, '을', '를')} 계산해 보세요.</div>` +
-    `<div class="eq" style="font-size:18px">${f(x2)}${M.josa(f(x2), '은', '는')} 0.01이 <span class="tail">${M.box(x2)}개</span></div>` +
-    `<div class="eq" style="font-size:18px">${f1(y2)}${M.josa(e2, '은', '는')} 0.01이 <span class="tail">${M.box(y2)}개</span></div>` +
-    `<div class="eq" style="font-size:18px">합은 0.01이 <span class="tail">${M.box(x2 + y2)}개</span></div>` +
-    `<div class="eq">${f(x2)} + ${f1(y2)} = <span class="tail">${M.dbox(x2 + y2, P)}</span></div>`));
+    M.line(`<div class="eq" style="font-size:18px">${f(x2)}${M.josa(f(x2), '은', '는')} 0.01이 <span class="tail">${M.box(x2)}개,</span></div>`,
+      `<div class="eq" style="font-size:18px">${f1(y2)}${M.josa(e2, '은', '는')} 0.01이 <span class="tail">${M.box(y2)}개</span></div>`) +
+    M.line(`<div class="eq" style="font-size:18px">합은 0.01이 <span class="tail">${M.box(x2 + y2)}개</span></div>`,
+      `<div class="eq">→ ${f(x2)} + ${f1(y2)} = <span class="tail">${M.dbox(x2 + y2, P)}</span></div>`), true));
   hints.push(`${f1(y2)}${M.josa(e2, '은', '는')} ${f(y2)}과 같아요. 그래서 0.01이 <b>${y2}개</b>예요 (${e2}개가 아니에요).`);
 
   // 3번: 세로셈, 자릿수 같음 (① 소수 둘째 자리에서 받아올림 1회  ② 받아올림 2회)
@@ -73,8 +73,8 @@ function generate() {
   let x4, t4; do { x4 = M.rand(1, 5) * 100 + M.rand(1, 9) * 10 + M.rand(1, 9); t4 = M.rand(1, 9); } while (Math.floor(x4 / 10) % 10 + t4 < 10);
   let p4, q4; do { p4 = M.rand(11, 89); q4 = M.rand(11, 89); } while (p4 % 10 === 0 || q4 % 10 === 0 || p4 + q4 < 100 || p4 + q4 === 100);
   cards.push(M.card(3, `<div class="q-text">계산해 보세요.</div>` +
-    `<div class="eq">${f(x4)} + ${f1(t4 * 10)} = <span class="tail">${M.dbox(x4 + t4 * 10, P)}</span></div>` +
-    `<div class="eq">${f(p4)} + ${f(q4)} = <span class="tail">${M.dbox(p4 + q4, P)}</span></div>`));
+    M.line(`<div class="eq">${f(x4)} + ${f1(t4 * 10)} = <span class="tail">${M.dbox(x4 + t4 * 10, P)}</span></div>`,
+      `<div class="eq">${f(p4)} + ${f(q4)} = <span class="tail">${M.dbox(p4 + q4, P)}</span></div>`), true));
   hints.push(`머릿속이나 연습장에서 <b>소수점을 맞추어</b> 세로로 써 보세요. ${f1(t4 * 10)}${M.josa(t4, '은', '는')} ${f(t4 * 10)}과 같아요.<br>${f(p4)} + ${f(q4)}처럼 합이 1을 넘으면 일의 자리에 받아올림이 생겨요.`);
 
   // 5번: 숫자 카드로 가장 큰·가장 작은 소수 두 자리 수를 만들어 더하기 (교과서 창의+)
@@ -82,9 +82,9 @@ function generate() {
   const asc = ds.slice().sort((p, q) => p - q), big = asc[2] * 100 + asc[1] * 10 + asc[0], small = asc[0] * 100 + asc[1] * 10 + asc[2];
   cards.push(M.card(4, `<div class="q-text">카드를 한 번씩 모두 사용하여 □.□□ 모양의 소수 두 자리 수를 만들려고 합니다.</div>` +
     `<div class="digit-cards">${ds.map(d => `<div class="digit-card">${d}</div>`).join('')}<div class="digit-card">.</div></div>` +
-    `<div class="eq" style="font-size:18px">가장 큰 수 <span class="tail">${M.dbox(big, P, true)}</span></div>` +
-    `<div class="eq" style="font-size:18px">가장 작은 수 <span class="tail">${M.dbox(small, P, true)}</span></div>` +
-    `<div class="eq" style="font-size:18px">두 수의 합 <span class="tail">${M.dbox(big + small, P)}</span></div>`, true));
+    M.line(`<div class="eq" style="font-size:18px">가장 큰 수 <span class="tail">${M.dbox(big, P, true)}</span></div>`,
+      `<div class="eq" style="font-size:18px">가장 작은 수 <span class="tail">${M.dbox(small, P, true)}</span></div>`,
+      `<div class="eq" style="font-size:18px">두 수의 합 <span class="tail">${M.dbox(big + small, P)}</span></div>`), true));
   hints.push('가장 큰 수는 높은 자리(일의 자리)부터 <b>큰 숫자</b>를, 가장 작은 수는 <b>작은 숫자</b>를 놓아요.<br>그다음 소수점을 맞추어 더해요.');
 
   M.render(cards, hints);

@@ -51,25 +51,26 @@ function generate() {
   const a2 = noZeroDigits(3);
   let b2; do { b2 = M.rand(11, 99); } while (b2 % 10 === 0);
   cards.push(M.card(1, `<div class="q-text">분수를 소수로 나타내어 보세요.</div>` +
-    `<div class="eq">${M.frac(a2, 1000)} = ${M.dbox(a2, P, true)}</div>` +
-    `<div class="eq" style="font-size:17px">${M.frac(a2, 1000, true)} 은 0.001이 <span class="tail">${M.box(a2)} 개</span></div>` +
-    `<div class="eq" style="margin-top:6px">${M.frac(b2, 1000)} = ${M.dbox(b2, P, true)}</div>`));
+    M.line(`<div class="eq">${M.frac(a2, 1000)} = ${M.dbox(a2, P, true)}</div>`,
+      `<div class="eq" style="font-size:17px">${M.frac(a2, 1000, true)} 은 0.001이 <span class="tail">${M.box(a2)} 개</span></div>`,
+      `<div class="eq">${M.frac(b2, 1000)} = ${M.dbox(b2, P, true)}</div>`), true));
   hints.push(`${M.frac(1, 1000, true)} = 0.001이에요. ${M.frac(b2, 1000, true)} 은 0.001이 ${b2}개라서 소수 <b>첫째 자리가 0</b>이에요.`);
 
   // 3번: 대분수 → 소수, 1·0.1·0.01·0.001이 몇 개
   const w3 = M.rand(1, 9), d3 = [M.rand(1, 9), M.rand(1, 9), M.rand(1, 9)];
   const fr3 = d3[0] * 100 + d3[1] * 10 + d3[2], v3 = w3 * 1000 + fr3;
   cards.push(M.card(2, `<div class="q-text">대분수를 소수로 나타내어 보세요.</div>` +
-    `<div class="eq">${M.mixed(w3, fr3, 1000)} = ${M.dbox(v3, P, true)}</div>` +
-    `<div class="eq" style="font-size:17px">${f(v3)}${M.josa(f(v3), '은', '는')} 1이 ${M.box(w3)}개, 0.1이 ${M.box(d3[0])}개, 0.01이 ${M.box(d3[1])}개, 0.001이 <span class="tail">${M.box(d3[2])}개입니다.</span></div>`, true));
+    M.line(`<div class="eq">${M.mixed(w3, fr3, 1000)} = ${M.dbox(v3, P, true)}</div>`,
+    // 앞 칸의 정답(소수)을 문장에 미리 보여 주지 않도록 '이 소수는'으로
+    `<div class="eq" style="font-size:17px">이 소수는 1이 ${M.box(w3)}개, 0.1이 ${M.box(d3[0])}개, 0.01이 ${M.box(d3[1])}개, 0.001이 <span class="tail">${M.box(d3[2])}개입니다.</span></div>`), true));
   hints.push('자연수 부분은 일의 자리에, 분수 부분은 소수 세 자리 수로 바꾸어 소수점 뒤에 써요.<br>소수점 뒤 첫째 숫자가 0.1의 개수, 둘째가 0.01의 개수, 셋째가 0.001의 개수예요.');
 
   // 4번: 자리 이름과 나타내는 값 (소수 둘째·셋째 자리)
   let d4; do { d4 = [M.rand(1, 9), M.rand(1, 9), M.rand(1, 9), M.rand(1, 9)]; } while (new Set(d4).size < 4);
   const s4 = d4[0] + '.' + d4[1] + d4[2] + d4[3];
-  cards.push(M.card(3, `<div class="q-text">${s4}에서</div>` +
-    `<div class="eq" style="font-size:18px">${d4[2]}${M.josa(d4[2], '은', '는')}</div>${M.places(2, 3)}<div class="eq" style="font-size:18px">자리 숫자이고, <span class="tail">${M.dbox(d4[2] * 10, P)}${M.josa(d4[2], '을', '를')} 나타냅니다.</span></div>` +
-    `<div class="eq" style="font-size:18px;margin-top:8px">${d4[3]}${M.josa(d4[3], '은', '는')}</div>${M.places(3, 3)}<div class="eq" style="font-size:18px">자리 숫자이고, <span class="tail">${M.dbox(d4[3], P)}${M.josa(d4[3], '을', '를')} 나타냅니다.</span></div>`, true));
+  cards.push(M.card(3, `<div class="q-text">숫자가 나타내는 자리와 값을 알아보세요.</div>` +
+    `<div class="eq" style="font-size:34px;letter-spacing:2px">${s4}</div>` +
+    M.placeLine(s4, d4[2], 2, 3, d4[2] * 10, P) + M.placeLine(s4, d4[3], 3, 3, d4[3], P), true));
   hints.push('소수점 오른쪽으로 첫째(0.■), 둘째(0.0■), 셋째(0.00■) 자리예요.<br>예) 1.853에서 5는 0.05, 3은 0.003을 나타내요.');
 
   // 5번: 0.001이 몇 개인 수 (교과서 창의+)

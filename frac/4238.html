@@ -45,17 +45,17 @@ function generate() {
   let a1, b1; do { a1 = M.rand(41, 89); b1 = M.rand(11, 39); } while (a1 % 10 === 0 || b1 % 10 === 0 || a1 % 10 < b1 % 10 || Math.floor(a1 / 10) <= Math.floor(b1 / 10));
   cards.push(M.card(0, `<div class="q-text">재윤이와 동생은 할아버지 댁에서 ${f(a1)} km 떨어진 밭에 갔다가 ${f(b1)} km를 돌아왔습니다. 할아버지 댁까지 남은 거리는 몇 km인가요?</div>` +
     M.lineSvg({ start: 0, unit: 1, p: P, ticks: 100, major: 10, mid: 5, trim: true, suffix: 'km', arrows: [{ at: a1, label: '밭' }, { at: a1 - b1, color: '#2563eb', label: '지금' }], width: 640 }) +
-    `<div class="eq" style="font-size:19px">식: ${M.dbox(a1, P)} − ${M.dbox(b1, P)}</div>` +
-    `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(a1 - b1, P)} km</span></div>`, true));
+    M.line(`<div class="eq" style="font-size:19px">식: ${M.dbox(a1, P)} − ${M.dbox(b1, P)}</div>`,
+      `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(a1 - b1, P)} km</span></div>`), true));
   hints.push(`할아버지 댁(0)에서 밭까지 ${f(a1)} km 가고, 거기서 ${f(b1)} km를 되돌아왔어요.<br>남은 거리 = 간 거리 − 돌아온 거리`);
 
   // 2번: 0.01의 개수로 계산 (a.b − c.de, 피감수가 소수 한 자리)
   let x2, y2; do { x2 = (M.rand(2, 5) * 10 + M.rand(1, 9)) * 10; y2 = M.rand(1, 4) * 100 + M.rand(0, 9) * 10 + M.rand(1, 9); } while (y2 >= x2 || Math.floor(x2 / 100) === Math.floor(y2 / 100));
   cards.push(M.card(1, `<div class="q-text">0.01의 개수를 이용하여 ${f1(x2)} − ${f(y2)}${M.josa(f(y2), '을', '를')} 계산해 보세요.</div>` +
-    `<div class="eq" style="font-size:18px">${f1(x2)}${M.josa(f1(x2), '은', '는')} 0.01이 <span class="tail">${M.box(x2)}개</span></div>` +
-    `<div class="eq" style="font-size:18px">${f(y2)}${M.josa(f(y2), '은', '는')} 0.01이 <span class="tail">${M.box(y2)}개</span></div>` +
-    `<div class="eq" style="font-size:18px">차는 0.01이 <span class="tail">${M.box(x2 - y2)}개</span></div>` +
-    `<div class="eq">${f1(x2)} − ${f(y2)} = <span class="tail">${M.dbox(x2 - y2, P)}</span></div>`));
+    M.line(`<div class="eq" style="font-size:18px">${f1(x2)}${M.josa(f1(x2), '은', '는')} 0.01이 <span class="tail">${M.box(x2)}개,</span></div>`,
+      `<div class="eq" style="font-size:18px">${f(y2)}${M.josa(f(y2), '은', '는')} 0.01이 <span class="tail">${M.box(y2)}개</span></div>`) +
+    M.line(`<div class="eq" style="font-size:18px">차는 0.01이 <span class="tail">${M.box(x2 - y2)}개</span></div>`,
+      `<div class="eq">→ ${f1(x2)} − ${f(y2)} = <span class="tail">${M.dbox(x2 - y2, P)}</span></div>`), true));
   hints.push(`${f1(x2)}${M.josa(f1(x2), '은', '는')} ${f(x2)}과 같아요. 그래서 0.01이 <b>${x2}개</b>예요.`);
 
   // 3번: 세로셈, 자릿수 같음, 소수 둘째 자리에서만 받아내림 (① a.bc − d.ef  ② 0.ab − 0.cd)
