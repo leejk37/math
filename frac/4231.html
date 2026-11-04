@@ -87,7 +87,7 @@ function generate() {
     `<div class="pick-v" style="font-size:18px;font-weight:bold;color:#1e293b">${s5}에서 ${dg}${M.josa(dg, '은', '는')}` +
     M.places(placeIdx, 2) +
     `<span class="tail">숫자이고, ${M.dbox(val, P)}${M.josa(dg, '을', '를')} 나타냅니다.</span></div>`;
-  cards.push(M.card(4, `<div class="q-text">숫자가 나타내는 자리와 값을 알아보세요.</div>` +
+  cards.push(M.card(4, `<div class="q-text">네모 안의 소수가 나타내는 자리와 값을 알아보세요.</div>` +
     M.placeBlock(s5, [placeLine(d5[1], 1, d5[1] * 10), placeLine(d5[2], 2, d5[2])]), true));
   hints.push('소수점 바로 오른쪽이 <b>소수 첫째 자리</b>(0.■), 그다음이 <b>소수 둘째 자리</b>(0.0■)예요.<br>예) 1.76에서 7은 0.7, 6은 0.06을 나타내요.');
 
