@@ -11,6 +11,13 @@
 <!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
 <script src="../help.js"></script>
 <title>소수 세 자리 수</title>
+<style>
+.cnt-grid{display:grid;grid-template-columns:auto auto auto auto;gap:8px 10px;align-items:center;justify-items:start}
+.cnt-grid > div:nth-child(4n+1){justify-self:end}
+.cnt-grid .ans-box{width:72px}
+.cnt-grid .cnt-last{border-top:1.5px dashed #cbd5e1;padding-top:10px;align-self:stretch;display:flex;align-items:center}
+.cnt-grid .cnt-last:nth-child(4n+1){justify-content:flex-end;justify-self:stretch}
+</style>
 </head>
 <body>
 
@@ -71,11 +78,18 @@ function generate() {
     M.placeBlock(s4, [M.placeLine(s4, d4[2], 2, 3, d4[2] * 10, P), M.placeLine(s4, d4[3], 3, 3, d4[3], P)]), true));
   hints.push('소수점 오른쪽으로 첫째(0.■), 둘째(0.0■), 셋째(0.00■) 자리예요.<br>예) 1.853에서 5는 0.05, 3은 0.003을 나타내요.');
 
-  // 5번: 0.001이 몇 개인 수 (교과서 창의+)
-  const v5 = M.rand(1, 3) * 1000 + M.rand(0, 9) * 100 + M.rand(0, 9) * 10 + M.rand(1, 9);
-  cards.push(M.card(4, `<div class="q-text">${f(v5)}${M.josa(f(v5), '은', '는')} 0.001이 몇 개인 수인가요?</div>` +
-    `<div class="eq">0.001이 <span class="tail">${M.box(v5)} 개</span></div>`));
-  hints.push('1은 0.001이 1000개, 0.1은 0.001이 100개, 0.01은 0.001이 10개예요.<br>예) 1.324는 1000 + 300 + 20 + 4 = <b>1324개</b>');
+  // 5번: 0.001이 몇 개인 수 (교과서 창의+) — 자리별로 나누어 센 다음 모두 합하기
+  const g5 = [M.rand(1, 3), M.rand(1, 9), M.rand(1, 9), M.rand(1, 9)];          // 일의 자리, 소수 첫째·둘째·셋째 자리 숫자
+  const v5 = g5[0] * 1000 + g5[1] * 100 + g5[2] * 10 + g5[3];
+  const parts5 = [[String(g5[0]), g5[0] * 1000], ['0.' + g5[1], g5[1] * 100], ['0.0' + g5[2], g5[2] * 10], ['0.00' + g5[3], g5[3]]];
+  // 4칸 표 모양: [수는] [0.001이] [□] [개] — 칸이 위아래로 줄 맞추어 보이게
+  const cell = 'style="font-size:18px;font-weight:bold;color:#1e293b"';
+  const row5 = (label, n, last) => `<div ${cell} class="${last ? 'cnt-last' : ''}">${last ? '→ ' : ''}${label}${M.josa(label, '은', '는')}</div>` +
+    `<div ${cell} class="${last ? 'cnt-last' : ''}">0.001이</div><div class="${last ? 'cnt-last' : ''}">${M.box(n)}</div><div ${cell} class="${last ? 'cnt-last' : ''}">개</div>`;
+  cards.push(M.card(4, `<div class="q-text">네모 안의 소수는 0.001이 몇 개인 수인지 자리별로 나누어 알아보세요.</div>` +
+    `<div class="place-wrap"><div class="big-num">${f(v5)}</div>` +
+    `<div class="cnt-grid">` + parts5.map(([l, n]) => row5(l, n)).join('') + row5(f(v5), v5, true) + `</div></div>`, true));
+  hints.push('1은 0.001이 1000개, 0.1은 0.001이 100개, 0.01은 0.001이 10개예요.<br>예) 1.324 → 1은 1000개, 0.3은 300개, 0.02는 20개, 0.004는 4개 → 모두 <b>1324개</b>');
 
   M.render(cards, hints);
 }
