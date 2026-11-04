@@ -51,6 +51,9 @@
     '.quiz-card>.help-bar~.hint-btn{right:92px}' +
     '.hint-box{display:none;background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:10px;padding:8px 12px;font-size:15px;color:#78350f;line-height:1.7;text-align:center;width:100%}' +
     '.hint-box.show{display:block}' +
+    // 수 옆에 선택지를 세로로 (예: 4231 4번 읽기)
+    '.pick-v{display:flex;align-items:center;gap:18px}' +
+    '.pick-v .choice-group{flex-direction:column;align-items:stretch;gap:6px}' +
     // 문제 지시문을 '문제 N' 바로 옆에 (M.inlineQuestion = true 인 페이지). 도움말·도움 버튼은 카드 아래쪽 오른편으로
     '.quiz-card.inline-q{padding-top:12px;padding-bottom:50px}' +
     '.inline-q>.quiz-number{top:15px}' +

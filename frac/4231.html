@@ -58,8 +58,10 @@ function generate() {
   // 3번: 대분수 → 소수, 자릿값 분해
   const w3 = M.rand(1, 9), t3 = M.rand(1, 9), o3 = M.rand(1, 9), v3 = w3 * 100 + t3 * 10 + o3;
   cards.push(M.card(2, `<div class="q-text">대분수를 소수로 나타내어 보세요.</div>` +
+    `<div class="row" style="gap:36px;align-items:center">` +
     `<div class="eq">${M.mixed(w3, t3 * 10 + o3, 100)} = ${M.dbox(v3, P, true)}</div>` +
-    `<div class="eq" style="font-size:17px">${f(v3)}${M.josa(f(v3), '은', '는')} 1이 ${M.box(w3)}개, 0.1이 ${M.box(t3)}개, 0.01이 <span class="tail">${M.box(o3)}개입니다.</span></div>`, true));
+    // 앞 칸의 정답(소수)을 문장에 미리 보여 주지 않도록 '이 소수는'으로
+    `<div class="eq" style="font-size:17px">이 소수는 1이 ${M.box(w3)}개, 0.1이 ${M.box(t3)}개, 0.01이 <span class="tail">${M.box(o3)}개입니다.</span></div></div>`, true));
   hints.push(`자연수 부분 ${w3}은 그대로 일의 자리에 쓰고, ${M.frac(t3 * 10 + o3, 100, true)} 은 소수 두 자리 수로 바꾸어 소수점 뒤에 써요.`);
 
   // 4번: 읽기 (0.bc 하나, a.bc 하나) — 자연수처럼 읽는 오개념 보기 포함
@@ -69,12 +71,12 @@ function generate() {
     const wrong1 = M.readDec(ip) + ' 점 ' + M.readInt(+fp);                // 영 점 십칠
     const wrong2 = M.readDec(ip + '.' + fp[1] + fp[0]);                     // 영 점 칠일
     const opts = M.shuffle([['r', right], ['w1', wrong1], ['w2', wrong2]]);
-    return `<div class="eq" style="font-size:22px">${str}</div>` + M.choices('r', opts);
+    return `<div class="pick-v"><div class="eq" style="font-size:24px">${str}</div>` + M.choices('r', opts) + `</div>`;
   };
   let b4, c4; do { b4 = M.rand(1, 9); c4 = M.rand(1, 9); } while (b4 === c4);
   let w4 = M.rand(1, 9), d4, e4; do { d4 = M.rand(1, 9); e4 = M.rand(1, 9); } while (d4 === e4);
   cards.push(M.card(3, `<div class="q-text">소수를 바르게 읽은 것을 골라 보세요.</div>` +
-    `<div class="row"><div>${readItem('0.' + b4 + c4)}</div><div>${readItem(w4 + '.' + d4 + e4)}</div></div>`, true));
+    `<div class="row" style="gap:64px;align-items:center"><div>${readItem('0.' + b4 + c4)}</div><div>${readItem(w4 + '.' + d4 + e4)}</div></div>`, true));
   hints.push('소수점은 <b>점</b>으로 읽고, 소수점 아래 숫자는 <b>하나씩</b> 읽어요. 예) 3.45 → 삼 점 사오');
 
   // 5번: 자리 이름과 나타내는 값
