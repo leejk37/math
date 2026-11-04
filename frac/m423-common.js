@@ -1,7 +1,7 @@
 /*
  * m423-common.js — 4학년 2학기 3단원 '소수의 덧셈과 뺄셈'(M423, 4231~4238) 페이지 공통 도우미
  *
- * 3학년 분수(m324-common.js)와 같은 모양(문제 카드, 💡 도움말, 안내 상자)에
+ * 3학년 분수(m324-common.js)와 같은 모양(문제 카드, 💡 힌트, 안내 상자)에
  * 소수에 필요한 것을 더했습니다.
  *  - 소수 입력칸(M.dbox), 자연수 입력칸(M.box), 고르기(M.choices, M.places, M.cmp), 여러 개 고르기(M.multi)
  *  - 세로셈: 덧셈 M.vAdd(받아올림 칸), 뺄셈 M.vSub(받아내림 칸 — 자연수 뺄셈 단계와 같은 표기)
@@ -17,10 +17,10 @@
     'body{background:#f8fafc;font-family:"Malgun Gothic","맑은 고딕",sans-serif;margin:0;padding:24px 16px;display:flex;flex-direction:column;align-items:center}' +
     '.header-text{font-size:24px;font-weight:bold;color:#1e293b;margin:4px 0 8px;text-align:center}' +
     '.sub-text{font-size:14px;color:#64748b;margin-bottom:22px;text-align:center;line-height:1.6}' +
-    '.quiz-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;width:100%;max-width:960px;margin-bottom:26px}' +
+    '.quiz-container{display:grid;grid-template-columns:1fr;gap:16px;width:100%;max-width:960px;margin-bottom:26px}' +
     '.quiz-card{background:#fff;border:2px solid #cbd5e1;border-radius:12px;padding:40px 16px 18px;position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 4px 6px rgba(0,0,0,.03);transition:border-color .3s,box-shadow .3s}' +
     '.quiz-card.wide{grid-column:1/-1}' +
-    '.quiz-number{position:absolute;top:12px;left:15px;font-size:14px;font-weight:bold;color:#475569}' +
+    '.quiz-number{position:absolute;top:12px;left:15px;font-size:14px;font-weight:bold;color:#fff;background:#2563eb;border-radius:999px;padding:2px 10px;line-height:1.5}' +
     '.q-text{font-size:18px;color:#1e293b;line-height:1.7;text-align:center;font-weight:bold}' +
     '.q-small{font-size:15px;color:#475569;text-align:center;line-height:1.6}' +
     '.eq{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;font-size:21px;font-weight:bold;color:#1e293b}' +
@@ -53,8 +53,8 @@
     '.hint-box.show{display:block}' +
     // 문제 지시문을 '문제 N' 바로 옆에 (M.inlineQuestion = true 인 페이지). 도움말·도움 버튼은 카드 아래쪽 오른편으로
     '.quiz-card.inline-q{padding-top:12px;padding-bottom:50px}' +
-    '.inline-q>.quiz-number{top:16px}' +
-    '.inline-q>.q-head{align-self:stretch;text-align:left;padding-left:54px;margin:0 0 2px;font-size:17px;line-height:1.6;word-break:keep-all}' +
+    '.inline-q>.quiz-number{top:15px}' +
+    '.inline-q>.q-head{align-self:stretch;text-align:left;padding-left:66px;margin:0 0 2px;font-size:17px;line-height:1.6;word-break:keep-all}' +
     '.inline-q>.hint-btn,.inline-q>.help-bar{top:auto;bottom:12px}' +
     '.rule-box{display:inline-block;text-align:left;background:#eff6ff;border:2px solid #3b82f6;border-radius:12px;padding:10px 18px;margin-bottom:8px;color:#1e293b;max-width:760px}' +
     '.rule-title{font-size:19px;font-weight:bold;color:#1d4ed8;margin-bottom:6px}' +
@@ -445,7 +445,7 @@
       var h = hints && hints[i];
       if (!h) return c;
       var cut = c.lastIndexOf('</div>');
-      return c.slice(0, cut) + '<button type="button" class="hint-btn" tabindex="-1" title="풀이 방법을 봅니다 (선생님께 알리지 않음)" onclick="this.parentNode.querySelector(\'.hint-box\').classList.toggle(\'show\')">💡 도움말</button>' +
+      return c.slice(0, cut) + '<button type="button" class="hint-btn" tabindex="-1" title="풀이 방법을 봅니다 (선생님께 알리지 않음)" onclick="this.parentNode.querySelector(\'.hint-box\').classList.toggle(\'show\')">💡 힌트</button>' +
         '<div class="hint-box">' + h + '</div>' + c.slice(cut);
     });
     document.getElementById('quiz').innerHTML = html.join('');
