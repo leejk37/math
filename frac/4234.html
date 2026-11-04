@@ -7,7 +7,7 @@
 <script src="../config.js"></script>
 <script src="../api.js"></script>
 <script src="frac-kit.js"></script>
-<script src="m423-common.js?v=20261104-1540"></script>
+<script src="m423-common.js?v=20261104-1550"></script>
 <!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
 <script src="../help.js"></script>
 <title>소수 사이의 관계</title>
@@ -50,30 +50,30 @@ function generate() {
     () => { const [big, small] = M.pick([['1', '0.1'], ['1', '0.01'], ['1', '0.001'], ['0.1', '0.01'], ['0.1', '0.001'], ['0.01', '0.001']]);
             return `${big}${M.josa(big, '은', '는')} ${small}의 <span class="tail">${M.box(U[big] / U[small])} 배</span>`; }
   ];
-  const lines1 = M.shuffle(pool.slice()).map(fn => `<div class="eq" style="font-size:19px">${fn()}</div>`).join('');
+  const lines1 = M.shuffle(pool.slice()).map(fn => `<div class="eq qbox" style="font-size:19px">${fn()}</div>`).join('');
   cards.push(M.card(0, `<div class="q-text">빈칸에 알맞은 수를 써넣으세요.</div>` + M.line(lines1), true));
   hints.push('1을 10칸으로 나누면 0.1, 0.1을 10칸으로 나누면 0.01, 0.01을 10칸으로 나누면 0.001이에요.<br>그래서 한 단계씩 <b>10배</b> 또는 <b>1/10</b> 관계예요.');
 
   // 2번: 0.abc의 10배, 100배
   const d2 = [M.rand(1, 9), M.rand(1, 9), M.rand(1, 9)], v2 = (d2[0] * 100 + d2[1] * 10 + d2[2]) * 10;
   cards.push(M.card(1, `<div class="q-text">빈칸에 알맞은 수를 써넣으세요.</div>` +
-    M.line(`<div class="eq">${s4(v2)}의 10배는 <span class="tail">${M.dbox(v2 * 10, P)}</span></div>`,
-      `<div class="eq">${s4(v2)}의 100배는 <span class="tail">${M.dbox(v2 * 100, P)}</span></div>`), true));
+    M.line(`<div class="eq qbox">${s4(v2)}의 10배는 <span class="tail">${M.dbox(v2 * 10, P)}</span></div>`,
+      `<div class="eq qbox">${s4(v2)}의 100배는 <span class="tail">${M.dbox(v2 * 100, P)}</span></div>`), true));
   hints.push('10배를 하면 숫자가 <b>왼쪽으로 한 자리</b>, 100배를 하면 <b>두 자리</b> 옮겨요.<br>소수점이 오른쪽으로 옮겨진다고 생각해도 돼요.');
 
   // 3번: a.b의 1/10, 1/100
   const a3 = M.rand(1, 9), b3 = M.rand(1, 9), v3 = (a3 * 10 + b3) * 1000;
   cards.push(M.card(2, `<div class="q-text">빈칸에 알맞은 수를 써넣으세요.</div>` +
-    M.line(`<div class="eq">${s4(v3)}의 ${M.frac(1, 10)} 은 <span class="tail">${M.dbox(v3 / 10, P)}</span></div>`,
-      `<div class="eq">${s4(v3)}의 ${M.frac(1, 100)} 은 <span class="tail">${M.dbox(v3 / 100, P)}</span></div>`), true));
+    M.line(`<div class="eq qbox">${s4(v3)}의 ${M.frac(1, 10)} 은 <span class="tail">${M.dbox(v3 / 10, P)}</span></div>`,
+      `<div class="eq qbox">${s4(v3)}의 ${M.frac(1, 100)} 은 <span class="tail">${M.dbox(v3 / 100, P)}</span></div>`), true));
   hints.push('1/10을 하면 숫자가 <b>오른쪽으로 한 자리</b>, 1/100을 하면 <b>두 자리</b> 옮겨요.<br>빈 자리에는 0을 써요. 예) 3.5의 1/100 → 0.035');
 
   // 4번: a.bcd의 100배, 1000배 / 세 자리 자연수의 1/100, 1/1000
   const v4 = M.rand(1, 9) * 10000 + M.rand(0, 9) * 1000 + M.rand(0, 9) * 100 + M.rand(1, 9) * 10;
   const n4 = M.rand(1, 9) * 100 + M.rand(0, 9) * 10 + M.rand(1, 9);
   cards.push(M.card(3, `<div class="q-text">빈칸에 알맞은 수를 써넣으세요.</div>` +
-    `<div class="eq" style="font-size:19px">${s4(v4)}의 100배는 ${M.dbox(v4 * 100, P)}이고, <span class="tail">1000배는 ${M.dbox(v4 * 1000, P)}입니다.</span></div>` +
-    `<div class="eq" style="font-size:19px">${n4}의 ${M.frac(1, 100, true)} 은 ${M.dbox(n4 * 100, P)}이고, <span class="tail">${M.frac(1, 1000, true)} 은 ${M.dbox(n4 * 10, P)}입니다.</span></div>`, true));
+    `<div class="eq qbox" style="font-size:19px">${s4(v4)}의 100배는 ${M.dbox(v4 * 100, P)}이고, <span class="tail">1000배는 ${M.dbox(v4 * 1000, P)}입니다.</span></div>` +
+    `<div class="eq qbox" style="font-size:19px">${n4}의 ${M.frac(1, 100, true)} 은 ${M.dbox(n4 * 100, P)}이고, <span class="tail">${M.frac(1, 1000, true)} 은 ${M.dbox(n4 * 10, P)}입니다.</span></div>`, true));
   hints.push('100배·1000배는 숫자가 왼쪽으로 두 자리·세 자리, 1/100·1/1000은 오른쪽으로 두 자리·세 자리 옮겨요.');
 
   // 5번: 다른 수를 설명한 사람 고르기 (기준 수 a.b, 두 사람은 맞는 설명, 한 사람은 배수가 한 단계 어긋남)
@@ -91,10 +91,11 @@ function generate() {
   const speech = chosen.map((k, i) => {
     let y = k.y;
     if (i === wrongIdx) y = ((k.y / 10) % 10 === 0 && Math.random() < 0.5) ? k.y / 10 : k.y * 10; // 소수 넷째 자리가 생기지 않게
-    return `<div class="speech"><span class="who">${names[i]}</span>${k.say(y)}</div>`;
-  }).join('');
-  cards.push(M.card(4, `<div class="q-text">세 사람 중 <b>다른 수</b>를 설명한 사람을 골라 보세요.</div>` +
-    `<div class="row">${speech}</div>` + M.choices(wrongIdx, names.map((n, i) => [i, n])), true));
+    return [i, `<span class="who">${names[i]}</span>${k.say(y)}`];
+  });
+  cards.push(M.card(4, `<div class="q-text">세 사람 중 <b>다른 수</b>를 설명한 사람의 말풍선을 눌러 보세요.</div>` +
+    // 말풍선 자체가 선택 버튼
+    M.choices(wrongIdx, speech).replace('class="choice-group"', 'class="choice-group speech-pick"'), true));
   hints.push('세 사람이 말한 수를 각각 계산해 보세요. 예) 0.93의 10배 = 9.3, 93의 1/10 = 9.3<br>계산한 값이 혼자 다른 사람을 골라요.');
 
   M.render(cards, hints);
