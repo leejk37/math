@@ -51,6 +51,11 @@
     '.quiz-card>.help-bar~.hint-btn{right:92px}' +
     '.hint-box{display:none;background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:10px;padding:8px 12px;font-size:15px;color:#78350f;line-height:1.7;text-align:center;width:100%}' +
     '.hint-box.show{display:block}' +
+    // 문제 지시문을 '문제 N' 바로 옆에 (M.inlineQuestion = true 인 페이지). 도움말·도움 버튼은 카드 아래쪽 오른편으로
+    '.quiz-card.inline-q{padding-top:12px;padding-bottom:50px}' +
+    '.inline-q>.quiz-number{top:16px}' +
+    '.inline-q>.q-head{align-self:stretch;text-align:left;padding-left:54px;margin:0 0 2px;font-size:17px;line-height:1.6;word-break:keep-all}' +
+    '.inline-q>.hint-btn,.inline-q>.help-bar{top:auto;bottom:12px}' +
     '.rule-box{display:inline-block;text-align:left;background:#eff6ff;border:2px solid #3b82f6;border-radius:12px;padding:10px 18px;margin-bottom:8px;color:#1e293b;max-width:760px}' +
     '.rule-title{font-size:19px;font-weight:bold;color:#1d4ed8;margin-bottom:6px}' +
     '.rule-line{font-size:16px;margin:4px 0;line-height:1.55}' +
@@ -444,6 +449,17 @@
         '<div class="hint-box">' + h + '</div>' + c.slice(cut);
     });
     document.getElementById('quiz').innerHTML = html.join('');
+    if (M.inlineQuestion) {
+      // 각 카드의 첫 지시문(.q-text)을 '문제 N' 바로 옆(카드 맨 위)으로 옮김 — 그림·식은 그 아래로
+      document.querySelectorAll('#quiz .quiz-card').forEach(function (card) {
+        var q = card.querySelector('.q-text');
+        var num = card.querySelector('.quiz-number');
+        if (!q || !num) return;
+        q.classList.add('q-head');
+        num.insertAdjacentElement('afterend', q);
+        card.classList.add('inline-q');
+      });
+    }
     bindPicks();
     M.wire();
   };

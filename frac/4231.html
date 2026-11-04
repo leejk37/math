@@ -20,7 +20,7 @@
   <div class="rule-line"><span class="rule-tag">쓰기</span> <b>1/100 = 0.01</b>, 0.01이 17개면 <b>0.17</b>이에요. 0.01이 7개면 <b>0.07</b> (소수 첫째 자리에 0을 꼭 써요)</div>
   <div class="rule-line"><span class="rule-tag t2">읽기</span> 소수점 아래는 숫자를 <b>하나씩</b> 읽어요. 0.17 → 영 점 <b>일칠</b> (십칠 ✕)</div>
   <div class="rule-line"><span class="rule-tag t3">자리</span> 1.76에서 1은 <b>일의 자리</b>(1), 7은 <b>소수 첫째 자리</b>(0.7), 6은 <b>소수 둘째 자리</b>(0.06)</div>
-</div><br><span style="font-size:13px;color:#94a3b8">(소수는 소수점까지 써요. 다 쓰면 Enter를 누르거나 다음 칸을 눌러요.)</span><br><span style="font-size:13px;color:#92400e">막히면 <b>💡 도움말</b>로 풀이 방법을 먼저 보고, 그래도 모르겠으면 <b>🤔 도움</b>으로 선생님을 부르세요.</span></div>
+</div></div>
 
 <div class="quiz-container" id="quiz"></div>
 
@@ -35,6 +35,7 @@ const P = 2;
 const f = n => M.fmt(n, P);
 function twoDigitsNoZero() { let n; do { n = M.rand(11, 99); } while (n % 10 === 0); return n; }
 
+M.inlineQuestion = true; // 문제 지시문을 '문제 N' 바로 옆에
 function generate() {
   M.reset();
   const cards = [], hints = [];
