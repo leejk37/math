@@ -42,17 +42,16 @@ function generate() {
 
   // 1번: 수직선 (0.01 사이를 10칸으로 나눈 눈금) → 화살표가 가리키는 수
   const start = M.rand(10, 98) * 10, at = M.rand(1, 9);   // 0.10~0.98 에서 시작, 0.001 단위
-  cards.push(M.card(0, `<div class="q-text">화살표가 가리키는 수를 소수로 써 보세요.</div>` +
+  cards.push(M.card(0, `<div class="q-text">수직선에서 화살표가 가리키는 위치를 네모 칸에 소수로 나타내어 보세요.</div>` +
     M.lineSvg({ start, unit: 1, p: P, ticks: 10, major: 10, mid: 5, trim: true, arrows: [{ at }], width: 520 }) +
-    `<div class="eq">${M.dbox(start + at, P, true)}</div>`, true));
+    `<div class="eq" style="font-size:18px">화살표(<span style="color:#ef4444">↓</span>)가 가리키는 수는 <span class="tail">${M.dbox(start + at, P, true)} 입니다.</span></div>`, true));
   hints.push(`작은 눈금 10칸이 0.01이에요. 그러니 작은 눈금 <b>한 칸은 0.001</b>이에요.<br>${M.fmt0(start, P)}에서 오른쪽으로 몇 칸 갔는지 세어 보세요.`);
 
-  // 2번: 분수 → 소수, 0.001이 몇 개
+  // 2번: 분수 → 소수 (세 자리 하나, 첫째 자리가 0인 것 하나)
   const a2 = noZeroDigits(3);
   let b2; do { b2 = M.rand(11, 99); } while (b2 % 10 === 0);
   cards.push(M.card(1, `<div class="q-text">분수를 소수로 나타내어 보세요.</div>` +
     M.line(`<div class="eq">${M.frac(a2, 1000)} = ${M.dbox(a2, P, true)}</div>`,
-      `<div class="eq" style="font-size:17px">${M.frac(a2, 1000, true)} 은 0.001이 <span class="tail">${M.box(a2)} 개</span></div>`,
       `<div class="eq">${M.frac(b2, 1000)} = ${M.dbox(b2, P, true)}</div>`), true));
   hints.push(`${M.frac(1, 1000, true)} = 0.001이에요. ${M.frac(b2, 1000, true)} 은 0.001이 ${b2}개라서 소수 <b>첫째 자리가 0</b>이에요.`);
 
