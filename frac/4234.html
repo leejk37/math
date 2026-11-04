@@ -20,7 +20,7 @@
   <div class="rule-line"><span class="rule-tag">관계</span> 1 → 0.1 → 0.01 → 0.001 : 오른쪽으로 갈 때마다 <b>1/10</b>, 왼쪽으로 갈 때마다 <b>10배</b></div>
   <div class="rule-line"><span class="rule-tag t2">10배</span> 숫자가 <b>왼쪽으로 한 자리</b>씩 옮겨요. 0.716 → 7.16 (10배) → 71.6 (100배)</div>
   <div class="rule-line"><span class="rule-tag t3">1/10</span> 숫자가 <b>오른쪽으로 한 자리</b>씩 옮겨요. 3.5 → 0.35 (1/10) → 0.035 (1/100)</div>
-</div><br><span style="font-size:13px;color:#94a3b8">(소수는 소수점까지 써요. 다 쓰면 Enter를 누르거나 다음 칸을 눌러요.)</span><br><span style="font-size:13px;color:#92400e">막히면 <b>💡 도움말</b>로 풀이 방법을 먼저 보고, 그래도 모르겠으면 <b>🤔 도움</b>으로 선생님을 부르세요.</span></div>
+</div></div>
 
 <div class="quiz-container" id="quiz"></div>
 
@@ -38,6 +38,7 @@ const U = { '1': 10000, '0.1': 1000, '0.01': 100, '0.001': 10 };
 const R = (k) => k === 10 ? '10배' : k === 100 ? '100배' : '1000배';
 const INV = (k) => M.frac(1, k, true);
 
+M.inlineQuestion = true; // 문제 지시문을 '문제 N' 바로 옆에
 function generate() {
   M.reset();
   const cards = [], hints = [];
