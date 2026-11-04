@@ -7,7 +7,7 @@
 <script src="../config.js"></script>
 <script src="../api.js"></script>
 <script src="frac-kit.js"></script>
-<script src="m423-common.js?v=20261104-1510"></script>
+<script src="m423-common.js?v=20261104-1515"></script>
 <!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
 <script src="../help.js"></script>
 <title>소수 세 자리 수</title>
@@ -68,8 +68,7 @@ function generate() {
   let d4; do { d4 = [M.rand(1, 9), M.rand(1, 9), M.rand(1, 9), M.rand(1, 9)]; } while (new Set(d4).size < 4);
   const s4 = d4[0] + '.' + d4[1] + d4[2] + d4[3];
   cards.push(M.card(3, `<div class="q-text">숫자가 나타내는 자리와 값을 알아보세요.</div>` +
-    `<div class="eq" style="font-size:34px;letter-spacing:2px">${s4}</div>` +
-    M.placeLine(s4, d4[2], 2, 3, d4[2] * 10, P) + M.placeLine(s4, d4[3], 3, 3, d4[3], P), true));
+    M.placeBlock(s4, [M.placeLine(s4, d4[2], 2, 3, d4[2] * 10, P), M.placeLine(s4, d4[3], 3, 3, d4[3], P)]), true));
   hints.push('소수점 오른쪽으로 첫째(0.■), 둘째(0.0■), 셋째(0.00■) 자리예요.<br>예) 1.853에서 5는 0.05, 3은 0.003을 나타내요.');
 
   // 5번: 0.001이 몇 개인 수 (교과서 창의+)

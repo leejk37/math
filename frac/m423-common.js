@@ -57,6 +57,11 @@
     // 수 옆에 선택지를 세로로 (예: 4231 4번 읽기)
     '.pick-v{display:flex;align-items:center;gap:18px}' +
     '.line1{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:14px 40px}' +
+    // 자리 문제: 왼쪽에 큰 수(상자), 오른쪽에 'X에서 N은 …' 줄들
+    '.place-wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px 36px}' +
+    '.big-num{font-size:40px;font-weight:bold;color:#1e293b;letter-spacing:2px;border:3px solid #2563eb;background:#eff6ff;border-radius:14px;padding:10px 24px}' +
+    '.place-lines{display:flex;flex-direction:column;gap:18px}' +
+    '.place-lines>.pick-v+.pick-v{border-top:1.5px dashed #cbd5e1;padding-top:18px}' +
     '.pick-v .choice-group{flex-direction:column;align-items:stretch;gap:4px}' +
     '.pick-v .choice-btn{padding:3px 10px;font-size:14px;min-height:0;line-height:1.4}' +
     '.pick-v .ans-box.dec{width:64px;height:34px}' +
@@ -224,6 +229,11 @@
     return '<div class="pick-v" style="font-size:18px;font-weight:bold;color:#1e293b">' + numStr + '에서 ' + dg + M.josa(dg, '은', '는') +
       M.places(placeIdx, maxPlace) +
       '<span class="tail">숫자이고, ' + M.dbox(val, p) + M.josa(dg, '을', '를') + ' 나타냅니다.</span></div>';
+  };
+
+  // 큰 수 상자 + 자리 줄들:  M.placeBlock('9.825', [M.placeLine(...), M.placeLine(...)])
+  M.placeBlock = function (numStr, lines) {
+    return '<div class="place-wrap"><div class="big-num">' + numStr + '</div><div class="place-lines">' + lines.join('') + '</div></div>';
   };
 
   /* ---------- 카드 ---------- */
