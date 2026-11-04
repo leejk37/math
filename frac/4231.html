@@ -84,7 +84,7 @@ function generate() {
   const s5 = d5[0] + '.' + d5[1] + d5[2];
   // 한 줄: 'N은 [자리 이름 세로 선택지] 숫자이고, □을(를) 나타냅니다.'
   const placeLine = (dg, placeIdx, val) =>
-    `<div class="pick-v" style="font-size:18px;font-weight:bold;color:#1e293b">${dg}${M.josa(dg, '은', '는')}` +
+    `<div class="pick-v" style="font-size:18px;font-weight:bold;color:#1e293b">${s5}에서 ${dg}${M.josa(dg, '은', '는')}` +
     M.places(placeIdx, 2) +
     `<span class="tail">숫자이고, ${M.dbox(val, P)}${M.josa(dg, '을', '를')} 나타냅니다.</span></div>`;
   cards.push(M.card(4, `<div class="q-text">숫자가 나타내는 자리와 값을 알아보세요.</div>` +
