@@ -44,15 +44,15 @@ function generate() {
   const n1 = twoDigitsNoZero();
   cards.push(M.card(0, M.gridSvg(n1, 180) +
     `<div class="q-text">전체 크기가 1인 모눈종이입니다. 색칠한 부분을 소수로 써 보세요.</div>` +
-    `<div class="eq" style="font-size:18px">0.01이 <span class="tail">${M.box(n1)} 개</span></div>` +
-    `<div class="eq" style="font-size:18px">소수로 쓰면 <span class="tail">${M.dbox(n1, P, true)}</span></div>`));
+    `<div class="eq" style="font-size:18px">0.01이 <span class="tail">${M.box(n1)} 개,</span>&nbsp; 소수로 쓰면 <span class="tail">${M.dbox(n1, P, true)}</span></div>`));
   hints.push('모눈 한 칸이 <b>0.01</b>이에요. 분홍 세로줄 한 줄(10칸)은 <b>0.1</b>이에요.<br>색칠한 칸이 모두 몇 칸인지 세면, 0.01이 그만큼 있는 수예요.');
 
   // 2번: 분수 → 소수 (두 자리 하나, 한 자리 하나)
   const a2 = twoDigitsNoZero(), b2 = M.rand(1, 9);
   cards.push(M.card(1, `<div class="q-text">분수를 소수로 나타내어 보세요.</div>` +
+    `<div class="row" style="gap:48px;align-items:center">` +
     `<div class="eq">${M.frac(a2, 100)} = ${M.dbox(a2, P, true)}</div>` +
-    `<div class="eq">${M.frac(b2, 100)} = ${M.dbox(b2, P, true)}</div>`));
+    `<div class="eq">${M.frac(b2, 100)} = ${M.dbox(b2, P, true)}</div></div>`));
   hints.push(`${M.frac(1, 100, true)} 은 0.01이에요. ${M.frac(a2, 100, true)} 은 0.01이 <b>${a2}개</b>예요.<br>${M.frac(b2, 100, true)} 은 0.01이 ${b2}개 → 소수 첫째 자리는 <b>0</b>이에요.`);
 
   // 3번: 대분수 → 소수, 자릿값 분해
