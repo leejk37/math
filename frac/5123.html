@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 5학년 분수 도우미(m5f) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-2"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>공약수와 최대공약수</title>
+</head>
+<body>
+
+<div class="header-text">공약수와 최대공약수</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 공약수: 두 수의 공통된 약수 · 최대공약수: 그중 가장 큰 수</div>
+  <div class="rule-line"><span class="rule-tag">뜻</span> 8의 약수 1, 2, 4, 8 / 12의 약수 1, 2, 3, 4, 6, 12 → 공약수 <b>1, 2, 4</b>, 최대공약수 <b>4</b></div>
+  <div class="rule-line"><span class="rule-tag t2">곱</span> 12 = 2 × 2 × 3, 18 = 2 × 3 × 3 → 공통으로 들어 있는 2 × 3 = <b>6</b>이 최대공약수</div>
+  <div class="rule-line"><span class="rule-tag t3">관계</span> 두 수의 공약수는 최대공약수의 약수와 같아요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 5123 — 공약수와 최대공약수 (교과서 5-1-2 36~39쪽, 수학익힘 26~27쪽, 성취기준 [6수01-04])
+// 진단 포인트: 한쪽 수의 약수만 고름, 가장 작은 공약수(2 등)를 최대공약수로 씀, 공약수가 최대공약수의 약수임을 모름
+const R = M.rand;
+M.inlineQuestion = true;
+// 최대공약수가 g인 두 수 (한 수가 다른 수의 약수가 아니고, 60 이하)
+function pairG(lo, hi) {
+  return F.gen(() => { const g = R(lo, hi), p = R(2, 7), q = R(2, 7); return [g * p, g * q, g, p, q]; },
+    ([a, b, g, p, q]) => p !== q && F.gcd(p, q) === 1 && a <= 60 && b <= 60 && a % b && b % a);
+}
+// 2 × 2 × 3 꼴 (작은 수부터)
+function factor(n) { const f = []; for (let p = 2; n > 1; p++) while (n % p === 0) { f.push(p); n /= p; } return f.join(' × '); }
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+  // 1번: 약수 표 보고 공약수 고르기 + 최대공약수
+  const [a1, b1, g1] = pairG(2, 8);
+  cards.push(M.card(0, `<div class="q-text">${a1}과(와) ${b1}의 공약수를 모두 고르고, 최대공약수를 써 보세요.</div>` +
+    `<table class="tbl"><tr><th>${a1}의 약수</th><td>${F.divisors(a1).join(', ')}</td></tr><tr><th>${b1}의 약수</th><td>${F.divisors(b1).join(', ')}</td></tr></table>` +
+    `<div class="q-small">공약수</div>` + F.nums(F.divisors(a1), F.divisors(g1)) +
+    `<div class="eq">최대공약수 ${M.box(g1)}</div>`, true));
+  hints.push('두 줄에 모두 들어 있는 수를 찾아요. 그중 가장 큰 수가 최대공약수예요.');
+
+  // 2번: 여러 수의 곱으로 최대공약수
+  const [a2, b2, g2] = F.gen(() => pairG(2, 12), ([a, b, g]) => g > 3 && factor(g).includes('×'));
+  cards.push(M.card(1, `<div class="q-text">여러 수의 곱으로 나타낸 식을 보고 ${a2}과(와) ${b2}의 최대공약수를 구해 보세요.</div>` +
+    `<div class="prod">${a2} = ${factor(a2)}<br>${b2} = ${factor(b2)}</div><div class="eq">최대공약수 ${M.box(g2)}</div>`, true));
+  hints.push('두 식에 공통으로 들어 있는 수를 찾아 모두 곱해요. 같은 수가 두 번씩 공통이면 두 번 다 곱해요.');
+
+  // 3번: 최대공약수의 약수 = 공약수
+  const g3 = M.pick([8, 9, 10, 12, 14, 15, 16, 18]), p3 = M.pick([2, 3, 5].filter(p => g3 * p <= 90)), q3 = p3 === 2 ? 3 : 2;
+  const pad3 = Array.from({ length: g3 + 2 }, (_, i) => i + 1);
+  cards.push(M.card(2, `<div class="q-text">어떤 두 수의 최대공약수가 ${g3}입니다. 두 수의 공약수를 모두 골라 보세요.</div>` + F.nums(pad3, F.divisors(g3)), true));
+  hints.push(`두 수의 공약수는 최대공약수 ${g3}의 약수와 같아요. ${g3}의 약수를 찾아요.`);
+
+  // 4번: 문장제 (최대한 많은 상자에 똑같이)
+  const [a4, b4, g4] = pairG(3, 9);
+  cards.push(M.card(3, `<div class="q-text">문제를 읽고 답을 구해 보세요.</div>` +
+    `<div class="word">양갱 ${a4}개와 약과 ${b4}개가 있습니다. 양갱과 약과를 최대한 많은 상자에 남김없이 똑같이 나누어 담으려고 합니다.</div>` +
+    M.line(`<div class="qbox"><div class="eq">상자 수 ${M.box(g4)}개</div></div>`, `<div class="qbox"><div class="eq">한 상자의 양갱 ${M.box(a4 / g4)}개</div></div>`), true));
+  hints.push(`양갱 수와 약과 수를 모두 나누어떨어지게 하는 수(공약수) 중 가장 큰 수가 상자 수예요.`);
+
+  // 5번: 두 쌍의 최대공약수
+  const P = [pairG(2, 9), pairG(4, 12)];
+  cards.push(M.card(4, `<div class="q-text">두 수의 최대공약수를 구해 보세요.</div>` +
+    M.line(...P.map(([a, b, g]) => `<div class="qbox"><div class="eq">(${a}, ${b}) → ${M.box(g)}</div></div>`)), true));
+  hints.push('작은 수의 약수 중 큰 수부터 차례로, 큰 수도 나누어떨어지게 하는지 확인해요.');
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
