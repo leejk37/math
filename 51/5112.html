@@ -73,11 +73,11 @@ function generate() {
   do {
     if (R(0, 1)) {
       const g = R(4, 8), k = R(5, 9), t = R(2, 4), n = g * k;
-      w = { text: `학급 임원 ${n}명이 ${g}명씩 모둠을 만들었습니다. 한 모둠이 활동을 ${t}가지씩 정한다면 정한 활동은 모두 몇 가지인가요?`,
+      w = { text: `학급 임원 ${n}명이 ${g}명씩 모둠을 만들었습니다. 모둠마다 활동을 ${t}가지씩 정했습니다. 정한 활동은 모두 몇 가지인가요?`,
         right: [n, '÷', g, '×', t], wrongs: [[n, '÷', '(', g, '×', t, ')'], [n, '×', g, '÷', t], [n, '÷', g, '+', t], [n, '−', g, '×', t]], unit: '가지' };
     } else {
       const per = R(3, 7), rows = R(2, 4), boxes = R(2, 4), n = per * rows * boxes;
-      w = { text: `딸기 ${n}개가 있습니다. 딸기를 한 상자에 ${per}개씩 ${rows}줄로 담으려면 상자는 몇 개 필요한가요?`,
+      w = { text: `딸기 ${n}개가 있습니다. 한 상자에 딸기를 ${per}개씩 ${rows}줄로 담으려고 합니다. 상자는 몇 개 필요한가요?`,
         right: [n, '÷', '(', per, '×', rows, ')'], wrongs: [[n, '÷', per, '×', rows], [n, '×', per, '÷', rows]], unit: '개' };
     }
     ch = M5.exprChoices(w.right, w.wrongs);

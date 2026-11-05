@@ -17,10 +17,10 @@
 
 <div class="header-text">덧셈, 뺄셈, 곱셈, 나눗셈이 섞여 있는 식을 계산해요</div>
 <div class="sub-text"><div class="rule-box">
-  <div class="rule-title">🔎 ( ) 안 → 곱셈·나눗셈 → 덧셈·뺄셈</div>
+  <div class="rule-title">🔎 계산 순서: ① ( ) 안 → ② 곱셈과 나눗셈 → ③ 덧셈과 뺄셈</div>
   <div class="rule-line"><span class="rule-tag">순서</span> 9 + 3 × 5 − 4 ÷ 2 = 9 + 15 − 2 = 24 − 2 = <b>22</b> &nbsp;(곱셈·나눗셈 먼저)</div>
   <div class="rule-line"><span class="rule-tag t2">( )</span> 3 × 2 + (32 − 2) ÷ 6 = 3 × 2 + 30 ÷ 6 = 6 + 5 = <b>11</b></div>
-  <div class="rule-line"><span class="rule-tag t3">같은 급</span> 곱셈과 나눗셈끼리, 덧셈과 뺄셈끼리는 앞에서부터 차례대로 계산해요.</div>
+  <div class="rule-line"><span class="rule-tag t3">차례</span> 곱셈과 나눗셈이 함께 있으면 앞에 있는 것부터 계산해요. 덧셈과 뺄셈도 앞에서부터 계산해요.</div>
 </div></div>
 
 <div class="quiz-container" id="quiz"></div>
@@ -86,7 +86,7 @@ function generate() {
   do {
     const n = R(3, 6), per = R(2, 4), rows = R(2, 3), dead = R(1, 4), good = n * R(3, 7), total = good + dead;
     const right = [per, '×', rows, '+', '(', total, '−', dead, ')', '÷', n];
-    w = { text: `텃밭 상자 ${n}개에 고추 모종을 각각 ${per}개씩 ${rows}줄로 심었습니다. 또 상추 모종 ${total}개 중에서 시든 모종 ${dead}개를 빼고 남은 모종을 텃밭 상자 ${n}개에 똑같이 나누어 심었습니다. 텃밭 상자 한 개에 심은 모종은 모두 몇 개인가요?`,
+    w = { text: `텃밭 상자가 ${n}개 있습니다. 상자마다 고추 모종을 ${per}개씩 ${rows}줄로 심었습니다. 상추 모종은 ${total}개가 있었는데, 그중 ${dead}개가 시들었습니다. 시들지 않은 상추 모종을 상자 ${n}개에 똑같이 나누어 심었습니다. 상자 한 개에 심은 모종은 고추와 상추를 합해 모두 몇 개인가요?`,
       right, wrongs: [[per, '×', rows, '+', total, '−', dead, '÷', n], ['(', per, '×', rows, '+', total, '−', dead, ')', '÷', n], [per, '+', rows, '×', '(', total, '−', dead, ')', '÷', n],
         [per, '×', rows, '+', total, '−', dead], ['(', per, '+', rows, ')', '×', '(', total, '−', dead, ')', '÷', n]] };
     ch = M5.exprChoices(w.right, w.wrongs);
