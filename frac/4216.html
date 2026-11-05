@@ -7,6 +7,7 @@
 <script src="../config.js"></script>
 <script src="../api.js"></script>
 <script src="frac-kit.js"></script>
+<script src="method-hint.js"></script>
 <script src="../help.js"></script>
 
     <title>대분수의 뺄셈 (방법 선택형)</title>
@@ -329,7 +330,7 @@
 
             let cardHTML = `
                 <div class="quiz-card" id="card-${i}">
-                    <div class="quiz-number">문제 ${i + 1}</div>
+                    <div class="quiz-number">문제 ${i + 1}${MethodHint.button()}</div>
 
                     <div class="equation-view ${globalMethod === 'm2' ? 'hidden' : ''}" id="eq-m1-${i}">
                         ${renderTextMixedFrac(A, b, C)} <span class="op">&minus;</span> ${renderTextMixedFrac(X, y, C)}
@@ -353,6 +354,10 @@
                         <label><input type="radio" name="method-${i}" value="m1" onchange="toggleMethod(${i})" ${isM1Checked}> 받아내림</label>
                         <label><input type="radio" name="method-${i}" value="m2" onchange="toggleMethod(${i})" ${isM2Checked}> 가분수 변환</label>
                     </div>
+                    ${MethodHint.box(
+                        `분수 부분을 보세요: ${MethodHint.fr(b, C)} &lt; ${MethodHint.fr(y, C)}. 이대로는 뺄 수 없어요.<br>그래서 자연수 ${A}에서 <b>1을 빌려</b> 분수 부분에 더해요. (1 = ${MethodHint.fr(C, C)})<br>빌려 온 만큼 분자는 커지고, 자연수는 1 작아져요.<br>그다음 <b>자연수는 자연수끼리, 분수는 분수끼리</b> 빼요.`,
+                        `두 대분수를 모두 <b>가분수</b>로 바꿔요. 가분수의 분자 = (자연수 × 분모) + 분자예요.<br>예: ${MethodHint.mixed(A, b, C)} → 분자는 (${A} × ${C} + ${b})<br>분자끼리 뺀 다음, 가분수를 다시 대분수로 바꿔요.`
+                    )}
                 </div>
             `;
             container.innerHTML += cardHTML;
