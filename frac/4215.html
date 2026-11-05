@@ -7,6 +7,7 @@
 <script src="../config.js"></script>
 <script src="../api.js"></script>
 <script src="frac-kit.js"></script>
+<script src="method-hint.js"></script>
 <script src="../help.js"></script>
 
     <title>자연수 - 분수의 뺄셈 (방법 선택형)</title>
@@ -391,6 +392,7 @@
                         <div class="quiz-number">
                             <span>문제 ${i + 1}</span>
                             <span class="quiz-type">(자연수-진분수)</span>
+                            ${MethodHint.button()}
                         </div>
 
                         <div class="equation-view ${globalMethod === 'm2' ? 'hidden' : ''}" id="eq-m1-${i}">
@@ -415,6 +417,10 @@
                             <label><input type="radio" name="method-${i}" value="m1" onchange="toggleMethod(${i})" ${isM1Checked}> 받아내림</label>
                             <label><input type="radio" name="method-${i}" value="m2" onchange="toggleMethod(${i})" ${isM2Checked}> 가분수 변환</label>
                         </div>
+                        ${MethodHint.box(
+                            `분모가 같은 분수끼리만 뺄 수 있어요. 그래서 자연수 ${A}에서 <b>1을 빌려</b> 분수로 바꿔요. (1 = ${MethodHint.fr(C, C)})<br>1을 빌려 주면 자연수는 1 작아져요. 그다음 분자끼리 빼요 (분모는 그대로).`,
+                            `자연수 ${A} → <b>분모가 ${C}인 가분수</b>로 바꿔요. (1 = ${MethodHint.fr(C, C)})<br>자연수 ${A} 안에는 ${MethodHint.fr(1, C)}이 (${A} × ${C})개 있어요.<br>분자끼리 뺀 다음, 가분수를 다시 대분수로 바꿔요.`
+                        )}
                     </div>
                 `;
             } else {
@@ -434,6 +440,7 @@
                         <div class="quiz-number">
                             <span>문제 ${i + 1}</span>
                             <span class="quiz-type">(자연수-대분수)</span>
+                            ${MethodHint.button()}
                         </div>
 
                         <div class="equation-view ${globalMethod === 'm2' ? 'hidden' : ''}" id="eq-m1-${i}">
@@ -458,6 +465,10 @@
                             <label><input type="radio" name="method-${i}" value="m1" onchange="toggleMethod(${i})" ${isM1Checked}> 받아내림</label>
                             <label><input type="radio" name="method-${i}" value="m2" onchange="toggleMethod(${i})" ${isM2Checked}> 가분수 변환</label>
                         </div>
+                        ${MethodHint.box(
+                            `자연수 ${A}에서 <b>1을 빌려</b> 분수로 바꿔요. (1 = ${MethodHint.fr(C, C)}) 1을 빌려 주면 자연수는 1 작아져요.<br>그다음 <b>자연수는 자연수끼리, 분수는 분수끼리</b> 빼요.`,
+                            `두 수를 모두 <b>분모가 ${C}인 가분수</b>로 바꿔요.<br>자연수 ${A} 안에는 ${MethodHint.fr(1, C)}이 (${A} × ${C})개, 대분수 ${MethodHint.mixed(X, y, C)} 안에는 (${X} × ${C} + ${y})개 있어요.<br>분자끼리 뺀 다음, 가분수를 다시 대분수로 바꿔요.`
+                        )}
                     </div>
                 `;
             }
