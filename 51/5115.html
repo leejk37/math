@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미(frac 폴더) → 공통 화면(frac/m423-common.js) → 혼합 계산 도우미(m511) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="../frac/frac-kit.js"></script>
+<script src="../frac/m423-common.js?v=20261104-1550"></script>
+<script src="m511-common.js?v=20261105-2"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>덧셈, 뺄셈, 곱셈, 나눗셈이 섞여 있는 식</title>
+</head>
+<body>
+
+<div class="header-text">덧셈, 뺄셈, 곱셈, 나눗셈이 섞여 있는 식을 계산해요</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 ( ) 안 → 곱셈·나눗셈 → 덧셈·뺄셈</div>
+  <div class="rule-line"><span class="rule-tag">순서</span> 9 + 3 × 5 − 4 ÷ 2 = 9 + 15 − 2 = 24 − 2 = <b>22</b> &nbsp;(곱셈·나눗셈 먼저)</div>
+  <div class="rule-line"><span class="rule-tag t2">( )</span> 3 × 2 + (32 − 2) ÷ 6 = 3 × 2 + 30 ÷ 6 = 6 + 5 = <b>11</b></div>
+  <div class="rule-line"><span class="rule-tag t3">같은 급</span> 곱셈과 나눗셈끼리, 덧셈과 뺄셈끼리는 앞에서부터 차례대로 계산해요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 5115 — 덧셈, 뺄셈, 곱셈, 나눗셈이 섞여 있는 식 (교과서 5-1-1 20~21쪽, 수학익힘 18~19쪽, 성취기준 [6수01-01])
+// 진단 포인트: 곱셈·나눗셈을 먼저 하지 않는 오류, 곱셈을 나눗셈보다 먼저 하는 오류(÷ 다음 ×), ( )를 무시하는 오류
+const R = M.rand;
+M.inlineQuestion = true;
+const differs = (tk, s) => M5.leftToRight(tk) !== s.value;
+const parenMatters = (tk, s) => { const n = M5.solve(M5.noParen(tk)); return !n || n.value !== s.value; };
+const dv = (lo, hi) => { const c = R(2, 9); return [c * R(lo || 2, hi || 9), c]; };
+
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: ( ) 없는 식 하나, ( ) 있는 식 하나에서 가장 먼저 계산하는 기호
+  const p1 = M5.gen(() => { const [d, e] = dv(); return [R(10, 40), '+', R(2, 9), '×', R(2, 9), '−', d, '÷', e]; }, differs);
+  const p1b = M5.gen(() => { const d = R(2, 6); return [R(30, 60), '−', '(', R(5, 20), '+', R(2, 9), ')', '÷', d, '×', R(2, 4)]; }, parenMatters);
+  cards.push(M.card(0, `<div class="q-text">가장 먼저 계산해야 하는 기호를 눌러 보세요.</div>` +
+    M.line(`<div class="qbox">${M5.pickFirst(p1)}</div>`, `<div class="qbox">${M5.pickFirst(p1b)}</div>`), true));
+  hints.push('( )가 있으면 ( ) 안이 가장 먼저예요. ( )가 없으면 곱셈과 나눗셈 중 <b>앞에 있는 것</b>이 가장 먼저예요.');
+
+  // 2번: ( ) 없는 식 — 곱셈·나눗셈 2개 + 덧셈·뺄셈 2개
+  const forms2 = [
+    () => { const [d, e] = dv(); return [R(10, 50), '+', R(2, 9), '×', R(2, 9), '−', d, '÷', e]; },
+    () => { const [b, c] = dv(); return [R(30, 70), '−', b, '÷', c, '×', R(2, 5), '+', R(2, 9)]; },  // ÷ 다음 × : 앞에서부터
+    () => { const c = R(2, 6), d = R(2, 4), b = R(2, 9) * d; return [R(10, 50), '+', c, '×', b, '÷', d, '−', R(2, 9)]; }];
+  const t2 = M5.gen(M.pick(forms2), differs);
+  cards.push(M.card(1, `<div class="q-text">계산 순서를 나타내고, 계산해 보세요.</div>` + M5.orderNote + M5.order(t2), true));
+  hints.push('곱셈과 나눗셈을 먼저, 둘 다 있으면 앞에 있는 것부터 해요. 그다음 덧셈과 뺄셈을 앞에서부터 해요.');
+
+  // 3번: ( )가 있는 식
+  const forms3 = [
+    () => { const e = R(2, 9), d = R(2, 9); return [R(2, 9), '×', R(2, 9), '+', '(', d + e * R(2, 6), '−', d, ')', '÷', e]; },
+    () => { const d = R(2, 6), sum = d * R(2, 6), c = R(1, sum - 1); return [R(30, 60), '−', '(', sum - c, '+', c, ')', '÷', d, '×', R(2, 3)]; },
+    () => { const [d, e] = dv(); return ['(', R(5, 20), '+', R(2, 9), ')', '×', R(2, 5), '−', d, '÷', e]; }];
+  const t3 = M5.gen(M.pick(forms3), parenMatters);
+  cards.push(M.card(2, `<div class="q-text">계산 순서를 나타내고, 계산해 보세요.</div>` + M5.orderNote + M5.order(t3), true));
+  hints.push('① ( ) 안 → ② 곱셈·나눗셈(앞에서부터) → ③ 덧셈·뺄셈(앞에서부터) 순서로 해요.');
+
+  // 4번: ( )로 묶어 계산 결과가 □가 되게 (교과서 단원평가 6번)
+  let pc;
+  do {
+    const [c, d] = dv(1, 6);
+    const base = M.pick([
+      [R(10, 30), '+', R(2, 15), '−', c, '÷', d],
+      [R(10, 40), '−', R(2, 9), '×', R(2, 5), '+', R(2, 9)],
+      [R(20, 60), '÷', R(2, 6), '+', R(2, 9), '×', R(2, 5)]]);
+    pc = M5.solve(base) && M5.parenChoices(base);
+  } while (!pc);
+  cards.push(M.card(3, `<div class="q-text">계산 결과가 <b style="color:#dc2626">${pc.target}</b>${M.josa(pc.target, '이', '가')} 되도록 ( )로 묶은 식을 골라 보세요.</div>` + pc.html, true));
+  hints.push('보기의 식을 하나씩 계산해 보세요. ( ) 안을 먼저 계산하면 결과가 어떻게 달라지는지 확인해요.');
+
+  // 5번: 문장을 하나의 식으로 (교과서 생각 깨우기: 텃밭 상자)
+  let w, ch;
+  do {
+    const n = R(3, 6), per = R(2, 4), rows = R(2, 3), dead = R(1, 4), good = n * R(3, 7), total = good + dead;
+    const right = [per, '×', rows, '+', '(', total, '−', dead, ')', '÷', n];
+    w = { text: `텃밭 상자 ${n}개에 고추 모종을 각각 ${per}개씩 ${rows}줄로 심었습니다. 또 상추 모종 ${total}개 중에서 시든 모종 ${dead}개를 빼고 남은 모종을 텃밭 상자 ${n}개에 똑같이 나누어 심었습니다. 텃밭 상자 한 개에 심은 모종은 모두 몇 개인가요?`,
+      right, wrongs: [[per, '×', rows, '+', total, '−', dead, '÷', n], ['(', per, '×', rows, '+', total, '−', dead, ')', '÷', n], [per, '+', rows, '×', '(', total, '−', dead, ')', '÷', n],
+        [per, '×', rows, '+', total, '−', dead], ['(', per, '+', rows, ')', '×', '(', total, '−', dead, ')', '÷', n]] };
+    ch = M5.exprChoices(w.right, w.wrongs);
+  } while (!ch);
+  cards.push(M.card(4, `<div class="q-text">문제를 하나의 식으로 나타낸 것을 고르고, 답을 구해 보세요.</div>` +
+    `<div class="word">${w.text}</div>` + M.line(ch,
+      `<div class="eq">답 <span class="tail">${M.box(M5.solve(w.right).value)} 개</span></div>`), true));
+  hints.push('상자 한 개에 심은 고추 모종 수와 상추 모종 수를 각각 생각해 보세요. 나누기 전에 먼저 빼야 하는 부분은 ( )로 묶어요.');
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

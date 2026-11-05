@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미(frac 폴더) → 공통 화면(frac/m423-common.js) → 혼합 계산 도우미(m511) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="../frac/frac-kit.js"></script>
+<script src="../frac/m423-common.js?v=20261104-1550"></script>
+<script src="m511-common.js?v=20261105-2"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>곱셈과 나눗셈이 섞여 있는 식</title>
+</head>
+<body>
+
+<div class="header-text">곱셈과 나눗셈이 섞여 있는 식을 계산해요</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 곱셈과 나눗셈만 있으면 앞에서부터 차례대로!</div>
+  <div class="rule-line"><span class="rule-tag">순서</span> 48 ÷ 6 × 2 = 8 × 2 = <b>16</b> &nbsp;(앞의 48 ÷ 6부터)</div>
+  <div class="rule-line"><span class="rule-tag t2">( )</span> ( )가 있으면 ( ) 안을 먼저 계산해요. 56 ÷ (7 × 4) = 56 ÷ 28 = <b>2</b></div>
+  <div class="rule-line"><span class="rule-tag t4">주의</span> 곱셈이라고 먼저 하면 안 돼요. 32 ÷ 4 × 2 ≠ 32 ÷ 8 &nbsp;·&nbsp; 32 ÷ 4 × 2 = <b>16</b></div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 5112 — 곱셈과 나눗셈이 섞여 있는 식 (교과서 5-1-1 14~15쪽, 수학익힘 12~13쪽, 성취기준 [6수01-01])
+// 진단 포인트: 'a ÷ b × c'에서 곱셈(b × c)을 먼저 하는 오류. 나눗셈은 모두 나누어떨어짐(곱셈구구 범위)
+const R = M.rand;
+M.inlineQuestion = true;
+// a ÷ b × c 와 a ÷ (b × c) 가 모두 나누어떨어지는 세 수 (a = b × c × q)
+function triple() { const b = R(2, 6), c = R(2, 4), q = R(2, 5); return [b * c * q, b, c]; }
+
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 같은 세 수, ( ) 있는 식과 없는 식에서 가장 먼저 계산하는 기호
+  let a, b, c;
+  do { [a, b, c] = triple(); } while (a > 99 || b === c);
+  cards.push(M.card(0, `<div class="q-text">가장 먼저 계산해야 하는 기호를 눌러 보세요.</div>` +
+    M.line(`<div class="qbox">${M5.pickFirst([a, '÷', b, '×', c])}</div>`, `<div class="qbox">${M5.pickFirst([a, '÷', '(', b, '×', c, ')'])}</div>`), true));
+  hints.push('( )가 없으면 곱셈·나눗셈 상관없이 앞에서부터 차례대로 계산해요. ( )가 있으면 ( ) 안이 먼저예요.');
+
+  // 2번: a ÷ b × c (몫 2~12, a는 100 미만)
+  const t2 = M5.gen(() => { const b = R(2, 9), q = R(2, 12); return [b * q, '÷', b, '×', R(2, 9)]; },
+    tk => tk[0] < 100 && tk[2] !== tk[4]);
+  cards.push(M.card(1, `<div class="q-text">계산 순서를 나타내고, 계산해 보세요.</div>` + M5.orderNote + M5.order(t2), true));
+  hints.push(`앞의 ${t2[0]} ÷ ${t2[2]}부터 계산하고, 그 몫에 ${t2[4]}${M.josa(t2[4], '을', '를')} 곱해요.`);
+
+  // 3번: a ÷ (b × c)
+  let t3; do { [a, b, c] = triple(); t3 = [a, '÷', '(', b, '×', c, ')']; } while (a > 99);
+  cards.push(M.card(2, `<div class="q-text">계산 순서를 나타내고, 계산해 보세요.</div>` + M5.orderNote + M5.order(t3), true));
+  hints.push('( ) 안의 곱셈을 가장 먼저 해요. 그다음 앞의 수를 그 곱으로 나눠요.');
+
+  // 4번: 두 식 비교 (a÷b×c ○ a÷(b×c) → 앞이 큼 / a×b÷c ○ a×(b÷c) → 같음)
+  let A, B;
+  if (R(0, 2)) { do { [a, b, c] = triple(); } while (a > 99); A = [a, '÷', b, '×', c]; B = [a, '÷', '(', b, '×', c, ')']; }
+  else { const c2 = R(2, 5), q = R(2, 4); A = [R(3, 9), '×', c2 * q, '÷', c2]; B = [A[0], '×', '(', A[2], '÷', A[4], ')']; }
+  if (R(0, 1)) { const t = A; A = B; B = t; }
+  cards.push(M.card(3, `<div class="q-text">두 식을 각각 계산하고, 계산 결과의 크기를 비교해 &gt;, =, &lt; 를 골라 보세요.</div>` + M5.compare(A, B), true));
+  hints.push('수가 같아도 계산 순서가 다르면 결과가 달라질 수 있어요. 두 식을 각각 순서대로 계산한 다음 비교해요.');
+
+  // 5번: 문장을 하나의 식으로 (교과서 생각 깨우기·활동 2)
+  let w, ch;
+  do {
+    if (R(0, 1)) {
+      const g = R(4, 8), k = R(5, 9), t = R(2, 4), n = g * k;
+      w = { text: `학급 임원 ${n}명이 ${g}명씩 모둠을 만들었습니다. 한 모둠이 활동을 ${t}가지씩 정한다면 정한 활동은 모두 몇 가지인가요?`,
+        right: [n, '÷', g, '×', t], wrongs: [[n, '÷', '(', g, '×', t, ')'], [n, '×', g, '÷', t], [n, '÷', g, '+', t], [n, '−', g, '×', t]], unit: '가지' };
+    } else {
+      const per = R(3, 7), rows = R(2, 4), boxes = R(2, 4), n = per * rows * boxes;
+      w = { text: `딸기 ${n}개가 있습니다. 딸기를 한 상자에 ${per}개씩 ${rows}줄로 담으려면 상자는 몇 개 필요한가요?`,
+        right: [n, '÷', '(', per, '×', rows, ')'], wrongs: [[n, '÷', per, '×', rows], [n, '×', per, '÷', rows]], unit: '개' };
+    }
+    ch = M5.exprChoices(w.right, w.wrongs);
+  } while (!ch);
+  cards.push(M.card(4, `<div class="q-text">문제를 하나의 식으로 나타낸 것을 고르고, 답을 구해 보세요.</div>` +
+    `<div class="word">${w.text}</div>` + M.line(ch,
+      `<div class="eq">답 <span class="tail">${M.box(M5.solve(w.right).value)} ${w.unit}</span></div>`), true));
+  hints.push('무엇을 먼저 구해야 하는지 생각해요. 한 상자에 담는 개수처럼 먼저 구할 부분은 ( )로 묶어요.');
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
