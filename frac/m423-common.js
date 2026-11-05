@@ -299,8 +299,9 @@
   function ansBox(ans, seq) {
     return '<input type="text" inputmode="numeric" autocomplete="off" class="ans-box vc" maxlength="1" data-kind="int" data-ans="' + ans + '" data-seq="' + seq + '">';
   }
-  function borrowBox(ans, seq, col) {
-    return '<input type="text" inputmode="numeric" autocomplete="off" class="ans-box borrow" maxlength="' + String(ans).length + '" data-kind="int" data-ans="' + ans + '" data-seq="' + seq + '" data-col="' + col + '">';
+  // lend: 이 자리가 왼쪽 자리에 1을 빌려준 경우만 윗수 숫자에 빗금 (받기만 한 자리는 원래 숫자를 10에 더해 쓰므로 빗금 없음)
+  function borrowBox(ans, seq, col, lend) {
+    return '<input type="text" inputmode="numeric" autocomplete="off" class="ans-box borrow" maxlength="' + String(ans).length + '" data-kind="int" data-ans="' + ans + '" data-seq="' + seq + '" data-col="' + col + '"' + (lend ? ' data-cut="1"' : '') + '>';
   }
   // 뺄셈 세로셈 (a > b).  받아내림 칸은 자연수 뺄셈 단계와 같은 표기:
   //   빌려주기만 하는 자리 = (그 자리 숫자 − 1), 받기만 하는 자리 = 10, 받고 다시 빌려주는 자리 = (그 자리 숫자 + 9)
@@ -347,7 +348,7 @@
     h += '<tr><td class="top"></td>';
     for (col = 0; col < n; col++) {
       if (col === intLen) h += '<td class="top"></td>';
-      h += '<td class="top">' + (note[col] != null ? borrowBox(note[col], seqN[col], col) : '') + '</td>';
+      h += '<td class="top">' + (note[col] != null ? borrowBox(note[col], seqN[col], col, col + 1 < n && borrowIn[col + 1] === 1) : '') + '</td>';
     }
     h += '</tr><tr><td class="op"></td>';
     A.forEach(function (d, k) {
@@ -574,8 +575,8 @@
         var v = this.value.replace(dec ? /[^0-9.]/g : /[^0-9]/g, '');
         if (dec) { var k = v.indexOf('.'); if (k >= 0) v = v.slice(0, k + 1) + v.slice(k + 1).replace(/\./g, ''); }
         if (v !== this.value) this.value = v;
-        // 받아내림 칸 숫자를 쓰면 윗수 숫자에 빗금
-        if (this.classList.contains('borrow')) {
+        // 받아내림 칸 숫자를 쓰면 윗수 숫자에 빗금 — 빌려준 자리만 (받기만 한 자리는 10 + 원래 숫자로 계산하므로 그대로 둠)
+        if (this.classList.contains('borrow') && this.dataset.cut === '1') {
           var t = this.closest('.vt'), dg = t && t.querySelector('.dg[data-col="' + this.dataset.col + '"]');
           if (dg && dg.textContent.replace(/​/g, '') !== '') dg.classList.toggle('cut', this.value !== '');
         }
