@@ -87,7 +87,7 @@ function generate() {
     } else {
       const a = R(11, 16), b = R(1, 4), c = R(9, 14);
       const right = [a, '−', b, '+', c];
-      w = { text: `우리 반 여학생 ${a}명 중에서 ${b}명이 결석했고, 남학생 ${c}명은 모두 출석했습니다. 출석한 학생은 모두 몇 명인가요?`,
+      w = { text: `우리 반 여학생은 ${a}명이고, 그중 ${b}명이 결석했습니다. 남학생 ${c}명은 모두 출석했습니다. 출석한 학생은 모두 몇 명인가요?`,
         right, wrongs: [[a, '−', '(', b, '+', c, ')'], [a, '+', b, '−', c], [a, '+', b, '+', c]], unit: '명' };
     }
     ch = M5.exprChoices(w.right, w.wrongs);
