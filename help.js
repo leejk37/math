@@ -39,7 +39,11 @@
     '.math-card{position:relative}.math-card>.help-bar{position:absolute;top:5px;right:5px;margin:0}' +
     '.quiz-card.help-waiting{box-shadow:0 0 0 3px #f59e0b inset!important}' +
     '.quiz-card .help-bar{margin:0;align-self:center;flex:0 0 auto;flex-direction:column;align-items:stretch;gap:4px}' +
-    '.quiz-card .help-btn{font-size:13px;padding:4px 10px}';
+    '.quiz-card .help-btn{font-size:13px;padding:4px 10px}' +
+    // 공통 틀(m324/m423-common.js)이 없는 옛 분수 페이지(4215·4216): '문제 N' 상자 안 아래쪽에 작게 붙임
+    '.quiz-card .quiz-number>.help-bar{display:flex;flex-direction:row;justify-content:center;align-self:center;margin:6px 0 0}' +
+    '.quiz-card .quiz-number>.help-bar .help-btn{font-size:12px;font-weight:normal;padding:2px 8px;min-width:0}' +
+    '.quiz-card .quiz-number>.help-bar .help-btn.sent,.quiz-card .quiz-number>.help-bar .help-btn.done{font-weight:bold}';
   document.head.appendChild(css);
 
   function val(id) {
@@ -198,7 +202,10 @@
         });
         bar.appendChild(b);
       });
-      qn.insertAdjacentElement('afterend', bar);
+      // 공통 틀이 있는 분수 페이지(window.M)·사칙연산 페이지: 카드 오른쪽 위(문제 번호 뒤)에 붙임
+      // 공통 틀이 없는 옛 분수 페이지: 카드가 grid/flex 칸으로 짜여 있어 칸이 밀리므로 '문제 N' 상자 안에 넣음
+      if (cardSel === '.quiz-card' && !window.M) qn.appendChild(bar);
+      else qn.insertAdjacentElement('afterend', bar);
     });
   }
 
