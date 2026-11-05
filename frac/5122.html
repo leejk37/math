@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 5학년 분수 도우미(m5f) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-2"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>배수</title>
+</head>
+<body>
+
+<div class="header-text">배수</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 배수: 어떤 수를 1배, 2배, 3배, … 한 수</div>
+  <div class="rule-line"><span class="rule-tag">뜻</span> 3을 1배, 2배, 3배, … 한 수 → 3의 배수는 <b>3, 6, 9, 12, …</b> (셀 수 없이 많아요)</div>
+  <div class="rule-line"><span class="rule-tag t2">관계</span> 18 = 2 × 9 → 2와 9는 18의 <b>약수</b>, 18은 2와 9의 <b>배수</b></div>
+  <div class="rule-line"><span class="rule-tag t3">주의</span> 약수는 그 수보다 작거나 같고, 배수는 그 수보다 크거나 같아요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 5122 — 배수 (교과서 5-1-2 34~35쪽, 수학익힘 24~25쪽, 성취기준 [6수01-05])
+// 진단 포인트: 배수를 약수와 헷갈림, 몇 배씩 건너뛰다 빠뜨림, 곱셈식에서 약수·배수 관계를 거꾸로 말함
+const R = M.rand;
+M.inlineQuestion = true;
+
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+  // 1번: 배수 작은 수부터 5개
+  const k1 = R(3, 12);
+  cards.push(M.card(0, `<div class="q-text">${k1}의 배수를 가장 작은 수부터 차례대로 5개 써 보세요.</div>` +
+    `<div class="eq">${[1, 2, 3, 4, 5].map(i => M.box(k1 * i)).join(', ')}</div>`, true));
+  hints.push(`${k1}을(를) 1배, 2배, 3배, 4배, 5배 한 수를 차례로 써요. ${k1} × 1, ${k1} × 2, …`);
+
+  // 2번: 1~50 수판에서 배수 모두 고르기
+  const k2 = M.pick([6, 7, 8, 9, 11, 12, 13].filter(k => k !== k1));
+  const all = Array.from({ length: 50 }, (_, i) => i + 1);
+  cards.push(M.card(1, `<div class="q-text">1부터 50까지의 수 중에서 ${k2}의 배수를 모두 골라 보세요.</div>` + F.nums(all, all.filter(v => v % k2 === 0)), true));
+  hints.push(`${k2}의 단 곱셈을 떠올려요. ${k2}, ${k2 * 2}, ${k2 * 3}, … 50을 넘으면 멈춰요.`);
+
+  // 3번: 곱셈식에서 약수·배수 관계
+  const a3 = R(2, 9), b3 = F.gen(() => R(2, 9), b => b !== a3), n3 = a3 * b3;
+  const yb = (v) => M.choices(v, [['약수', '약수'], ['배수', '배수']]);
+  const first = R(0, 1);
+  cards.push(M.card(2, `<div class="q-text">${n3} = ${a3} × ${b3}을 보고 알맞은 말을 골라 보세요.</div>` +
+    M.line(`<div class="qbox"><div class="eq">${first ? n3 : a3}은(는) ${first ? a3 : n3}의 ${yb(first ? '배수' : '약수')}</div></div>`,
+      `<div class="qbox"><div class="eq">${first ? b3 : n3}은(는) ${first ? n3 : b3}의 ${yb(first ? '약수' : '배수')}</div></div>`), true));
+  hints.push(`${n3} = ${a3} × ${b3}이면 ${a3}와 ${b3}은 ${n3}을(를) 나누어떨어지게 하므로 ${n3}의 약수, ${n3}은 ${a3}와 ${b3}을 몇 배 한 수이므로 배수예요.`);
+
+  // 4번: 수 6개 중 배수 고르기
+  const k4 = M.pick([4, 6, 7, 8, 9]);
+  const t4 = F.gen(() => M.shuffle(Array.from({ length: 80 }, (_, i) => i + 20)).slice(0, 6), l => { const c = l.filter(v => v % k4 === 0).length; return c >= 2 && c <= 3; });
+  cards.push(M.card(3, `<div class="q-text">${k4}의 배수를 모두 골라 보세요.</div>` + F.nums(t4, t4.filter(v => v % k4 === 0)), true));
+  hints.push(`${k4}(으)로 나누어 보세요. 나누어떨어지면 ${k4}의 배수예요.`);
+
+  // 5번: 가장 큰 두 자리 수 / 가장 작은 세 자리 수
+  const k5 = M.pick([6, 7, 8, 9, 11, 12, 13, 14, 15]);
+  cards.push(M.card(4, `<div class="q-text">${k5}의 배수 중에서 알맞은 수를 써 보세요.</div>` +
+    M.line(`<div class="qbox"><div class="eq">가장 큰 두 자리 수 ${M.box(Math.floor(99 / k5) * k5)}</div></div>`,
+      `<div class="qbox"><div class="eq">가장 작은 세 자리 수 ${M.box(Math.ceil(100 / k5) * k5)}</div></div>`), true));
+  hints.push(`99와 100을 ${k5}(으)로 나누어 보세요. 몫에 ${k5}을(를) 곱하면 가까운 배수를 찾을 수 있어요.`);
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
