@@ -87,6 +87,28 @@
   .foot button { font-size: 13px; color: var(--sub); }
   .hidden { display: none !important; }
 
+  /* 날짜 이동 */
+  .daynav { display: flex; gap: 4px; align-items: center; }
+  .daynav button { padding: 7px 10px; }
+  .daynav button:disabled { opacity: .4; cursor: default; }
+  .pastbar { background: #eef4ff; border: 1px solid #b9cdf6; color: #1e3a8a; border-radius: 10px; padding: 8px 14px;
+    margin-bottom: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+  .pastbar button { font-size: 14px; padding: 4px 10px; }
+
+  /* 정렬되는 표 머리 */
+  .feed th.sort { cursor: pointer; user-select: none; white-space: nowrap; }
+  .feed th.sort:hover { color: var(--ink); }
+  .feed th.sort.on { color: var(--accent); }
+  .feed th.sort .arw { font-size: 11px; margin-left: 3px; }
+  .feedtools { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+  .feedtools button { font-size: 13px; color: var(--sub); }
+  h2 .tools { float: right; display: flex; gap: 4px; }
+  h2 .tools button { font-size: 13px; padding: 4px 10px; font-weight: 500; }
+  h2 .tools button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .opsec { margin-bottom: 14px; }
+  .opsec h3 { font-size: 15px; margin: 6px 0 8px; color: var(--ink); }
+  .opsec h3 small { color: var(--sub); font-weight: 500; margin-left: 6px; }
+
   /* 도움 요청 */
   .helpbox { background: #fff8ec; border: 2px solid #f5c26b; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
   .helpbox.quiet { background: var(--panel); border: 1px solid var(--line); }
@@ -120,7 +142,12 @@
   <div class="controls">
     <select id="grade" aria-label="학년"></select>
     <select id="classNum" aria-label="반"></select>
-    <input type="date" id="day" aria-label="날짜">
+    <span class="daynav">
+      <button id="prevDay" title="기록이 있는 이전 날로">◀</button>
+      <input type="date" id="day" aria-label="날짜">
+      <button id="nextDay" title="기록이 있는 다음 날로">▶</button>
+      <button id="todayBtn" title="오늘로">오늘</button>
+    </span>
     <label class="toggle"><input type="checkbox" id="showNames" checked> 이름 보기</label>
     <span class="dot" id="conn" title="연결 상태"></span>
     <span id="who"></span>
@@ -133,6 +160,7 @@
   <div id="msg" class="notice">불러오는 중…</div>
 
   <section id="board" class="hidden">
+    <div class="pastbar hidden" id="pastBar"><span id="pastText"></span><button id="pastToday">오늘 현황으로 돌아가기</button></div>
     <div class="helpbox quiet" id="helpBox">
       <div class="hd"><b>🙋 도움 요청</b><span class="cnt" id="helpCount">없음</span>
         <span class="right"><span id="helpDone"></span><label class="toggle"><input type="checkbox" id="helpSound" checked> 알림음</label></span></div>
@@ -140,19 +168,24 @@
     </div>
     <div class="summary">
       <div class="stat"><div class="k">제출한 학생</div><div class="v" id="stSubmitted">-</div></div>
-      <div class="stat"><div class="k">오늘 제출 횟수</div><div class="v" id="stAttempts">-</div></div>
+      <div class="stat"><div class="k" id="stAttemptsK">오늘 제출 횟수</div><div class="v" id="stAttempts">-</div></div>
       <div class="stat"><div class="k">최근 점수 평균</div><div class="v" id="stAvg">-</div></div>
       <div class="stat"><div class="k">마지막 제출</div><div class="v" id="stLast">-</div></div>
     </div>
 
     <div class="grid" id="grid"></div>
 
-    <h2>단계별 문항 오답<small>학생마다 그 단계의 가장 최근 제출만 셉니다</small></h2>
+    <h2>단계별 문항 오답<small>학생마다 그 단계의 가장 최근 제출만 셉니다</small>
+      <span class="tools"><button data-iorder="step">단계순</button><button data-iorder="recent">최근순</button></span></h2>
     <div class="items" id="items"></div>
 
-    <h2>최근 제출<small>새 기록이 위에 옵니다</small></h2>
-    <table class="feed"><thead><tr><th>시각</th><th>번호</th><th>이름</th><th>영역·단계</th><th>점수</th><th>문항</th><th>걸린 시간</th></tr></thead>
+    <h2>최근 제출<small id="feedHint">제목 칸을 누르면 그 기준으로 정렬합니다</small></h2>
+    <table class="feed"><thead><tr id="feedHead">
+      <th class="sort" data-key="at">시각</th><th class="sort" data-key="num">번호</th><th class="sort" data-key="name">이름</th>
+      <th class="sort" data-key="lv">영역·단계</th><th class="sort" data-key="score">점수</th><th class="sort" data-key="wrong">문항</th>
+      <th class="sort" data-key="sec">걸린 시간</th></tr></thead>
       <tbody id="feed"></tbody></table>
+    <div class="feedtools"><button id="feedMore"></button></div>
 
     <div class="foot">
       <button id="cleanBtn" title="오늘을 뺀 지난 날짜의 현황판 기록을 지웁니다. 시트 기록은 지워지지 않습니다.">지난 날짜 현황판 기록 지우기</button>
@@ -180,6 +213,10 @@ let helpSeen = null;      // 알림음용: 이미 본 요청 id
 let data = {};            // { 번호: { pushId: 기록 } }
 let seenCount = {};       // 깜빡임 표시용: 번호별 지난번 기록 수
 let firstLoad = true;
+let sortKey = store.get('sortKey', 'at');                 // 최근 제출 정렬 기준
+let sortDir = Number(store.get('sortDir', '-1')) || -1;   // 1 오름차순, -1 내림차순
+let feedAll = false;                                     // 최근 제출: 20개만 / 모두
+let itemOrder = store.get('iorder', 'step');             // 단계별 문항 오답: step(단계순) / recent(최근순)
 
 function msg(html) { $('msg').innerHTML = html; $('msg').classList.remove('hidden'); $('board').classList.add('hidden'); }
 function showBoard() { $('msg').classList.add('hidden'); $('board').classList.remove('hidden'); }
@@ -230,7 +267,14 @@ async function init() {
   $('logoutBtn').onclick = () => am.signOut(auth);
   $('grade').onchange = () => { store.set('grade', $('grade').value); fillClasses(); subscribe(); };
   $('classNum').onchange = () => { store.set('class', $('classNum').value); subscribe(); };
-  $('day').onchange = subscribe;
+  $('day').onchange = () => { updateDayUi(); subscribe(); };
+  $('prevDay').onclick = () => jumpDay(-1);
+  $('nextDay').onclick = () => jumpDay(1);
+  $('todayBtn').onclick = $('pastToday').onclick = () => { $('day').value = window.liveToday(); updateDayUi(); subscribe(); };
+  document.querySelectorAll('#feedHead th.sort').forEach((th) => { th.onclick = () => setSort(th.dataset.key); });
+  $('feedMore').onclick = () => { feedAll = !feedAll; render(); };
+  document.querySelectorAll('[data-iorder]').forEach((b) => { b.onclick = () => { itemOrder = b.dataset.iorder; store.set('iorder', itemOrder); render(); }; });
+  updateDayUi();
   $('showNames').checked = store.get('names', '1') === '1';
   $('showNames').onchange = () => { store.set('names', $('showNames').checked ? '1' : '0'); render(); };
   $('cleanBtn').onclick = cleanOld;
@@ -351,8 +395,16 @@ function render() {
   $('stLast').textContent = last ? ago(last) : '-';
 
   renderItems(nums, nameOf);
-  all.sort((a, b) => b.at - a.at);
-  $('feed').innerHTML = all.slice(0, 20).map((r) => `<tr><td>${clock(r.at)}</td><td>${esc(r.num)}</td><td>${esc(nameOf(r.num))}</td>
+  sortFeed(all, nameOf);
+  const shown = feedAll ? all : all.slice(0, 20);
+  $('feedMore').classList.toggle('hidden', all.length <= 20);
+  $('feedMore').textContent = feedAll ? '20개만 보기' : `모두 보기 (${all.length}개)`;
+  document.querySelectorAll('#feedHead th.sort').forEach((th) => {
+    const on = th.dataset.key === sortKey;
+    th.classList.toggle('on', on);
+    th.innerHTML = th.textContent.replace(/[▲▼]/g, '') + (on ? `<span class="arw">${sortDir > 0 ? '▲' : '▼'}</span>` : '');
+  });
+  $('feed').innerHTML = shown.map((r) => `<tr><td>${clock(r.at)}</td><td>${esc(r.num)}</td><td>${esc(nameOf(r.num))}</td>
       <td>${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td><td><div class="marks" style="margin:0">${marks(r.results)}</div></td><td>${mmss(r.sec)}</td></tr>`).join('')
     || '<tr><td colspan="7" style="color:var(--sub)">아직 제출이 없습니다.</td></tr>';
 }
@@ -365,8 +417,8 @@ function renderItems(nums, nameOf) {
     const g = groups[key] || (groups[key] = { op: r.op, level: r.level, latest: {}, lastAt: 0 });
     g.latest[n] = r; g.lastAt = Math.max(g.lastAt, r.at);
   }));
-  const list = Object.values(groups).sort((a, b) => b.lastAt - a.lastAt);
-  $('items').innerHTML = list.map((g) => {
+  document.querySelectorAll('[data-iorder]').forEach((b) => b.classList.toggle('on', b.dataset.iorder === itemOrder));
+  const card = (g) => {
     const recs = Object.entries(g.latest);
     const qn = Math.max(...recs.map(([, r]) => String(r.results || '').length), 0);
     const rows = [];
@@ -382,7 +434,92 @@ function renderItems(nums, nameOf) {
     const avg = Math.round(recs.reduce((s, [, r]) => s + r.score, 0) / recs.length);
     return `<div class="item"><div class="t">${esc(g.op)} · ${esc(shortLevel(g.level))}</div>
       <div class="s">${esc(g.level)}<br>${recs.length}명 · 평균 ${avg}점</div>${rows.join('')}</div>`;
-  }).join('') || '<div class="notice">아직 제출이 없습니다.</div>';
+  };
+  const list = Object.values(groups);
+  if (!list.length) { $('items').style.display = ''; $('items').innerHTML = '<div class="notice">아직 제출이 없습니다.</div>'; return; }
+  if (itemOrder === 'recent') {
+    $('items').style.display = '';
+    $('items').innerHTML = list.sort((a, b) => b.lastAt - a.lastAt).map(card).join('');
+    return;
+  }
+  // 단계순: 영역별로 묶고(최근에 제출이 있던 영역이 위), 영역 안에서는 1단계, 2단계… 순서
+  const ops = {};
+  list.forEach((g) => { (ops[g.op] || (ops[g.op] = [])).push(g); });
+  const opList = Object.entries(ops).map(([op, gs]) => ({ op, gs, lastAt: Math.max(...gs.map((g) => g.lastAt)) }))
+    .sort((a, b) => b.lastAt - a.lastAt);
+  $('items').style.display = 'block';
+  $('items').innerHTML = opList.map(({ op, gs }) => `<div class="opsec"><h3>${esc(op)}<small>${gs.length}개 단계</small></h3>
+    <div class="items">${gs.sort((a, b) => levelCmp(a.level, b.level)).map(card).join('')}</div></div>`).join('');
+}
+
+/* 단계 비교: '2단계'가 '10단계'보다 앞에 오도록 숫자로 비교 */
+function levelCmp(a, b) { return shortLevel(a).localeCompare(shortLevel(b), 'ko', { numeric: true }) || String(a).localeCompare(String(b), 'ko', { numeric: true }); }
+
+/* ---------- 최근 제출 정렬 ---------- */
+function setSort(key) {
+  if (sortKey === key) sortDir = -sortDir;
+  else { sortKey = key; sortDir = (key === 'at' || key === 'score' || key === 'wrong' || key === 'sec') ? -1 : 1; }
+  store.set('sortKey', sortKey); store.set('sortDir', String(sortDir));
+  render();
+}
+function sortFeed(all, nameOf) {
+  const wrongOf = (r) => (String(r.results || '').match(/X/g) || []).length;
+  const val = {
+    at: (r) => r.at,
+    num: (r) => Number(r.num) || 0,
+    name: (r) => nameOf(r.num) || '',
+    score: (r) => Number(r.score) || 0,
+    wrong: (r) => wrongOf(r),
+    sec: (r) => Number(r.sec) || 0
+  }[sortKey];
+  all.sort((a, b) => {
+    let c;
+    if (sortKey === 'lv') c = String(a.op).localeCompare(String(b.op), 'ko') || levelCmp(a.level, b.level);
+    else if (sortKey === 'name') c = val(a).localeCompare(val(b), 'ko') || (Number(a.num) - Number(b.num));
+    else c = val(a) - val(b);
+    return (c * sortDir) || (b.at - a.at);   // 같으면 최근 것이 위
+  });
+}
+
+/* ---------- 날짜 이동 ---------- */
+function weekday(day) { return '일월화수목금토'[new Date(day + 'T00:00:00').getDay()]; }
+function updateDayUi() {
+  const day = $('day').value, today = window.liveToday();
+  const past = day && day !== today;
+  $('todayBtn').disabled = !past;
+  $('nextDay').disabled = !day || day >= today;
+  $('pastBar').classList.toggle('hidden', !past);
+  $('stAttemptsK').textContent = past ? '그날 제출 횟수' : '오늘 제출 횟수';
+  $('day').max = today;
+  if (past) $('pastText').innerHTML = `📅 <b>${esc(day)} (${weekday(day)})</b> 지난 날짜의 기록을 보고 있습니다.`;
+}
+/* 이 반의 기록이 있는 이전(-1)·다음(+1) 날짜로 이동. 다른 반만 기록이 있는 날은 건너뜀 */
+async function jumpDay(dir) {
+  if (!user) return;
+  const cls = `${window.liveKey($('grade').value)}_${window.liveKey($('classNum').value)}`;
+  const today = window.liveToday();
+  const btn = dir < 0 ? $('prevDay') : $('nextDay');
+  btn.disabled = true;
+  try {
+    let cur = $('day').value || today;
+    for (let i = 0; i < 60; i++) {   // 최대 60일치까지 찾아봄
+      const q = dir < 0
+        ? dbm.query(dbm.ref(db, 'live'), dbm.orderByKey(), dbm.endBefore(cur), dbm.limitToLast(1))
+        : dbm.query(dbm.ref(db, 'live'), dbm.orderByKey(), dbm.startAfter(cur), dbm.limitToFirst(1));
+      const v = (await dbm.get(q)).val();
+      const d = v && Object.keys(v)[0];
+      if (!d || d > today) {
+        if (dir > 0) { $('day').value = today; updateDayUi(); subscribe(); }
+        else alert('이 반의 이전 기록이 더 없습니다.\n(\'지난 날짜 현황판 기록 지우기\'로 지운 날은 현황판에서 볼 수 없습니다. 평가데이터 시트에는 남아 있습니다.)');
+        return;
+      }
+      if (v[d] && v[d][cls]) { $('day').value = d; updateDayUi(); subscribe(); return; }
+      cur = d;
+    }
+    alert('가까운 날짜에서 이 반의 기록을 찾지 못했습니다. 날짜 칸에서 직접 골라 주세요.');
+  } catch (e) {
+    alert('날짜를 찾지 못했습니다: ' + e.message);
+  } finally { updateDayUi(); if (dir < 0) btn.disabled = false; }
 }
 
 function openStudent(num, name) {
