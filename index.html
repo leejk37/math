@@ -210,7 +210,7 @@
             <input type="text" id="featureName" placeholder="이름" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;">
           </div>
           <select id="featureOperation" onchange="updateFeatureSubLevels()" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;">
-            <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈">곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수">4학년 분수</option>
+            <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈">곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option>
           </select>
           <select id="featureLevel" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;"></select>
           <textarea id="featureComment" rows="4" placeholder="불편사항을 입력해주세요" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
@@ -230,7 +230,7 @@
         </select>
         <select id="resetClass" style="padding: 5px; width: 65px;"></select>
         <select id="resetOperation" onchange="updateResetSubLevels()" style="padding: 5px; width: 70px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수">4학년 분수</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option>
         </select>
         <select id="resetTargetLevel" style="padding: 5px; flex-grow: 1; max-width: 450px;"></select>
         <button class="action-btn" style="background-color: #dc2626; margin-left: auto;" onclick="executeResetRecords()">기록 삭제</button>
@@ -243,7 +243,7 @@
         <select id="searchGrade" style="padding: 5px; width: 75px;"></select>
         <select id="searchClass" style="padding: 5px; width: 65px;"></select>
         <select id="searchOperation" onchange="updateSearchSubLevels()" style="padding: 5px; width: 75px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수">4학년 분수</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option>
         </select>
         <select id="searchTargetLevel" style="padding: 5px; flex-grow: 1; max-width: 300px;"><option value="전체">모든 단계</option></select>
         <input type="number" id="searchScore" value="80" style="width: 45px; text-align: right; padding: 5px;"> 점
@@ -267,7 +267,7 @@
           <option value="student">학생 개인 단계별 평균 기록</option>
         </select>
         <select id="dashOperation" style="padding: 5px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수">4학년 분수</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option>
         </select>
         <select id="dashGrade"></select>
         <select id="dashClassNum"></select>
@@ -427,13 +427,13 @@
       <div id="frac4-curriculumControls" style="background: #fce7f3; border: 2px solid #f9a8d4; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
         <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
           <label style="color: #be185d;"><b>세부 단계 : </b></label>
-          <select id="frac4-subLevel" data-op="4학년 분수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
+          <select id="frac4-subLevel" data-op="4학년 분수·소수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
         </div>
         <div id="frac4-startSection" style="text-align: center;">
           <button class="submit-btn" id="frac4-startBtn" style="background-color: #be185d; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac4')">4학년 분수·소수 진단 시작</button>
         </div>
       </div>
-      <iframe id="frac4-frame" title="4학년 분수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
+      <iframe id="frac4-frame" title="4학년 분수·소수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
     </div>
 
     <div id="screen-mul" class="screen active">
@@ -558,7 +558,7 @@
           "15단계(3245): 가분수를 대분수로",
           "16단계(3246): 분모가 같은 분수의 크기 비교"],
       // 1·2단계는 분수의 덧셈(4211·4212)을 넣을 자리로 비워 둠
-      "4학년 분수": [
+      "4학년 분수·소수": [
           "3단계(4213): 진분수의 뺄셈",
           "4단계(4214): 대분수의 뺄셈 (자연수끼리·분수끼리)",
           "5단계(4214): 대분수의 뺄셈 (가분수로 바꾸어)",
@@ -579,7 +579,7 @@
     const FRAC_FILES = {
       "3학년 분수·소수": ["3161.html","3162.html","3163.html","3164.html","3165.html","3166.html","3167.html","3168.html","3169.html",
                      "3241.html","3242.html","3243.html","3244.html","3245a.html","3245b.html","3246.html"],
-      "4학년 분수": ["4213.html","4214a.html","4214b.html","4215.html","4216.html",
+      "4학년 분수·소수": ["4213.html","4214a.html","4214b.html","4215.html","4216.html",
                  "4231.html","4232.html","4233.html","4234.html","4235.html","4236.html","4237.html","4238.html"]
     };
 
@@ -4917,7 +4917,7 @@ setTimeout(() => {
     })();
 
     // ==========================================
-    // 🍕 분수 영역 (3학년 분수·소수 / 4학년 분수)
+    // 🍕 분수 영역 (3학년 분수·소수 / 4학년 분수·소수)
     //  - 문제 화면은 frac 폴더의 페이지를 iframe으로 띄움
     //  - 학생 정보는 sessionStorage로 넘기고(주소에 이름을 넣지 않음), 저장은 각 페이지의 frac-kit.js가 담당
     // ==========================================
