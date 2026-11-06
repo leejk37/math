@@ -1,6 +1,7 @@
 /*
  * m5f-common.js — 5학년 1학기 분수 영역 공통 도우미
  *   약수와 배수(M512, 5121~5124) → 약분과 통분(M514, 5141~5146) → 분수의 덧셈과 뺄셈(M515, 5151~5156)
+ *   → 5학년 2학기 분수의 곱셈(M522, 5221~5226)
  *
  * frac/m423-common.js의 화면 모양·입력칸·고르기·채점(M.box, M.choices, M.cmp, M.card, M.line, M.render, M.grade, M.fill)을
  * 그대로 쓰고, 5학년 분수에 필요한 것만 더합니다.  → 페이지에서 m423-common.js 다음에 불러 주세요.
@@ -142,6 +143,35 @@
   };
   // 식 = 답칸
   F.calc = function (left, x) { return '<div class="eq">' + left + EQ + F.ans(x) + '</div>'; };
+
+
+  /* ---------- 분수의 곱셈 (M522, 5221~5226) ---------- */
+  F.OP['x'] = '<span class="op">×</span>';
+  // 곱 (기약분수)
+  F.mul = function (a, b) { return F.simp(a.n * b.n, a.d * b.d); };
+  F.nat = function (k) { return { n: k, d: 1 }; };
+  // 글자만: 3/8, 1 1/5
+  F.ft = function (x) { return x.n + '/' + x.d; };
+  // 분수 모양 안에 식 쓰기: (3×6)/8
+  F.ex = function (top, bot) { return M.frac(top, bot); };
+  // □/d 칸 다음에, 약분하거나 대분수로 바꿀 수 있으면 '= 답' 칸을 하나 더 (분자만 빈칸 → 기약분수·대분수·자연수)
+  F.tailN = function (raw, d) {
+    var h = F.fn(raw, d);
+    if (!(raw < d && F.gcd(raw, d) === 1)) h += EQ + F.ans(F.simp(raw, d));
+    return h;
+  };
+  // 분모·분자 모두 빈칸인 곱 다음에 '= 답'
+  F.tailF = function (n, d) {
+    var h = F.ff(n, d);
+    if (!(n < d && F.gcd(n, d) === 1)) h += EQ + F.ans(F.simp(n, d));
+    return h;
+  };
+  // 보기 글자: 값 → '2 1/4', '3/5', '6'
+  F.st = function (x) {
+    var m = F.mixedOf(F.simp(x.n, x.d));
+    if (!m.n) return String(m.w);
+    return (m.w ? m.w + ' ' : '') + m.n + '/' + m.d;
+  };
 
   /* ---------- 문제 만들기 도우미 ---------- */
   // 조건을 만족할 때까지 다시 뽑기
