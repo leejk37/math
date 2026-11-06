@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 분수 빈칸(m5f) → 소수의 곱셈 도우미(m524) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m524-common.js?v=20261106-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>(소수) × (자연수) — 1보다 작은 소수</title>
+</head>
+<body>
+
+<div class="header-text">(소수) × (자연수)를 계산해요 — 1보다 작은 소수</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 0.1(또는 0.01)이 몇 개인지 세어 보아요!</div>
+  <div class="rule-line"><span class="rule-tag">원리</span> 0.2 × 6 → 0.1이 2 × 6 = 12개 → <b>1.2</b></div>
+  <div class="rule-line"><span class="rule-tag t2">분수</span> 0.3 × 5 = <sup>3</sup>⁄<sub>10</sub> × 5 = <sup>15</sup>⁄<sub>10</sub> = 1.5</div>
+  <div class="rule-line"><span class="rule-tag t3">자연수</span> 3 × 5 = 15 → 0.3은 3의 <sup>1</sup>⁄<sub>10</sub>배이니 곱도 <sup>1</sup>⁄<sub>10</sub>배 → 1.5</div>
+  <div class="rule-line"><span class="rule-tag t4">어림</span> 계산하기 전에 크기를 어림하면 소수점을 잘못 찍었는지 알 수 있어요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 5241 — (소수) × (자연수), 1보다 작은 소수 (교과서 5-2-4 88~89쪽, 수학 익힘 54~55쪽)
+const f = M.fmt;
+const STORY = [
+  (a, n) => ({ unit: 'mL', text: `유준이는 비커에 우유를 ${f(a, 1)} mL씩 ${n}번 넣었습니다. 비커에 넣은 우유는 모두 몇 mL인가요?` }),
+  (a, n) => ({ unit: 'm', text: `리본 한 개를 만드는 데 끈이 ${f(a, 1)} m 필요합니다. 리본 ${n}개를 만들려면 끈은 모두 몇 m 필요한가요?` }),
+  (a, n) => ({ unit: 'kg', text: `한 봉지에 콩이 ${f(a, 1)} kg씩 들어 있습니다. ${n}봉지에 들어 있는 콩은 모두 몇 kg인가요?` })
+];
+
+M.inlineQuestion = true; // 문제 지시문을 '문제 N' 바로 옆에
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 문장제 — 어림하고 식·답 쓰기 (0.a × n)
+  let a1, n1; do { a1 = M.rand(2, 9); n1 = M.rand(3, 9); } while ((a1 * n1) % 10 === 0 || a1 * n1 < 10);
+  const s1 = M.pick(STORY)(a1, n1);
+  cards.push(M.card(0, `<div class="q-text">${s1.text}</div>` +
+    `<div class="eq" style="font-size:18px">어림하기: ${D.est(a1 * n1, 1, s1.unit)}</div>` +
+    M.line(`<div class="eq" style="font-size:19px">식: ${M.pairbox('s', a1, 1)} × ${M.pairbox('s', n1 * 10, 1)}</div>`,
+      `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(a1 * n1, 1)} ${s1.unit}</span></div>`), true));
+  hints.push(`${f(a1, 1)}${M.josa(f(a1, 1), '을', '를')} ${n1}번 더한 것과 같아요. ${f(a1, 1)}${M.josa(f(a1, 1), '은', '는')} 1보다 작으니, 곱은 ${n1}보다 작아요.<br>어림한 값과 계산한 값의 크기가 비슷한지 꼭 비교해요.`);
+
+  // 2번: 그림 — 0.1의 개수 (0.a × n)
+  let a2, n2; do { a2 = M.rand(2, 5); n2 = M.rand(3, 6); } while ((a2 * n2) % 10 === 0);
+  cards.push(M.card(1, `<div class="q-text">그림을 보고 ${f(a2, 1)} × ${n2}${M.josa(n2, '을', '를')} 계산해 보세요.</div>` + D.tenthGroups(a2, n2) +
+    M.line(`<div class="eq" style="font-size:18px">0.1이 모두 <span class="tail">${M.box(a2 * n2)}개이므로</span> <span class="tail">${M.dbox(a2 * n2, 1)}입니다.</span></div>`) +
+    `<div class="eq">${f(a2, 1)} × ${n2} = 0.1 × ${M.box(a2 * n2)} = ${M.dbox(a2 * n2, 1)}</div>`, true));
+  hints.push(`작은 칸 하나가 0.1이에요. ${f(a2, 1)}${M.josa(f(a2, 1), '은', '는')} 0.1이 ${a2}개, 그것이 ${n2}묶음이에요.<br>0.1이 10개면 1이에요.`);
+
+  // 3번: 분수의 곱셈 / 자연수의 곱셈으로 (0.a × n)
+  let a3, n3; do { a3 = M.rand(2, 9); n3 = M.rand(2, 9); } while ((a3 * n3) % 10 === 0 || a3 * n3 < 10 || (a3 === a2 && n3 === n2));
+  cards.push(M.card(2, `<div class="q-text">${f(a3, 1)} × ${n3}${M.josa(n3, '을', '를')} 두 가지 방법으로 계산해 보세요.</div>` +
+    D.methods(`<div class="eq">${f(a3, 1)} × ${n3} = ${M.frac(M.box(a3), 10)} × ${n3} = ${M.frac(M.box(a3) + ' × ' + M.box(n3), 10)} = ${M.frac(M.box(a3 * n3), 10)} = ${M.dbox(a3 * n3, 1)}</div>`,
+      D.arrows({ A: a3, pa: 1, B: n3, pb: 0, pick: true })), true));
+  hints.push(`① ${f(a3, 1)} = ${M.frac(a3, 10, true)}이에요. 분자끼리 곱한 다음 다시 소수로 바꾸어요.<br>② ${f(a3, 1)}${M.josa(f(a3, 1), '은', '는')} ${a3}의 ${M.frac(1, 10, true)}배예요. 곱하는 수가 ${M.frac(1, 10, true)}배가 되면 곱도 ${M.frac(1, 10, true)}배가 돼요.`);
+
+  // 4번: 두 가지 방법 (0.ab × n)
+  let x4, n4; do { x4 = M.rand(11, 99); n4 = M.rand(2, 6); } while (x4 % 10 === 0 || (x4 * n4) % 10 === 0);
+  cards.push(M.card(3, `<div class="q-text">${f(x4, 2)} × ${n4}${M.josa(n4, '을', '를')} 두 가지 방법으로 계산해 보세요.</div>` +
+    D.methods(`<div class="eq">${f(x4, 2)} × ${n4} = ${M.frac(M.box(x4), 100)} × ${n4} = ${M.frac(M.box(x4 * n4), 100)} = ${M.dbox(x4 * n4, 2)}</div>`,
+      D.arrows({ A: x4, pa: 2, B: n4, pb: 0, topBox: true, pick: true })), true));
+  hints.push(`소수 두 자리 수는 분모가 <b>100</b>인 분수로 바꾸어요. ${f(x4, 2)} = ${M.frac(x4, 100, true)}<br>${f(x4, 2)}${M.josa(f(x4, 2), '은', '는')} ${x4}의 ${M.frac(1, 100, true)}배이므로 ${x4} × ${n4}의 곱도 ${M.frac(1, 100, true)}배가 돼요.`);
+
+  // 5번: 계산하기 (가로셈 0.a × n, 세로셈 0.ab × n)
+  let a5, n5; do { a5 = M.rand(2, 9); n5 = M.rand(3, 9); } while ((a5 * n5) % 10 === 0 || a5 === n5);
+  let x5, m5; do { x5 = M.rand(11, 99); m5 = M.rand(3, 9); } while (x5 % 10 === 0 || (x5 * m5) % 10 === 0);
+  cards.push(M.card(4, `<div class="q-text">계산해 보세요.</div>` +
+    M.line(`<div class="eq qbox">${f(a5, 1)} × ${n5} = ${M.dbox(a5 * n5, 1)}</div>`, D.vmul(x5, 2, m5, 0)), true));
+  hints.push(`${a5} × ${n5}처럼 자연수의 곱셈을 한 다음, 곱해지는 수의 소수점 아래 자릿수만큼 소수점을 찍어요.<br>세로셈도 ${x5} × ${m5}${M.josa(m5, '을', '를')} 먼저 계산한 다음 소수 <b>두 자리</b> 수가 되도록 소수점을 찍어요.`);
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
