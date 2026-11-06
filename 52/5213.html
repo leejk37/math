@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미(frac 폴더) → 공통 화면(frac/m423-common.js) → 수의 범위와 어림 도우미(m521) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="../frac/frac-kit.js"></script>
+<script src="../frac/m423-common.js?v=20261105-1"></script>
+<script src="m521-common.js?v=20261106-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>수의 범위를 활용하여 문제 해결하기</title>
+</head>
+<body>
+
+<div class="header-text">수의 범위를 활용하여 문제 해결하기</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 두 낱말을 함께 쓰면 '사이'의 범위가 돼요</div>
+  <div class="rule-line"><span class="rule-tag">●</span> 이상·이하 → 그 수를 포함 &nbsp; <span class="rule-tag t2">○</span> 초과·미만 → 그 수를 포함하지 않음</div>
+  <div class="rule-line"><span class="rule-tag t3">예</span> <b>10 이상 13 미만</b>인 수 → 10에 ●, 13에 ○, 두 점 사이에 선</div>
+  <div class="rule-line"><span class="rule-tag t4">주의</span> 12세는 '9세 이상 12세 미만'에 들지 않아요(12는 포함되지 않음).</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 5213 — 수의 범위를 활용하여 문제 해결하기 (교과서 5-2-1 16~17쪽, 수학익힘 14~15쪽, 성취기준 [6수01-02])
+// 진단 포인트: 두 끝점의 포함 여부를 섞어서 판단, 경곗값(기준 수와 같은 값)에서 판단 오류, 범위 안의 자연수 개수를 셀 때 끝점 처리 오류
+const R = M.rand;
+M.inlineQuestion = true;
+// 네 가지 꼴: [아래 포함?, 위 포함?]
+const KINDS = [[true, true], [true, false], [false, true], [false, false]];
+const rng = (a, ai, b, bi) => ({ lo: { v: a, inc: ai }, hi: { v: b, inc: bi } });
+
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+  const ks = M.shuffle(KINDS.slice());
+
+  // 1·2번: 수직선에 'A ○○ B ○○인 수' 나타내기 (서로 다른 꼴 두 가지)
+  [0, 1].forEach(i => {
+    const from = R(2, 12) * 5, a = from + R(2, 6), b = a + R(3, 7), r = rng(a, ks[i][0], b, ks[i][1]);
+    cards.push(M.card(i, `<div class="q-text">수직선에 나타내어 보세요.</div><div class="range-label">${N.text(r)}</div>` +
+      N.line({ from, to: from + 15 }, r), true));
+    hints.push(`${a}에는 ${r.lo.inc ? '●(이상 — 포함)' : '○(초과 — 포함하지 않음)'}, ${b}에는 ${r.hi.inc ? '●(이하 — 포함)' : '○(미만 — 포함하지 않음)'}를 그리고, 두 점 사이에 선을 그어요.`);
+  });
+
+  // 3번: 수직선을 보고 범위 쓰기
+  const from3 = R(2, 12) * 5, a3 = from3 + R(2, 6), b3 = a3 + R(3, 7), r3 = rng(a3, ks[2][0], b3, ks[2][1]);
+  cards.push(M.card(2, `<div class="q-text">수직선에 나타낸 수의 범위를 써 보세요.</div>` + N.show({ from: from3, to: from3 + 15 }, r3) +
+    `<div class="eq">${M.box(a3)} ${N.word4(r3.lo.inc ? '이상' : '초과', ['이상', '초과'])} ${M.box(b3)} ${N.word4(r3.hi.inc ? '이하' : '미만', ['이하', '미만'])} <span class="tail">인 수</span></div>`, true));
+  hints.push('왼쪽 점이 ●이면 이상, ○이면 초과예요. 오른쪽 점이 ●이면 이하, ○이면 미만이에요.');
+
+  // 4번: 놀이 기구 — 키를 보고 탈 수 있는 놀이 기구 모두 고르기 (경곗값 키가 자주 나오도록)
+  const b = R(11, 13) * 10;
+  const rides = [
+    ['바이킹', { lo: { v: b, inc: false }, hi: null }],
+    ['꼬마 비행기', { lo: null, hi: { v: b + 10, inc: false } }],
+    ['하늘 자전거', rng(b - 10, true, b + 30, false)],
+    ['청룡 열차', rng(b, true, b + 50, true)]
+  ];
+  const who = M.pick(['아버지', '어머니', '형', '누나', '동생', '예지']);
+  const h = N.gen(() => M.pick([b, b, b + 10, b + 30, b + 50, b - 10, b + R(1, 9), b + R(11, 29), b + R(31, 49)]), v => rides.some(rd => N.has(rd[1], v)));
+  const rideCard = rd => `<div class="ride"><b>${rd[0]}</b>${N.text(rd[1]).replace('인 수', '').replace(/(\d+)/g, '$1 cm')}</div>`;
+  cards.push(M.card(3, `<div class="q-text">놀이 기구별 탈 수 있는 키의 범위입니다. 키가 ${h} cm인 ${who}${N.josa(who, '이', '가')} 탈 수 있는 놀이 기구를 모두 골라 보세요.</div>` +
+    M.line(...rides.map(rideCard)) + N.multi(rides.map((rd, i) => [i, rd[0]]), rides.map((rd, i) => N.has(rd[1], h) ? i : null).filter(i => i !== null)), true));
+  hints.push(`놀이 기구마다 ${h} cm가 범위에 드는지 하나씩 확인해요. 키가 기준 수와 꼭 같을 때는 이상·이하면 탈 수 있고, 초과·미만이면 탈 수 없어요.`);
+
+  // 5번: 범위에 드는 자연수 — 가장 작은 수, 가장 큰 수, 개수
+  const a5 = R(12, 40), b5 = a5 + R(5, 9), r5 = rng(a5, ks[3][0], b5, ks[3][1]);
+  const lo5 = r5.lo.inc ? a5 : a5 + 1, hi5 = r5.hi.inc ? b5 : b5 - 1;
+  cards.push(M.card(4, `<div class="q-text">${N.text(r5).replace('인 수', '인 자연수')}를 알아보세요.</div>` +
+    `<div class="eq">가장 작은 수 ${M.box(lo5)} &nbsp; 가장 큰 수 ${M.box(hi5)} &nbsp; <span class="tail">모두 ${M.box(hi5 - lo5 + 1)} 개</span></div>`, true));
+  hints.push(`${a5}${M.josa(a5, '이', '가')} 들어가는지, ${b5}${M.josa(b5, '이', '가')} 들어가는지 먼저 정해요. 그다음 가장 작은 수부터 가장 큰 수까지 차례로 세어 보세요.`);
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
