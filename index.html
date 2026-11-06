@@ -210,7 +210,7 @@
             <input type="text" id="featureName" placeholder="이름" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;">
           </div>
           <select id="featureOperation" onchange="updateFeatureSubLevels()" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;">
-            <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈">곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option>
+            <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈">곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option><option value="수의 범위·어림">수의 범위·어림</option>
           </select>
           <select id="featureLevel" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;"></select>
           <textarea id="featureComment" rows="4" placeholder="불편사항을 입력해주세요" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
@@ -230,7 +230,7 @@
         </select>
         <select id="resetClass" style="padding: 5px; width: 65px;"></select>
         <select id="resetOperation" onchange="updateResetSubLevels()" style="padding: 5px; width: 70px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option><option value="수의 범위·어림">수의 범위·어림</option>
         </select>
         <select id="resetTargetLevel" style="padding: 5px; flex-grow: 1; max-width: 450px;"></select>
         <button class="action-btn" style="background-color: #dc2626; margin-left: auto;" onclick="executeResetRecords()">기록 삭제</button>
@@ -243,7 +243,7 @@
         <select id="searchGrade" style="padding: 5px; width: 75px;"></select>
         <select id="searchClass" style="padding: 5px; width: 65px;"></select>
         <select id="searchOperation" onchange="updateSearchSubLevels()" style="padding: 5px; width: 75px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option><option value="수의 범위·어림">수의 범위·어림</option>
         </select>
         <select id="searchTargetLevel" style="padding: 5px; flex-grow: 1; max-width: 300px;"><option value="전체">모든 단계</option></select>
         <input type="number" id="searchScore" value="80" style="width: 45px; text-align: right; padding: 5px;"> 점
@@ -267,7 +267,7 @@
           <option value="student">학생 개인 단계별 평균 기록</option>
         </select>
         <select id="dashOperation" style="padding: 5px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option><option value="수의 범위·어림">수의 범위·어림</option>
         </select>
         <select id="dashGrade"></select>
         <select id="dashClassNum"></select>
@@ -288,6 +288,7 @@
       <button id="btn-frac3" class="nav-btn" onclick="switchScreen('frac3')">🍕 3학년 분수·소수</button>
       <button id="btn-frac4" class="nav-btn" onclick="switchScreen('frac4')">🍰 4학년 분수·소수</button>
       <button id="btn-frac5" class="nav-btn" onclick="switchScreen('frac5')">🥧 5학년 분수</button>
+      <button id="btn-range5" class="nav-btn" onclick="switchScreen('range5')">📏 수의 범위·어림</button>
     </div>
 
     <div style="background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 25px; width: calc(100% - 30px); display: flex; gap: 10px; align-items: center; justify-content: center; border: 2px solid #cbd5e1;">
@@ -466,6 +467,20 @@
       <iframe id="frac5-frame" title="5학년 분수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
     </div>
 
+    <!-- 5학년 2학기 1단원 수의 범위와 어림하기(M521) — 문제 화면은 52 폴더, 검토용 화면: 52/m521-review.html -->
+    <div id="screen-range5" class="screen">
+      <div id="range5-curriculumControls" style="background: #fff7ed; border: 2px solid #fdba74; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
+        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
+          <label style="color: #c2410c;"><b>세부 단계 : </b></label>
+          <select id="range5-subLevel" data-op="수의 범위·어림" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
+        </div>
+        <div id="range5-startSection" style="text-align: center;">
+          <button class="submit-btn" id="range5-startBtn" style="background-color: #c2410c; width: auto; padding: 8px 60px;" onclick="startFracQuiz('range5')">수의 범위·어림 진단 시작</button>
+        </div>
+      </div>
+      <iframe id="range5-frame" title="수의 범위·어림 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
+    </div>
+
     <div id="screen-mul" class="screen active">
       <div id="mul-curriculumControls" style="background: #e0f2fe; border: 2px solid #bae6fd; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 6px;">
@@ -627,7 +642,16 @@
           "13단계(5153): 대분수의 덧셈",
           "14단계(5154): 진분수의 뺄셈",
           "15단계(5155): 대분수의 뺄셈 (받아내림 없음)",
-          "16단계(5156): 대분수의 뺄셈 (받아내림 있음)"]
+          "16단계(5156): 대분수의 뺄셈 (받아내림 있음)"],
+      // 5학년 2학기 1단원 수의 범위와 어림하기(M521) — 문제 화면은 52 폴더, 검토용 화면: 52/m521-review.html
+      "수의 범위·어림": [
+          "1단계(5211): 이상과 이하",
+          "2단계(5212): 초과와 미만",
+          "3단계(5213): 수의 범위를 활용하여 문제 해결하기",
+          "4단계(5214): 올림",
+          "5단계(5215): 버림",
+          "6단계(5216): 반올림",
+          "7단계(5217): 올림, 버림, 반올림을 활용하여 문제 해결하기"]
       };
 
     // 단계 → 문제 페이지 파일 (web/frac 폴더)
@@ -639,11 +663,13 @@
       "혼합계산": ["5111.html","5112.html","5113.html","5114.html","5115.html"],
       "5학년 분수": ["5121.html","5122.html","5123.html","5124.html",
                  "5141.html","5142.html","5143.html","5144.html","5145.html","5146.html",
-                 "5151.html","5152.html","5153.html","5154.html","5155.html","5156.html"]
+                 "5151.html","5152.html","5153.html","5154.html","5155.html","5156.html"],
+      "수의 범위·어림": ["5211.html","5212.html","5213.html","5214.html","5215.html","5216.html","5217.html"]
     };
     // 문제 화면이 들어 있는 폴더 (적지 않은 영역은 frac 폴더)
     const FRAC_DIRS = {
-      "혼합계산": "51/"
+      "혼합계산": "51/",
+      "수의 범위·어림": "52/"
     };
 
 
@@ -680,7 +706,7 @@
     });
 
     function switchScreen(type) {
-      ['add', 'sub', 'mul', 'div', 'frac3', 'frac4', 'mix5', 'frac5'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
+      ['add', 'sub', 'mul', 'div', 'frac3', 'frac4', 'mix5', 'frac5', 'range5'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
       document.getElementById('screen-' + type).classList.add('active'); document.getElementById('btn-' + type).classList.add('active');
     }
 
@@ -4980,12 +5006,12 @@ setTimeout(() => {
     })();
 
     // ==========================================
-    // 🍕 분수 영역 (3학년 분수·소수 / 4학년 분수·소수) + 🧮 혼합계산(51 폴더) + 🥧 5학년 분수(frac 폴더)
+    // 🍕 분수 영역 (3학년 분수·소수 / 4학년 분수·소수) + 🧮 혼합계산(51 폴더) + 🥧 5학년 분수(frac 폴더) + 📏 수의 범위·어림(52 폴더)
     //  - 문제 화면은 frac 폴더의 페이지를 iframe으로 띄움
     //  - 학생 정보는 sessionStorage로 넘기고(주소에 이름을 넣지 않음), 저장은 각 페이지의 frac-kit.js가 담당
     // ==========================================
     function initFracLevelSelects() {
-      ['frac3', 'frac4', 'mix5', 'frac5'].forEach(function(key) {
+      ['frac3', 'frac4', 'mix5', 'frac5', 'range5'].forEach(function(key) {
         const sel = document.getElementById(key + '-subLevel');
         if (!sel) return;
         sel.innerHTML = '';
@@ -5025,7 +5051,7 @@ setTimeout(() => {
     }
 
     function resetFracScreen() {
-      ['frac3', 'frac4', 'mix5', 'frac5'].forEach(function(key) {
+      ['frac3', 'frac4', 'mix5', 'frac5', 'range5'].forEach(function(key) {
         const frame = document.getElementById(key + '-frame');
         if (frame) { frame.style.display = 'none'; frame.src = 'about:blank'; }
         const ctrl = document.getElementById(key + '-curriculumControls');
@@ -5040,7 +5066,7 @@ setTimeout(() => {
     window.addEventListener('message', function(e) {
       if (e.origin !== location.origin || !e.data) return;
       if (e.data.type === 'frac-height') {
-        ['frac3', 'frac4', 'mix5', 'frac5'].forEach(function(key) {
+        ['frac3', 'frac4', 'mix5', 'frac5', 'range5'].forEach(function(key) {
           const frame = document.getElementById(key + '-frame');
           if (frame && frame.contentWindow === e.source) frame.style.height = Math.max(400, e.data.h) + 'px';
         });
