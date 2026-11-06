@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 5학년 분수 도우미(m5f) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>(자연수) × (대분수)</title>
+</head>
+<body>
+
+<div class="header-text">(자연수) × (대분수)</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 (자연수) × (대분수): 두 가지 방법</div>
+  <div class="rule-line"><span class="rule-tag">방법 1</span> 가분수로 바꾸어 곱해요. 2 × 2 1/3 = 2 × 7/3 = 14/3 = <b>4 2/3</b></div>
+  <div class="rule-line"><span class="rule-tag t2">방법 2</span> 자연수와 진분수로 나누어 곱해요. 2 × 2 1/3 = (2 × 2) + (2 × 1/3) = 4 + 2/3 = <b>4 2/3</b></div>
+  <div class="rule-line"><span class="rule-tag t3">크기</span> 1보다 큰 수를 곱하면 처음 수보다 커지고, 1보다 작은 수를 곱하면 작아져요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 5224 — (자연수) × (대분수) (교과서 5-2-2 42~43쪽, 수학익힘 32~33쪽, 성취기준 [6수01-10])
+// 진단 포인트: 자연수를 대분수의 자연수 부분에만 곱함, 곱하는 수의 크기(1보다 크고 작음)와 결과의 크기
+const R = M.rand;
+M.inlineQuestion = true;
+const X = F.OP['x'], P = F.OP['+'], EQ = '<span class="op">=</span>';
+const LP = '<span class="op">(</span>', RP = '<span class="op">)</span>';
+const ft = F.ft;
+// 조사: 분수는 분자를 마지막에 읽으므로(사분의 삼) 분자로, 자연수는 그 수로 받침을 판단
+const J = (s, a, b) => { const t = String(s), k = t.includes('/') ? t.split('/')[0].split(' ').pop() : t; return t + M.josa(k, a, b); };
+const mix = (lo, hi) => ({ w: R(1, 3), x: F.proper(lo || 2, hi || 9) });
+const V = m => F.v(m.w, m.x.n, m.x.d);
+const MX = m => F.mx(m.w, m.x.n, m.x.d);
+const mt = m => m.w + ' ' + ft(m.x);
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+  // 1번: 방법 1 (가분수로)
+  const [k1, m1] = F.gen(() => [R(2, 5), mix()], ([k, m]) => k * V(m).n <= 80);
+  const p1 = V(m1).n;
+  cards.push(M.card(0, `<div class="q-text">대분수를 가분수로 나타내어 계산해 보세요.</div>` +
+    `<div class="eq">${k1}${X}${MX(m1)}${EQ}${k1}${X}${F.fn(p1, m1.x.d)}${EQ}${F.tailN(k1 * p1, m1.x.d)}</div>`, true));
+  hints.push('가분수의 분자 = 자연수 × 분모 + 분자예요. 가분수로 바꾼 다음 자연수와 분자를 곱해요.');
+
+  // 2번: 방법 2 (자연수와 진분수의 합으로)
+  const [k2, m2] = F.gen(() => [R(2, 6), mix()], ([k, m]) => k * m.x.n > m.x.d && (k * m.x.n) % m.x.d !== 0);
+  cards.push(M.card(1, `<div class="q-text">대분수를 자연수와 진분수의 합으로 나타내어 계산해 보세요.</div>` +
+    `<div class="eq">${k2}${X}${MX(m2)}${EQ}${LP}${k2}${X}${m2.w}${RP}${P}${LP}${k2}${X}${F.fr(m2.x.n, m2.x.d)}${RP}${EQ}` +
+    `${M.box(k2 * m2.w)}${P}${F.fn(k2 * m2.x.n, m2.x.d)}${EQ}${F.ans(F.mul(F.nat(k2), V(m2)))}</div>`, true));
+  hints.push(`${k2}에 자연수 ${J(m2.w, '을', '를')} 곱하고, ${k2}에 진분수 ${ft(m2.x)}도 곱해서 더해요. 분수 부분이 1보다 크면 자연수로 올려요.`);
+
+  // 3번: 계산 (2문제, 하나는 약분이 있는 수)
+  const C3 = [F.gen(() => [R(2, 5), mix()], ([k, m]) => k * V(m).n <= 80),
+              F.gen(() => [R(2, 9), mix(3, 8)], ([k, m]) => F.gcd(k, m.x.d) > 1 && k * V(m).n <= 120)];
+  cards.push(M.card(2, `<div class="q-text">계산해 보세요.</div>` +
+    M.line(...C3.map(([k, m]) => `<div class="qbox">${F.calc(k + X + MX(m), F.mul(F.nat(k), V(m)))}</div>`)), true));
+  hints.push('방법 1(가분수로 바꾸기)이나 방법 2(자연수와 진분수로 나누기) 중 편한 방법으로 계산해요.');
+
+  // 4번: 문장제 (넓이)
+  const k4 = R(2, 5), m4 = mix(2, 6);
+  cards.push(M.card(3, `<div class="q-text">문제를 읽고 답을 구해 보세요.</div>` +
+    `<div class="word">지수네 모둠은 복도에 가로가 ${k4} m, 세로가 ${mt(m4)} m인 직사각형 모양의 벽화를 그렸습니다. 벽화의 넓이는 몇 m²인가요?</div>` +
+    `<div class="eq">${F.ans(F.mul(F.nat(k4), V(m4)))} <span class="unit">m²</span></div>`, true));
+  hints.push(`직사각형의 넓이 = 가로 × 세로이므로 ${k4} × ${J(mt(m4), '을', '를')} 계산해요.`);
+
+  // 5번: 크기 비교 (곱하는 수가 1보다 작을 때·클 때)
+  const k5 = R(3, 9), x5 = F.proper(2, 9), m5 = mix(2, 9);
+  cards.push(M.card(4, `<div class="q-text">계산하지 않고 크기를 비교하여 ○ 안에 &gt;, =, &lt;를 알맞게 골라 보세요.</div>` +
+    M.line(`<div class="qbox"><div class="eq cmp-row">${k5}${X}${F.fr(x5.n, x5.d)} ${M.cmp(x5.n, x5.d)} ${k5}</div></div>`,
+           `<div class="qbox"><div class="eq cmp-row">${k5}${X}${MX(m5)} ${M.cmp(V(m5).n, V(m5).d)} ${k5}</div></div>`), true));
+  hints.push(`${k5} × 1 = ${J(k5, '이에요', '예요')}. 곱하는 수가 1보다 작으면 ${k5}보다 작아지고, 1보다 크면 ${k5}보다 커져요.`);
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
