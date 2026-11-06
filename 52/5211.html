@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미(frac 폴더) → 공통 화면(frac/m423-common.js) → 수의 범위와 어림 도우미(m521) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="../frac/frac-kit.js"></script>
+<script src="../frac/m423-common.js?v=20261105-1"></script>
+<script src="m521-common.js?v=20261106-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>이상과 이하</title>
+</head>
+<body>
+
+<div class="header-text">이상과 이하</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 이상·이하는 기준이 되는 수를 포함해요</div>
+  <div class="rule-line"><span class="rule-tag">이상</span> 30보다 크거나 같은 수 → 30, 31, 32 … 는 <b>30 이상</b>인 수</div>
+  <div class="rule-line"><span class="rule-tag t2">이하</span> 20보다 작거나 같은 수 → 20, 19.8, 18.7 … 은 <b>20 이하</b>인 수</div>
+  <div class="rule-line"><span class="rule-tag t4">수직선</span> 기준 수에 <b>●</b>(포함)를 찍고, 범위 쪽으로 선을 그어요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 5211 — 이상과 이하 (교과서 5-2-1 12~13쪽, 수학익힘 10~11쪽, 성취기준 [6수01-02])
+// 진단 포인트: 기준 수 자체를 빼먹음(이상·이하를 '보다 큰/작은'으로 이해), 소수를 범위에서 빼먹음, 수직선에 ○를 찍음, 선을 반대쪽으로 그음
+const R = M.rand;
+M.inlineQuestion = true;
+
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: N 이상인 수 모두 고르기 (N 자체, N−1을 꼭 넣음)
+  const n1 = R(3, 8) * 5 + R(0, 4);
+  const pool1 = N.distinct(6, () => n1 + R(-12, 15)).filter(v => v !== n1 && v !== n1 - 1).slice(0, 6);
+  const list1 = M.shuffle([n1, n1 - 1].concat(pool1));
+  cards.push(M.card(0, `<div class="q-text">${n1} 이상인 수를 모두 골라 보세요.</div>` + N.nums(list1, v => v >= n1), true));
+  hints.push(`${n1} 이상인 수는 ${n1}보다 크거나 <b>같은</b> 수예요. ${n1}도 들어가요.`);
+
+  // 2번: 기록표에서 X초 이하인 기록 모두 고르기 (25 m 수영 — 소수 포함, 기준 수와 같은 기록 포함)
+  const lim2 = R(18, 24);
+  const names = M.shuffle(['주연', '원호', '소영', '성훈', '영은', '지민', '하준']).slice(0, 6);
+  const recs = M.shuffle([lim2 * 10, lim2 * 10 - R(1, 9), lim2 * 10 + R(1, 9), (lim2 - R(1, 3)) * 10 + R(0, 9), (lim2 + R(1, 2)) * 10 + R(0, 9), lim2 * 10 - R(10, 25)]);
+  const fmt = v => v % 10 ? (v / 10).toFixed(1) : String(v / 10);
+  cards.push(M.card(1, `<div class="q-text">25 m 수영 기록입니다. 기록이 ${lim2}초 이하인 사람을 모두 골라 보세요.</div>` +
+    N.table(['이름'].concat(names), [['기록(초)'].concat(recs.map(fmt))], '25 m 수영 기록') +
+    N.multi(names.map((nm, i) => [i, nm]), names.map((nm, i) => recs[i] <= lim2 * 10 ? i : null).filter(i => i !== null)), true));
+  hints.push(`${lim2}초 이하는 ${lim2}초보다 짧거나 <b>같은</b> 기록이에요. 소수로 된 기록도 ${lim2}초와 크기를 비교해 보세요.`);
+
+  // 3번: 수직선에 'A 이상인 수' 나타내기
+  const from3 = R(3, 7) * 5, a3 = from3 + R(3, 11);
+  cards.push(M.card(2, `<div class="q-text">수직선에 나타내어 보세요.</div><div class="range-label">${a3} 이상인 수</div>` +
+    N.line({ from: from3, to: from3 + 15 }, { lo: { v: a3, inc: true }, hi: null }), true));
+  hints.push(`${a3}${M.josa(a3, '을', '를')} 포함하니까 ${a3} 위에 ●를 찍고, ${a3}보다 큰 쪽(오른쪽)으로 선을 그어요.`);
+
+  // 4번: 수직선에 'B 이하인 수' 나타내기
+  const from4 = R(8, 14) * 5, b4 = from4 + R(4, 12);
+  cards.push(M.card(3, `<div class="q-text">수직선에 나타내어 보세요.</div><div class="range-label">${b4} 이하인 수</div>` +
+    N.line({ from: from4, to: from4 + 15 }, { lo: null, hi: { v: b4, inc: true } }), true));
+  hints.push(`${b4}${M.josa(b4, '을', '를')} 포함하니까 ${b4} 위에 ●를 찍고, ${b4}보다 작은 쪽(왼쪽)으로 선을 그어요.`);
+
+  // 5번: 수직선을 보고 수의 범위 쓰기 (이상/이하 중 하나)
+  const up = R(0, 1) === 1, from5 = R(2, 9) * 5, c5 = from5 + R(4, 11);
+  const r5 = up ? { lo: { v: c5, inc: true }, hi: null } : { lo: null, hi: { v: c5, inc: true } };
+  cards.push(M.card(4, `<div class="q-text">수직선에 나타낸 수의 범위를 써 보세요.</div>` + N.show({ from: from5, to: from5 + 15 }, r5) +
+    `<div class="eq">${M.box(c5)} ${N.word4(up ? '이상' : '이하', ['이상', '이하'])} <span class="tail">인 수</span></div>`, true));
+  hints.push('●가 찍힌 수를 쓰고, 선이 오른쪽(큰 쪽)으로 가면 이상, 왼쪽(작은 쪽)으로 가면 이하예요.');
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

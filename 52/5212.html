@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미(frac 폴더) → 공통 화면(frac/m423-common.js) → 수의 범위와 어림 도우미(m521) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="../frac/frac-kit.js"></script>
+<script src="../frac/m423-common.js?v=20261105-1"></script>
+<script src="m521-common.js?v=20261106-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>초과와 미만</title>
+</head>
+<body>
+
+<div class="header-text">초과와 미만</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 초과·미만은 기준이 되는 수를 포함하지 않아요</div>
+  <div class="rule-line"><span class="rule-tag">초과</span> 10보다 큰 수 → 11, 12, 13 … 은 <b>10 초과</b>인 수 (10은 아님)</div>
+  <div class="rule-line"><span class="rule-tag t2">미만</span> 11보다 작은 수 → 10.9, 10.2, 9.5 … 는 <b>11 미만</b>인 수 (11은 아님)</div>
+  <div class="rule-line"><span class="rule-tag t4">수직선</span> 기준 수에 <b>○</b>(포함하지 않음)를 그리고, 범위 쪽으로 선을 그어요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 5212 — 초과와 미만 (교과서 5-2-1 14~15쪽, 수학익힘 12~13쪽, 성취기준 [6수01-02])
+// 진단 포인트: 기준 수를 포함시킴(초과를 이상으로, 미만을 이하로 이해), 수직선에 ●를 찍음, 이상·이하·초과·미만 낱말 구분
+const R = M.rand;
+M.inlineQuestion = true;
+
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: N 초과인 수 모두 고르기 (N 자체와 N+1을 꼭 넣음)
+  const n1 = R(3, 8) * 5 + R(0, 4);
+  const pool1 = N.distinct(6, () => n1 + R(-12, 15)).filter(v => v !== n1 && v !== n1 + 1).slice(0, 6);
+  const list1 = M.shuffle([n1, n1 + 1].concat(pool1));
+  cards.push(M.card(0, `<div class="q-text">${n1} 초과인 수를 모두 골라 보세요.</div>` + N.nums(list1, v => v > n1), true));
+  hints.push(`${n1} 초과인 수는 ${n1}보다 큰 수예요. ${n1}${M.josa(n1, '은', '는')} 들어가지 않아요.`);
+
+  // 2번: 50 m 달리기 기록에서 X초 미만인 기록 모두 고르기 (소수 포함, 기준 수와 같은 기록 포함)
+  const lim2 = R(9, 12);
+  const names = M.shuffle(['은우', '윤서', '민재', '하나', '지성', '서아', '도윤']).slice(0, 6);
+  const recs = M.shuffle([lim2 * 10, lim2 * 10 - R(1, 4), lim2 * 10 + R(1, 9), lim2 * 10 - R(5, 9), (lim2 + 1) * 10 + R(0, 5), lim2 * 10 - R(11, 18)]);
+  const fmt = v => v % 10 ? (v / 10).toFixed(1) : String(v / 10);
+  cards.push(M.card(1, `<div class="q-text">50 m 달리기 기록입니다. 기록이 ${lim2}초 미만인 사람을 모두 골라 보세요.</div>` +
+    N.table(['이름'].concat(names), [['기록(초)'].concat(recs.map(fmt))], '50 m 달리기 기록') +
+    N.multi(names.map((nm, i) => [i, nm]), names.map((nm, i) => recs[i] < lim2 * 10 ? i : null).filter(i => i !== null)), true));
+  hints.push(`${lim2}초 미만은 ${lim2}초보다 짧은 기록이에요. 기록이 꼭 ${lim2}초인 사람은 들어가지 않아요.`);
+
+  // 3번: 수직선에 'A 초과인 수' 나타내기
+  const from3 = R(2, 8) * 5, a3 = from3 + R(3, 11);
+  cards.push(M.card(2, `<div class="q-text">수직선에 나타내어 보세요.</div><div class="range-label">${a3} 초과인 수</div>` +
+    N.line({ from: from3, to: from3 + 15 }, { lo: { v: a3, inc: false }, hi: null }), true));
+  hints.push(`${a3}${M.josa(a3, '은', '는')} 포함하지 않으니까 ${a3} 위에 ○를 그리고, ${a3}보다 큰 쪽(오른쪽)으로 선을 그어요.`);
+
+  // 4번: 수직선에 'B 미만인 수' 나타내기
+  const from4 = R(8, 14) * 5, b4 = from4 + R(4, 12);
+  cards.push(M.card(3, `<div class="q-text">수직선에 나타내어 보세요.</div><div class="range-label">${b4} 미만인 수</div>` +
+    N.line({ from: from4, to: from4 + 15 }, { lo: null, hi: { v: b4, inc: false } }), true));
+  hints.push(`${b4}${M.josa(b4, '은', '는')} 포함하지 않으니까 ${b4} 위에 ○를 그리고, ${b4}보다 작은 쪽(왼쪽)으로 선을 그어요.`);
+
+  // 5번: 수직선을 보고 수의 범위 쓰기 (이상·이하·초과·미만 네 가지 중 하나)
+  const w5 = M.pick(N.WORDS), from5 = R(2, 9) * 5, c5 = from5 + R(4, 11);
+  const inc5 = w5 === '이상' || w5 === '이하', right5 = w5 === '이상' || w5 === '초과';
+  const r5 = right5 ? { lo: { v: c5, inc: inc5 }, hi: null } : { lo: null, hi: { v: c5, inc: inc5 } };
+  cards.push(M.card(4, `<div class="q-text">수직선에 나타낸 수의 범위를 써 보세요.</div>` + N.show({ from: from5, to: from5 + 15 }, r5) +
+    `<div class="eq">${M.box(c5)} ${N.word4(w5)} <span class="tail">인 수</span></div>`, true));
+  hints.push('● 는 그 수를 포함하고(이상·이하), ○ 는 포함하지 않아요(초과·미만). 선이 오른쪽으로 가면 큰 수 쪽, 왼쪽으로 가면 작은 수 쪽이에요.');
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
