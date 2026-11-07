@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 5학년 분수 도우미(m5f) → 6학년 분수 도우미(m6f) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m6f-common.js?v=20261107-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>(분수) ÷ (자연수)를 분수의 곱셈으로</title>
+</head>
+<body>
+
+<div class="header-text">(분수) ÷ (자연수)를 분수의 곱셈으로 나타내요</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 ÷ (자연수) 는 × <sup>1</sup>⁄<sub>(자연수)</sub></div>
+  <div class="rule-line"><span class="rule-tag">원리</span> <sup>4</sup>⁄<sub>5</sub> ÷ 3 의 몫은 <sup>4</sup>⁄<sub>5</sub>를 3등분한 것 중 하나 → <sup>4</sup>⁄<sub>5</sub>의 <sup>1</sup>⁄<sub>3</sub></div>
+  <div class="rule-line"><span class="rule-tag t2">계산</span> <sup>4</sup>⁄<sub>5</sub> ÷ 3 = <sup>4</sup>⁄<sub>5</sub> × <sup>1</sup>⁄<sub>3</sub> = <b><sup>4</sup>⁄<sub>15</sub></b></div>
+  <div class="rule-line"><span class="rule-tag t3">약분</span> <sup>8</sup>⁄<sub>15</sub> ÷ 4 = <sup>8</sup>⁄<sub>15</sub> × <sup>1</sup>⁄<sub>4</sub> 처럼 곱셈으로 바꾼 다음 약분하면 편해요. → <b><sup>2</sup>⁄<sub>15</sub></b></div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 6114 — (분수) ÷ (자연수)를 분수의 곱셈으로 나타내기 (교과서 6-1-1 18~19쪽, 수학 익힘 16~17쪽, 성취기준 [6수01-11])
+// 진단 포인트: ÷ (자연수)를 × (자연수)로 바꿈, 나누어지는 분수를 뒤집음
+const R = M.rand;
+M.inlineQuestion = true;
+const { EQ, DV, X, J, ro } = G;
+const ft = F.ft;
+const STORY = [
+  (x, k) => ({ unit: 'kg', text: `찰흙 ${ft(x)} kg을 ${k}명에게 똑같이 나누어 주려고 합니다. 한 명에게 줄 수 있는 찰흙은 몇 kg인가요?` }),
+  (x, k) => ({ unit: 't', text: `음식물 쓰레기로 만든 가스 ${ft(x)} t을 발전기 ${k}대에 똑같이 나누어 넣었습니다. 발전기 한 대에 넣은 가스는 몇 t인가요?` }),
+  (x, k) => ({ unit: 'L', text: `물 ${ft(x)} L를 화분 ${k}개에 똑같이 나누어 주었습니다. 화분 한 개에 준 물은 몇 L인가요?` })
+];
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 그림 — n/d의 1/k
+  const [x1, k1] = [G.proper(3, 7), R(2, 4)];
+  cards.push(M.card(0, `<div class="q-text">${G.sf(x1.n, x1.d)} ÷ ${J(k1, '을', '를')} 그림으로 알아보고, 분수의 곱셈으로 나타내어 계산해 보세요.</div>` + G.area(x1.n, x1.d, k1) +
+    `<div class="eq" style="font-size:18px">빗금 친 부분은 ${F.fr(x1.n, x1.d)}${M.josa(x1.n, '을', '를')} ${k1}등분한 것 중의 하나이므로 ${F.fr(x1.n, x1.d)}의 ${F.fd(1, k1)}입니다.</div>` +
+    `<div class="eq">${F.fr(x1.n, x1.d)}${DV}${k1}${EQ}${F.fr(x1.n, x1.d)}${X}${F.fd(1, k1)}${EQ}${F.tailF(x1.n, x1.d * k1)}</div>`, true));
+  hints.push(`${k1}등분한 것 중 하나는 전체의 ${M.frac(1, k1, true)}이에요. 그래서 ÷ ${k1}${M.josa(k1, '은', '는')} × ${M.frac(1, k1, true)}과 같아요.<br>분자끼리, 분모끼리 곱해요.`);
+
+  // 2번: 곱셈으로 나타내어 계산 (두 단계)
+  const [x2, k2] = F.gen(() => [G.proper(3, 9), R(2, 6)], ([x, k]) => x.n >= 2 && x.d * k <= 60 && !(x.n === x1.n && x.d === x1.d));
+  const [x2b, k2b] = F.gen(() => [G.proper(4, 11), R(2, 7)], ([x, k]) => x.d * k <= 80 && !(x.n === x2.n && x.d === x2.d));
+  cards.push(M.card(1, `<div class="q-text">분수의 곱셈으로 나타내어 계산해 보세요.</div>` +
+    `<div class="eq">${F.fr(x2.n, x2.d)}${DV}${k2}${EQ}${F.fr(x2.n, x2.d)}${X}${F.fd(1, k2)}${EQ}${F.ex(x2.n + ' × ' + M.box(1), x2.d + ' × ' + M.box(k2))}${EQ}${F.tailF(x2.n, x2.d * k2)}</div>` +
+    `<div class="eq">${F.fr(x2b.n, x2b.d)}${DV}${k2b}${EQ}${F.fr(x2b.n, x2b.d)}${X}${F.fd(1, k2b)}${EQ}${F.ans(G.div(x2b, G.nat(k2b)))}</div>`, true));
+  hints.push('÷ (자연수)를 × 1/(자연수)로 바꾸어요. 분자는 분자끼리, 분모는 분모끼리 곱해요.<br>약분할 수 있으면 기약분수로 나타내요.');
+
+  // 3번: 약분하여 계산 (분자와 자연수가 약분되는 경우)
+  const c3 = [0, 1].map(() => F.gen(() => [{ n: R(4, 20), d: R(5, 23) }, R(2, 8)],
+    ([x, k]) => x.n < x.d && G.coprime(x.n, x.d) && F.gcd(x.n, k) > 1));
+  cards.push(M.card(2, `<div class="q-text">계산해 보세요.</div>` +
+    M.line(...c3.map(([x, k]) => `<div class="qbox">${F.calc(F.fr(x.n, x.d) + DV + k, G.div(x, G.nat(k)))}</div>`)), true));
+  hints.push('곱셈으로 바꾼 다음, 분자와 자연수(곱하는 분수의 분모)를 약분하면 계산이 쉬워요.<br>예) 8/15 × 1/4 → 8과 4를 4로 약분 → 2/15');
+
+  // 4번: 문장제
+  const [x4, k4] = F.gen(() => [G.proper(5, 15), R(2, 6)], ([x, k]) => x.n >= 2 && x.d * k <= 75);
+  const s4 = M.pick(STORY)(x4, k4);
+  cards.push(M.card(3, `<div class="q-text">문제를 읽고 식을 쓰고 답을 구해 보세요.</div>` + G.word(s4.text) +
+    M.line(`<div class="eq">식: ${F.ff(x4.n, x4.d)}${DV}${M.box(k4)}</div>`, `<div class="eq">답: ${F.ans(G.div(x4, G.nat(k4)))} ${s4.unit}</div>`), true));
+  hints.push(`전체를 ${ro(k4)} 똑같이 나누므로 ${ft(x4)} ÷ ${G.ye(k4)}. ${ft(x4)} × 1/${k4}${M.josa(k4, '과', '와')} 같아요.`);
+
+  // 5번: 같은 곱셈식 고르기 (오개념: ×자연수, 나누어지는 분수 뒤집기) + 계산
+  const [x5, k5] = F.gen(() => [G.proper(3, 9), R(2, 7)], ([x, k]) => x.n > 1 && x.d * k <= 63);
+  const f = (n, d) => M.frac(n, d, true);
+  cards.push(M.card(4, `<div class="q-text">${G.sf(x5.n, x5.d)} ÷ ${k5}${M.josa(k5, '과', '와')} 계산 결과가 같은 곱셈식을 고르고, 몫을 구해 보세요.</div>` +
+    `<div class="row"><div class="choice-group-wrap">` + F.one(`${f(x5.n, x5.d)} × ${f(1, k5)}`, [`${f(x5.n, x5.d)} × ${k5}`, `${f(x5.d, x5.n)} × ${f(1, k5)}`]) + `</div></div>` +
+    `<div class="eq">${F.fr(x5.n, x5.d)}${DV}${k5}${EQ}${F.ans(G.div(x5, G.nat(k5)))}</div>`, true));
+  hints.push('나누는 자연수만 1/(자연수)로 바꾸어 곱해요. 나누어지는 분수는 그대로 두어요.');
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

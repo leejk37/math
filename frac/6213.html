@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 5학년 분수 도우미(m5f) → 6학년 분수 도우미(m6f) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m6f-common.js?v=20261107-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>분모가 다른 (분수) ÷ (분수)</title>
+</head>
+<body>
+
+<div class="header-text">분모가 다른 (분수) ÷ (분수)</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 통분한 다음 분자끼리 나누어요</div>
+  <div class="rule-line"><span class="rule-tag">원리</span> <sup>4</sup>⁄<sub>5</sub> ÷ <sup>1</sup>⁄<sub>10</sub> → <sup>4</sup>⁄<sub>5</sub> = <sup>8</sup>⁄<sub>10</sub> 이고 <sup>8</sup>⁄<sub>10</sub>은 <sup>1</sup>⁄<sub>10</sub>의 8배 → <b>8</b></div>
+  <div class="rule-line"><span class="rule-tag t2">계산</span> <sup>3</sup>⁄<sub>4</sub> ÷ <sup>2</sup>⁄<sub>3</sub> = <sup>9</sup>⁄<sub>12</sub> ÷ <sup>8</sup>⁄<sub>12</sub> = 9 ÷ 8 = <sup>9</sup>⁄<sub>8</sub> = <b>1<sup>1</sup>⁄<sub>8</sub></b></div>
+  <div class="rule-line"><span class="rule-tag t3">주의</span> 분모가 다를 때 분자끼리 바로 나누면 안 돼요. 먼저 통분해요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 6213 — 분모가 다른 (분수) ÷ (분수) (교과서 6-2-1 16~17쪽, 수학 익힘 14~15쪽, 성취기준 [6수01-11])
+// 진단 포인트: 통분하지 않고 분자끼리 나눔, 나누어지는 수와 나누는 수를 바꾸어 나눔
+const R = M.rand;
+M.inlineQuestion = true;
+const { EQ, DV, J } = G;
+const sf = G.sf, ft = F.ft;
+const STORY = [
+  (x, y) => ({ unit: '배', text: `모양과 크기가 같은 빵 2개가 있습니다. 준영이는 빵 한 개의 ${ft(x)}을(를) 먹었고, 동생은 빵 한 개의 ${ft(y)}을(를) 먹었습니다. 준영이가 먹은 빵의 양은 동생이 먹은 빵의 양의 몇 배인가요?` }),
+  (x, y) => ({ unit: '배', text: `과일차를 만들기 위해 물 ${ft(x)} L와 과일 원액 ${ft(y)} L를 섞었습니다. 물의 양은 과일 원액의 양의 몇 배인가요?` }),
+  (x, y) => ({ unit: '배', text: `빨간 끈의 길이는 ${ft(x)} m이고, 파란 끈의 길이는 ${ft(y)} m입니다. 빨간 끈의 길이는 파란 끈의 길이의 몇 배인가요?` })
+];
+const obj = (n) => M.josa(n, '을', '를');
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 수직선 — a/b ÷ 1/(b×k)
+  const [x1, k1] = F.gen(() => [G.proper(2, 5), R(2, 3)], ([x, k]) => x.d * k <= 12);
+  const D1 = x1.d * k1, A1 = x1.n * k1;
+  cards.push(M.card(0, `<div class="q-text">그림을 보고 ${sf(x1.n, x1.d)} ÷ ${sf(1, D1)}이 얼마인지 알아보세요.</div>` +
+    G.jumps(D1, A1, 1, { arcLabel: false, endLabel: [x1.n, x1.d] }) +
+    `<div class="eq" style="font-size:18px">${F.fr(x1.n, x1.d)}${EQ}${F.fn(A1, D1)} 이므로, ${F.fr(x1.n, x1.d)}${M.josa(x1.n, '은', '는')} ${F.fr(1, D1)}의 ${M.box(A1)}배입니다.</div>` +
+    `<div class="eq">${F.fr(x1.n, x1.d)}${DV}${F.fr(1, D1)}${EQ}${F.fn(A1, D1)}${DV}${F.fr(1, D1)}${EQ}${M.box(A1)}</div>`, true));
+  hints.push(`${M.frac(x1.n, x1.d, true)}${M.josa(x1.n, '을', '를')} 분모가 ${D1}인 분수로 바꾸어요. 분모가 같아지면 분자끼리 나누어요.`);
+
+  // 2번: 통분하여 계산
+  const [x2, y2] = F.gen(() => [G.proper(3, 9), G.proper(3, 9)], ([x, y]) => x.d !== y.d && F.lcm(x.d, y.d) <= 45 && !F.eq(x, y));
+  const L2 = F.lcm(x2.d, y2.d), A2 = x2.n * L2 / x2.d, C2 = y2.n * L2 / y2.d;
+  cards.push(M.card(1, `<div class="q-text">두 분모의 최소공배수로 통분하여 ${sf(x2.n, x2.d)} ÷ ${sf(y2.n, y2.d)}${M.josa(y2.n, '을', '를')} 계산해 보세요.</div>` +
+    `<div class="eq">${F.fr(x2.n, x2.d)}${DV}${F.fr(y2.n, y2.d)}${EQ}${F.fn(A2, L2)}${DV}${F.fn(C2, L2)}${EQ}${M.box(A2)}${DV}${M.box(C2)}${EQ}${F.tailF(A2, C2)}</div>`, true));
+  hints.push(`두 분모 ${x2.d}${M.josa(x2.d, '과', '와')} ${y2.d}의 최소공배수는 ${G.ye(L2)}. 분모를 ${G.ro(L2)} 같게 만든 다음 분자끼리 나누어요.`);
+
+  // 3번: 계산
+  const c3 = [0, 1].map(() => F.gen(() => [G.proper(2, 9), G.proper(2, 9)], ([x, y]) => x.d !== y.d && F.lcm(x.d, y.d) <= 40 && !F.eq(x, y)));
+  cards.push(M.card(2, `<div class="q-text">계산해 보세요.</div>` +
+    M.line(...c3.map(([x, y]) => `<div class="qbox">${F.calc(F.fr(x.n, x.d) + DV + F.fr(y.n, y.d), G.div(x, y))}</div>`)), true));
+  hints.push('먼저 통분하고, 분자끼리 나누어요. 몫이 나누어떨어지지 않으면 분수로 나타내요.');
+
+  // 4번: 몇 배 문장제
+  const [x4, y4] = F.gen(() => [G.proper(2, 8), G.proper(3, 10)], ([x, y]) => x.d !== y.d && F.lt(y, x) && F.lcm(x.d, y.d) <= 40 && x.n + y.n >= 3);
+  const s4 = M.pick(STORY)(x4, y4);
+  const t4 = s4.text.replace(`${ft(x4)}을(를)`, `${ft(x4)}${obj(x4.n)}`).replace(`${ft(y4)}을(를)`, `${ft(y4)}${obj(y4.n)}`);
+  cards.push(M.card(3, `<div class="q-text">문제를 읽고 식을 쓰고 답을 구해 보세요.</div>` + G.word(t4) +
+    M.line(`<div class="eq">식: ${F.ff(x4.n, x4.d)}${DV}${F.ff(y4.n, y4.d)}</div>`, `<div class="eq">답: ${F.ans(G.div(x4, y4))} ${s4.unit}</div>`), true));
+  hints.push('"몇 배인가요?"는 기준이 되는 양으로 나누어요. 두 분수를 통분하여 나누어요.');
+
+  // 5번: 바르게 계산한 것 고르기 (함정: 통분하지 않고 분자끼리 나눔, 순서를 바꾸어 나눔)
+  const [x5, y5] = F.gen(() => [G.proper(3, 9), G.proper(3, 9)], ([x, y]) => {
+    if (x.d === y.d || F.lcm(x.d, y.d) > 45 || x.n + y.n < 4) return false;
+    const r = G.div(x, y), w1 = F.simp(x.n, y.n), w2 = G.div(y, x);
+    return !F.eq(r, w1) && !F.eq(r, w2) && !F.eq(w1, w2);
+  });
+  const pre = `${sf(x5.n, x5.d)} ÷ ${sf(y5.n, y5.d)} = `;
+  cards.push(M.card(4, `<div class="q-text">바르게 계산한 것을 골라 보세요.</div>` +
+    F.one(pre + G.fs(G.div(x5, y5)), [pre + G.fs(F.simp(x5.n, y5.n)), pre + G.fs(G.div(y5, x5))]), true));
+  hints.push('분모가 다르면 먼저 통분해야 해요. 통분한 다음, 나누어지는 수(÷ 앞)의 분자를 나누는 수(÷ 뒤)의 분자로 나누어요.');
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
