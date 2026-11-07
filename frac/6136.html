@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 분수 빈칸(m5f) → 소수 도우미(m524) → 소수의 나눗셈 도우미(m6d) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m524-common.js?v=20261106-1"></script>
+<script src="m6d-common.js?v=20261107-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>(자연수) ÷ (자연수)의 몫을 소수로 나타내기</title>
+</head>
+<body>
+
+<div class="header-text">(자연수) ÷ (자연수)의 몫을 소수로 나타내어 보아요</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 3 = 3.0 = 3.00 — 소수점 아래 0을 내려 계속 나누어요!</div>
+  <div class="rule-line"><span class="rule-tag">세로</span> 3 ÷ 4 → 3.00 ÷ 4 → 30 ÷ 4 = 7 남은 2 → 20 ÷ 4 = 5 → <b>0.75</b></div>
+  <div class="rule-line"><span class="rule-tag t3">자연수</span> 300 ÷ 4 = 75 → 나누어지는 수가 <sup>1</sup>⁄<sub>100</sub>배이면 몫도 <sup>1</sup>⁄<sub>100</sub>배 → 3 ÷ 4 = 0.75</div>
+  <div class="rule-line"><span class="rule-tag t2">분수</span> 3 ÷ 4 = <sup>3</sup>⁄<sub>4</sub> = <sup>3×25</sup>⁄<sub>4×25</sub> = <sup>75</sup>⁄<sub>100</sub> = 0.75</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 6136 — (자연수) ÷ (자연수)의 몫을 소수로 나타내기 (교과서 6-1-3 68~69쪽, 수학 익힘 46~47쪽)
+const f = M.fmt, f0 = M.fmt0;
+const STORY = [
+  (a, n) => ({ unit: '장', text: `크기가 같은 한지 ${a}장을 ${n}명이 똑같이 나누어 가지려고 합니다. 한 명이 가질 수 있는 한지는 몇 장인지 소수로 나타내어 보세요.` }),
+  (a, n) => ({ unit: 'km', text: `일정한 빠르기로 공원을 ${n}바퀴 도는 데 ${a} km를 걸었습니다. 공원 한 바퀴는 몇 km인지 소수로 나타내어 보세요.` }),
+  (a, n) => ({ unit: 'L', text: `물 ${a} L를 ${n}명이 똑같이 나누어 마셨습니다. 한 명이 마신 물은 몇 L인지 소수로 나타내어 보세요.` })
+];
+// 몫이 소수 한 자리 또는 두 자리에서 나누어떨어지는 (자연수) ÷ (자연수).  q: 몫(0.01 단위), qp: 몫의 소수 자릿수
+function mk(nList, aLo, aHi, test) {
+  return F.gen(() => {
+    const n = M.pick(nList), a = M.rand(aLo, aHi);
+    const qp = (a * 10) % n === 0 ? 1 : 2;
+    return { n, a, qp, q: a * 100 / n };
+  }, o => o.a % o.n !== 0 && (o.a * 100) % o.n === 0 && (!test || test(o)));
+}
+const ex = (o) => `${o.a} ÷ ${o.n}`;
+
+M.inlineQuestion = true; // 문제 지시문을 '문제 N' 바로 옆에
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 문장제 — 어림하고 식·답 쓰기
+  const p1 = mk([2, 4, 5, 8], 3, 19);
+  const s1 = M.pick(STORY)(p1.a, p1.n);
+  cards.push(M.card(0, `<div class="q-text">${s1.text}</div>` +
+    `<div class="eq" style="font-size:18px">어림하기: ${D.est(p1.q, 2, s1.unit)}</div>` +
+    M.line(`<div class="eq" style="font-size:19px">식: ${M.box(p1.a)} ÷ ${M.box(p1.n)}</div>`,
+      `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(p1.q, 2)} ${s1.unit}</span></div>`), true));
+  hints.push(`${p1.a} ÷ ${p1.n}의 몫은 ${Math.floor(p1.a / p1.n)}${M.josa(String(Math.floor(p1.a / p1.n)), '과', '와')} ${Math.floor(p1.a / p1.n) + 1} 사이예요.<br>나누어떨어지지 않으면 ${p1.a} = ${p1.a}.0 = ${p1.a}.00처럼 생각하여 0을 내려 계산해요.`);
+
+  // 2번: 자연수의 나눗셈을 이용하기 (300 ÷ 4 = 75 → 3 ÷ 4)
+  const p2 = mk([2, 4, 5, 8, 20, 25], 1, 30, o => o.a !== p1.a);
+  const A2 = p2.a * M.pow(p2.qp), Q2 = A2 / p2.n;
+  cards.push(M.card(1, `<div class="q-text">${A2} ÷ ${p2.n} = ${Q2}${M.josa(String(Q2), '을', '를')} 이용하여 ${ex(p2)}의 몫을 소수로 나타내어 보세요.</div>` +
+    D.divArrows({ A: A2, n: p2.n, pa: p2.qp, pick: true }), true));
+  hints.push(`나누는 수는 그대로이고, 나누어지는 수 ${A2}${M.josa(String(A2), '이', '가')} ${p2.a}${M.josa(String(p2.a), '으로', '로')} ${M.frac(1, M.pow(p2.qp), true)}배가 되었어요.<br>그러면 몫도 ${M.frac(1, M.pow(p2.qp), true)}배가 돼요.`);
+
+  // 3번: 분수로 나타낸 다음 소수로
+  const p3 = mk([2, 4, 5, 20, 25], 1, 24, o => o.a !== p2.a && o.a < o.n * 3);
+  const den3 = 10 % p3.n === 0 && p3.qp === 1 ? 10 : 100, k3 = den3 / p3.n;
+  cards.push(M.card(2, `<div class="q-text">${ex(p3)}의 몫을 분수로 나타낸 다음, 소수로 나타내어 보세요.</div>` +
+    `<div class="eq">${ex(p3)} = ${F.fin(M.box(p3.a), p3.n)} = ${F.fin(M.box(p3.a) + '<span style="margin:0 3px">×</span>' + M.box(k3), p3.n + '<span style="margin:0 3px">×</span>' + M.box(k3))} = ${F.fin(M.box(p3.a * k3), den3)} = ${M.dbox(p3.q, 2)}</div>`, true));
+  hints.push(`(자연수) ÷ (자연수)의 몫은 분수 ${M.frac('나누어지는 수', '나누는 수', true)}로 나타낼 수 있어요.<br>분모가 ${den3}이 되도록 분모와 분자에 같은 수를 곱한 다음 소수로 나타내요.`);
+
+  // 4번: 세로로 계산하기 (나누어지는 수 < 나누는 수, 나누어지는 수 > 나누는 수)
+  const p4a = mk([4, 5, 8, 20, 25], 1, 24, o => o.a < o.n);
+  const p4b = mk([4, 5, 8], 9, 39, o => o.a > o.n && o.a !== p1.a);
+  cards.push(M.card(3, `<div class="q-text">나눗셈의 몫을 소수로 나타내어 보세요. (흐린 0은 소수점 아래에 내려 쓴 0이에요)</div>` +
+    M.line(D.vdiv({ a: p4a.a, pa: 0, n: p4a.n }), D.vdiv({ a: p4b.a, pa: 0, n: p4b.n })), true));
+  hints.push(`나누어지는 수의 일의 자리 뒤에 소수점을 찍고 0을 내려 계속 나누어요.<br>몫의 소수점은 나누어지는 수의 소수점 위에 찍어요.`);
+
+  // 5번: 옳게 계산한 사람 찾기 + 몫 구하기
+  const r5 = mk([4, 5, 8, 20, 25], 1, 30);
+  const w5 = mk([2, 4, 5, 8], 9, 39, o => o.a !== r5.a);
+  const wrongTxt = f0(w5.q * 10, 2);   // 소수점을 한 자리 잘못 찍은 몫
+  const okFirst = Math.random() < 0.5;
+  const sayR = `${ex(r5)} = ${f0(r5.q, 2)}`, sayW = `${ex(w5)} = ${wrongTxt}`;
+  const people = okFirst ? [['규민', sayR], ['시은', sayW]] : [['규민', sayW], ['시은', sayR]];
+  const okName = okFirst ? '규민' : '시은', badName = okFirst ? '시은' : '규민';
+  cards.push(M.card(4, `<div class="q-text">옳게 계산한 사람을 고르고, 잘못 계산한 사람의 몫을 바르게 고쳐 보세요.</div>` +
+    `<div class="choice-group speech-pick" tabindex="-1" data-ans="${okName}">` + people.map(p => `<button type="button" class="choice-btn" data-v="${p[0]}"><span class="who">${p[0]}</span>${p[1]}</button>`).join('') + `</div>` +
+    `<div class="eq">${badName}의 나눗셈: ${ex(w5)} = ${M.dbox(w5.q, 2)}</div>`, true));
+  hints.push(`두 나눗셈을 직접 계산해 보세요.<br>몫의 크기를 어림하면 소수점을 잘못 찍었는지 알 수 있어요. 예) ${w5.a} ÷ ${w5.n}의 몫은 ${Math.floor(w5.a / w5.n)}${M.josa(String(Math.floor(w5.a / w5.n)), '과', '와')} ${Math.floor(w5.a / w5.n) + 1} 사이예요.`);
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
