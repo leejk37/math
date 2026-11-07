@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 분수 빈칸(m5f) → 소수 도우미(m524) → 소수의 나눗셈 도우미(m6d) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m524-common.js?v=20261106-1"></script>
+<script src="m6d-common.js?v=20261107-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>(소수) ÷ (소수) — 자릿수가 같은 경우</title>
+</head>
+<body>
+
+<div class="header-text">(소수) ÷ (소수)를 계산해요 — 자릿수가 같은 경우</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 소수점을 똑같이 옮겨 (자연수) ÷ (자연수)로 계산해요!</div>
+  <div class="rule-line"><span class="rule-tag t2">분수</span> 3.6 ÷ 0.2 = <sup>36</sup>⁄<sub>10</sub> ÷ <sup>2</sup>⁄<sub>10</sub> = 36 ÷ 2 = 18</div>
+  <div class="rule-line"><span class="rule-tag t3">자연수</span> 1.26 ÷ 0.18 → 두 수를 100배 → 126 ÷ 18 = 7</div>
+  <div class="rule-line"><span class="rule-tag">세로</span> 0.18)1.26 → 두 수의 소수점을 오른쪽으로 똑같이 두 자리씩 옮겨 18)126</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 6222 — (소수) ÷ (소수), 자릿수가 같은 경우 (교과서 6-2-2 38~39쪽, 수학 익힘 26~27쪽)
+const f = M.fmt;
+const STORY = [
+  (a, b) => ({ unit: '명', text: `바나나튀김 반죽 ${f(a, 1)} kg이 있습니다. 한 사람이 체험하는 데 반죽 ${f(b, 1)} kg이 필요하다면 체험을 할 수 있는 사람은 몇 명인가요?` }),
+  (a, b) => ({ unit: '병', text: `주스 ${f(a, 1)} L를 한 병에 ${f(b, 1)} L씩 나누어 담으려고 합니다. 몇 병에 담을 수 있나요?` }),
+  (a, b) => ({ unit: '도막', text: `끈 ${f(a, 1)} m를 ${f(b, 1)} m씩 자르려고 합니다. 몇 도막이 되나요?` })
+];
+// 몫 Q(자연수), 나누는 수 b(10^-p 단위, 소수점 아래 자릿수 p) → a = Q × b
+function mk(p, bLo, bHi, qLo, qHi, test) {
+  return F.gen(() => { const b = M.rand(bLo, bHi), Q = M.rand(qLo, qHi); return { p, b, Q, a: b * Q }; },
+    o => o.a % 10 !== 0 && o.b % 10 !== 0 && (!test || test(o)));
+}
+const ex = (o) => `${f(o.a, o.p)} ÷ ${f(o.b, o.p)}`;
+
+M.inlineQuestion = true; // 문제 지시문을 '문제 N' 바로 옆에
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 문장제 — 어림하고 식·답 쓰기
+  const p1 = mk(1, 2, 9, 11, 29, o => o.a < 1000);
+  const s1 = M.pick(STORY)(p1.a, p1.b);
+  cards.push(M.card(0, `<div class="q-text">${s1.text}</div>` +
+    `<div class="eq" style="font-size:18px">어림하기: ${D.est(p1.Q, 0, s1.unit)}</div>` +
+    M.line(`<div class="eq" style="font-size:19px">식: ${M.dbox(p1.a, 1)} ÷ ${M.dbox(p1.b, 1)}</div>`,
+      `<div class="eq" style="font-size:19px">답: <span class="tail">${M.box(p1.Q)} ${s1.unit}</span></div>`), true));
+  hints.push(`(전체 양) ÷ (한 번에 쓰는 양)이에요.<br>두 수를 똑같이 10배 하면 ${p1.a} ÷ ${p1.b}${M.josa(String(p1.b), '과', '와')} 몫이 같아요.`);
+
+  // 2번: 분수의 나눗셈으로 (소수 한 자리, 소수 두 자리)
+  const p2a = mk(1, 2, 9, 11, 39, o => o.a !== p1.a && o.a < 1000);
+  const p2b = mk(2, 12, 99, 2, 9, o => o.a >= 100 && o.a < 1000);
+  const fr = (o) => {
+    const d = M.pow(o.p);
+    return `<div class="eq">${ex(o)} = ${F.fin(M.box(o.a), d)} ÷ ${F.fin(M.box(o.b), d)} = ${M.box(o.a)} ÷ ${M.box(o.b)} = ${M.box(o.Q)}</div>`;
+  };
+  cards.push(M.card(1, `<div class="q-text">소수의 나눗셈을 분수의 나눗셈으로 나타내어 계산해 보세요.</div>` + fr(p2a) + fr(p2b), true));
+  hints.push(`분모가 같은 분수의 나눗셈은 분자끼리 나누면 돼요.<br>소수 한 자리 수는 분모가 10, 소수 두 자리 수는 분모가 100인 분수로 나타내요.`);
+
+  // 3번: 자연수의 나눗셈을 이용하기 (1.26 ÷ 0.18 → 126 ÷ 18)
+  const p3 = mk(2, 12, 49, 2, 9, o => o.a >= 100 && o.a < 1000 && o.a !== p2b.a);
+  cards.push(M.card(2, `<div class="q-text">자연수의 나눗셈을 이용하여 ${ex(p3)}${M.josa(f(p3.b, 2), '을', '를')} 계산해 보세요.</div>` +
+    D.shiftArrows({ a: p3.a, pa: 2, b: p3.b, pb: 2, s: 2, showA: false, boxB: true }), true));
+  hints.push(`나누는 수 ${f(p3.b, 2)}${M.josa(f(p3.b, 2), '을', '를')} 자연수로 만들려면 100배 해야 해요.<br>나누어지는 수에도 똑같이 100배 해요.`);
+
+  // 4번: 소수점을 옮겨 세로로 계산하기
+  const p4a = mk(1, 2, 9, 11, 39, o => o.a < 1000);
+  const p4b = mk(2, 12, 49, 2, 9, o => o.a >= 100 && o.a < 1000 && o.a !== p3.a);
+  cards.push(M.card(3, `<div class="q-text">두 수의 소수점을 똑같이 옮겨 세로로 계산해 보세요.</div>` +
+    M.line(D.vdiv({ a: p4a.a, pa: 0, n: p4a.b, label: `${ex(p4a)} → 소수점을 한 자리씩 옮겨요` }),
+      D.vdiv({ a: p4b.a, pa: 0, n: p4b.b, label: `${ex(p4b)} → 소수점을 두 자리씩 옮겨요` })), true));
+  hints.push(`나누는 수의 소수점을 오른쪽으로 옮긴 만큼 나누어지는 수의 소수점도 똑같이 옮겨요.<br>그러면 (자연수) ÷ (자연수)가 되니 자연수의 나눗셈처럼 계산해요.`);
+
+  // 5번: 계산하기 + 계산 결과 비교
+  const p5a = mk(1, 2, 9, 11, 39, o => o.a < 1000), p5b = mk(2, 12, 99, 2, 9, o => o.a >= 100 && o.a < 1000);
+  const c1 = mk(1, 2, 9, 4, 19, o => o.a < 100), c2 = mk(1, 2, 9, 4, 19, o => o.a < 100 && o.Q !== c1.Q);
+  cards.push(M.card(4, `<div class="q-text">계산해 보고, 계산 결과를 비교해 보세요.</div>` +
+    M.line(`<div class="eq qbox">${ex(p5a)} = ${M.box(p5a.Q)}</div>`, `<div class="eq qbox">${ex(p5b)} = ${M.box(p5b.Q)}</div>`) +
+    `<div class="cmp-row qbox">${ex(c1)} ${M.cmp(c1.Q, c2.Q)} ${ex(c2)}</div>`, true));
+  hints.push(`두 수의 소수점 아래 자릿수가 같으니, 소수점을 지우고 자연수끼리 나눈 것과 몫이 같아요.<br>예) 5.6 ÷ 0.8 = 56 ÷ 8 = 7`);
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

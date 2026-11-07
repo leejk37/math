@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 분수 빈칸(m5f) → 소수 도우미(m524) → 소수의 나눗셈 도우미(m6d) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m524-common.js?v=20261106-1"></script>
+<script src="m6d-common.js?v=20261107-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>몫을 반올림하여 나타내기</title>
+</head>
+<body>
+
+<div class="header-text">나눗셈의 몫을 반올림하여 나타내어 보아요</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 나타낼 자리 바로 아래 자리에서 반올림해요!</div>
+  <div class="rule-line"><span class="rule-tag">예</span> 16.2 ÷ 10.5 = 1.54… </div>
+  <div class="rule-line"><span class="rule-tag t3">일의 자리</span> 소수 첫째 자리 5에서 반올림 → <b>2</b></div>
+  <div class="rule-line"><span class="rule-tag t2">소수 첫째 자리</span> 소수 둘째 자리 4에서 반올림 → <b>1.5</b></div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 6225 — 몫을 반올림하여 나타내기 (교과서 6-2-2 44~45쪽, 수학 익힘 32~33쪽)
+const f = M.fmt, f0 = M.fmt0;
+// 나눗셈 x = num / den.  k자리까지 반올림한 값(10^-k 단위 정수): (2·num·10^k + den) / (2·den) 를 버림
+const rnd = (num, den, k) => Math.floor((2 * num * M.pow(k) + den) / (2 * den));
+// 끝없이 이어지는(또는 소수 셋째 자리 아래까지 이어지는) 나눗셈만: 반올림할 자리 아래가 0이 아니고, 셋째 자리까지 나누어떨어지지 않음
+const endless = (num, den) => (num * 1000) % den !== 0;
+// 소수 a(10^-pa) ÷ 소수 b(10^-pb) → { num, den }
+const frac = (a, pa, b, pb) => ({ num: a * M.pow(pb), den: b * M.pow(pa) });
+const ex = (a, pa, b, pb) => `${f(a, pa)} ÷ ${f(b, pb)}`;
+
+M.inlineQuestion = true; // 문제 지시문을 '문제 N' 바로 옆에
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 몫을 소수 셋째 자리까지 세로로 계산하고 반올림하기 (14 ÷ 9)
+  const p1 = F.gen(() => ({ a: M.rand(10, 29), n: M.pick([3, 6, 7, 9]) }), o => endless(o.a, o.n) && o.a % o.n !== 0);
+  cards.push(M.card(0, `<div class="q-text">${p1.a} ÷ ${p1.n}의 몫을 소수 셋째 자리까지 계산하고, 반올림하여 나타내어 보세요.</div>` +
+    `<div class="row" style="align-items:center">${D.vdiv({ a: p1.a, pa: 0, n: p1.n, qp: 3 })}` +
+    `<div style="display:flex;flex-direction:column;gap:12px">` +
+    `<div class="eq" style="font-size:18px">일의 자리까지: ${M.dbox(rnd(p1.a, p1.n, 0), 0)}</div>` +
+    `<div class="eq" style="font-size:18px">소수 첫째 자리까지: ${M.dbox(rnd(p1.a, p1.n, 1), 1)}</div>` +
+    `<div class="eq" style="font-size:18px">소수 둘째 자리까지: ${M.dbox(rnd(p1.a, p1.n, 2), 2)}</div></div></div>`, true));
+  hints.push(`나누어떨어지지 않으면 소수점 아래 0을 계속 내려 소수 셋째 자리까지 몫을 구해요.<br>일의 자리까지는 소수 첫째 자리에서, 소수 첫째 자리까지는 소수 둘째 자리에서 반올림해요. (5 이상이면 올리고, 4 이하면 버려요)`);
+
+  // 2번: 표 — (소수) ÷ (자연수)의 몫을 반올림하기 (5.6 ÷ 3)
+  const p2 = F.gen(() => ({ a: M.rand(11, 99), n: M.pick([3, 6, 7, 9]) }), o => o.a % 10 !== 0 && endless(o.a, o.n * 10) && o.a > o.n * 10);
+  const x2 = frac(p2.a, 1, p2.n, 0);
+  cards.push(M.card(1, `<div class="q-text">${f(p2.a, 1)} ÷ ${p2.n}의 몫을 반올림하여 주어진 자리까지 나타내어 보세요.</div>` +
+    `<table class="tbl"><tr><th>일의 자리</th><th>소수 첫째 자리</th><th>소수 둘째 자리</th></tr>` +
+    `<tr><td>${M.dbox(rnd(x2.num, x2.den, 0), 0)}</td><td>${M.dbox(rnd(x2.num, x2.den, 1), 1)}</td><td>${M.dbox(rnd(x2.num, x2.den, 2), 2)}</td></tr></table>`));
+  hints.push(`먼저 몫을 소수 셋째 자리까지 구해 보세요.<br>소수 둘째 자리까지 나타낼 때는 소수 셋째 자리 숫자를 보고 반올림해요.`);
+
+  // 3번: 반올림하여 소수 첫째 자리까지 (네 개)
+  const items3 = [
+    F.gen(() => ({ a: M.rand(1, 9), pa: 0, b: M.pick([3, 6, 7, 9]), pb: 0 }), o => o.a % o.b && endless(o.a, o.b)),
+    F.gen(() => ({ a: M.rand(11, 49), pa: 1, b: M.rand(3, 9), pb: 1 }), o => o.a % 10 && o.a % o.b && endless(o.a, o.b)),
+    F.gen(() => ({ a: M.rand(101, 499), pa: 1, b: M.pick([3, 6, 7, 9]), pb: 0 }), o => o.a % 10 && endless(o.a, o.b * 10)),
+    F.gen(() => ({ a: M.rand(11, 49), pa: 1, b: M.pick([3, 6, 7, 9]), pb: 0 }), o => o.a % 10 && endless(o.a, o.b * 10))
+  ];
+  const rows3 = items3.map(o => { const x = frac(o.a, o.pa, o.b, o.pb); return `<div class="eq qbox" style="font-size:19px">${ex(o.a, o.pa, o.b, o.pb)} ➡ ${M.dbox(rnd(x.num, x.den, 1), 1)}</div>`; });
+  cards.push(M.card(2, `<div class="q-text">몫을 반올림하여 소수 첫째 자리까지 나타내어 보세요.</div>` + M.line(rows3[0], rows3[1]) + M.line(rows3[2], rows3[3]), true));
+  hints.push(`몫을 소수 둘째 자리까지 구한 다음, 소수 둘째 자리 숫자를 보고 반올림해요.<br>나누는 수가 소수이면 먼저 두 수의 소수점을 똑같이 옮겨 나누는 수를 자연수로 만들어요.`);
+
+  // 4번: 문장제 — 몇 배인지 반올림하여 소수 둘째 자리까지
+  const p4 = F.gen(() => ({ a: M.rand(12, 49), b: M.rand(11, 39) }), o => o.a > o.b && o.a % 10 && o.b % 10 && endless(o.a, o.b));
+  const r4 = rnd(p4.a, p4.b, 2);
+  cards.push(M.card(3, `<div class="q-text">집에서 공원까지의 거리는 ${f(p4.b, 1)} km, 집에서 수영장까지의 거리는 ${f(p4.a, 1)} km입니다. 집에서 수영장까지의 거리는 집에서 공원까지의 거리의 몇 배인지 반올림하여 소수 둘째 자리까지 나타내어 보세요.</div>` +
+    M.line(`<div class="eq" style="font-size:19px">식: ${M.dbox(p4.a, 1)} ÷ ${M.dbox(p4.b, 1)}</div>`, `<div class="eq" style="font-size:19px">답: <span class="tail">${M.dbox(r4, 2)} 배</span></div>`), true));
+  hints.push(`(수영장까지의 거리) ÷ (공원까지의 거리)를 계산해요.<br>몫을 소수 셋째 자리까지 구한 다음, 소수 셋째 자리에서 반올림해요.`);
+
+  // 5번: 반올림한 몫과 실제 몫의 크기 비교
+  const p5 = F.gen(() => ({ a: M.rand(11, 89), b: M.rand(3, 9) }), o => o.a % 10 && o.a % o.b && endless(o.a, o.b) && rnd(o.a, o.b, 0) * o.b !== o.a);
+  const R5 = rnd(p5.a, p5.b, 0);
+  cards.push(M.card(4, `<div class="q-text">계산 결과를 비교하여 ○ 안에 &gt;, =, &lt;를 알맞게 골라 보세요.</div>` +
+    `<div class="cmp-row qbox"><div class="qbox" style="font-size:17px;max-width:260px;text-align:center">${ex(p5.a, 1, p5.b, 1)}의 몫을 반올림하여<br>일의 자리까지 나타낸 수</div> ${M.cmp(R5 * p5.b, p5.a)} <div class="qbox">${ex(p5.a, 1, p5.b, 1)}</div></div>`, true));
+  hints.push(`먼저 ${ex(p5.a, 1, p5.b, 1)}의 몫을 소수 첫째 자리까지 구해 보세요.<br>반올림할 때 올렸으면 반올림한 수가 더 크고, 버렸으면 더 작아요.`);
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
