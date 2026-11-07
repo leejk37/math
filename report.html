@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>진단분석보고서</title>
+<script src="config.js"></script>
+<script src="api.js"></script>
+<style>
+  :root {
+    --bg: #f4f6fa; --panel: #ffffff; --line: #e3e7ef; --ink: #1d2433; --sub: #667085; --muted: #98a2b3;
+    --accent: #2e6be6; --accent-soft: #eaf1ff;
+    /* 성취 수준: 도달·노력·보충 (색만으로 구분하지 않고 항상 글자를 함께 씀) */
+    --reach: #0ca30c; --effort: #fab219; --support: #d03b3b; --none: #d5dae3;
+    --reach-soft: #e3f6e3; --effort-soft: #fff4d6; --support-soft: #fbe5e5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.5; }
+  .hidden { display: none !important; }
+
+  header.bar { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 12px 20px; }
+  header.bar h1 { font-size: 20px; margin: 0; white-space: nowrap; }
+  header.bar h1 a { color: var(--sub); font-size: 13px; font-weight: 500; margin-left: 8px; text-decoration: none; }
+  .who { margin-left: auto; display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--sub); }
+  select, input[type=date], button { font: inherit; font-size: 15px; padding: 7px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: #fff; color: var(--ink); }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  button:disabled { opacity: .5; cursor: default; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 16px 16px 60px; }
+  .notice { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 28px; text-align: center;
+    color: var(--sub); line-height: 1.8; }
+  .notice b { color: var(--ink); }
+
+  /* 범위 고르기 */
+  .picker { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 12px; }
+  .row > label.k { font-weight: 700; font-size: 14px; color: var(--sub); min-width: 44px; }
+  .units { display: flex; flex-direction: column; gap: 10px; }
+  .unit { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .unit-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .unit-h small { color: var(--sub); font-weight: 500; }
+  .lvls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .lv { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px;
+    padding: 4px 10px 4px 8px; font-size: 13px; cursor: pointer; background: #fff; }
+  .lv input { margin: 0; }
+  .lv small { color: var(--muted); }
+  .opts { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; color: var(--sub); }
+  .opts label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; flex-wrap: wrap; }
+
+  /* 보고서 */
+  .report { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 28px 30px; }
+  .cover { border-bottom: 3px solid var(--ink); padding-bottom: 14px; margin-bottom: 8px; }
+  .cover .school { color: var(--sub); font-size: 14px; }
+  .cover h2 { margin: 4px 0 6px; font-size: 26px; letter-spacing: -0.5px; }
+  .cover .meta { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--sub); }
+  .flow { display: flex; gap: 6px; margin: 14px 0 6px; font-size: 13px; font-weight: 700; flex-wrap: wrap; }
+  .flow span { padding: 4px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .flow i { color: var(--muted); font-style: normal; align-self: center; }
+
+  section.part { margin-top: 30px; }
+  section.part > h3 { font-size: 20px; margin: 0 0 4px; display: flex; align-items: baseline; gap: 10px; }
+  section.part > h3 .no { color: var(--accent); }
+  section.part > p.lead { margin: 0 0 14px; color: var(--sub); font-size: 14px; }
+  h4 { font-size: 16px; margin: 22px 0 8px; }
+  h4 small { color: var(--sub); font-weight: 500; font-size: 13px; margin-left: 6px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .tile { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .tile .k { font-size: 13px; color: var(--sub); }
+  .tile .v { font-size: 28px; font-weight: 800; line-height: 1.2; }
+  .tile .v small { font-size: 14px; font-weight: 600; color: var(--sub); margin-left: 2px; }
+  .tile .d { font-size: 12px; color: var(--sub); }
+
+  .summary-text { background: #f8fafc; border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0;
+    padding: 12px 16px; margin-top: 14px; font-size: 15px; }
+  .summary-text p { margin: 4px 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 8px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+  th { background: #f8fafc; color: var(--sub); font-weight: 600; font-size: 13px; white-space: nowrap; }
+  td.n, th.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  td.c, th.c { text-align: center; }
+  .lvname b { white-space: nowrap; }
+  .lvname small { display: block; color: var(--sub); font-size: 12px; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+
+  /* 막대 */
+  .meter { display: flex; align-items: center; gap: 8px; min-width: 140px; }
+  .meter .track { flex: 1; height: 10px; border-radius: 5px; background: #eef1f6; position: relative; overflow: hidden; }
+  .meter .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 5px 5px 0; background: var(--accent); }
+  .meter .first { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: .55; }
+  .meter span { font-weight: 700; width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+  .delta { font-size: 12px; font-weight: 700; }
+  .delta.up { color: #006300; } .delta.down { color: var(--support); } .delta.same { color: var(--muted); }
+
+  .stack { display: flex; height: 22px; gap: 2px; border-radius: 4px; overflow: hidden; min-width: 200px; }
+  .stack div { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; min-width: 0; }
+  .stack .reach { background: var(--reach); } .stack .effort { background: var(--effort); color: #0b0b0b; }
+  .stack .support { background: var(--support); } .stack .none { background: var(--none); color: var(--sub); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--sub); margin: 0 0 8px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .badge.reach { background: var(--reach-soft); color: #006300; }
+  .badge.effort { background: var(--effort-soft); color: #7a5300; }
+  .badge.support { background: var(--support-soft); color: #9b1c1c; }
+  .badge.none { background: #eef1f6; color: var(--sub); }
+  .badge.reteach { background: var(--support); color: #fff; }
+  .badge.group { background: var(--support-soft); color: #9b1c1c; }
+  .badge.check { background: var(--effort-soft); color: #7a5300; }
+  .badge.next { background: var(--reach-soft); color: #006300; }
+
+  /* 문항 정답률 격자 */
+  .qgrid td.q { text-align: center; font-weight: 700; font-size: 13px; min-width: 46px; position: relative; }
+  .qgrid td.q.reach { background: var(--reach-soft); color: #006300; }
+  .qgrid td.q.effort { background: var(--effort-soft); color: #7a5300; }
+  .qgrid td.q.support { background: var(--support-soft); color: #9b1c1c; }
+  .qgrid td.q.na { color: var(--muted); font-weight: 400; }
+  .qgrid td.q sup { font-size: 10px; color: var(--accent); margin-left: 1px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .card .t { font-weight: 700; }
+  .card .s { font-size: 13px; color: var(--sub); margin: 2px 0 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip { border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px; font-size: 13px; background: #fff; white-space: nowrap; }
+  .chip.support { border-color: #f1b5b5; background: var(--support-soft); }
+  .chip.effort { border-color: #f3d58a; background: var(--effort-soft); }
+  ul.plain { margin: 6px 0 0; padding-left: 20px; }
+  ul.plain li { margin: 3px 0; }
+  .muted { color: var(--sub); }
+  .note { font-size: 12px; color: var(--sub); margin-top: 8px; }
+
+  /* 학생 개인 쪽 */
+  .student-page { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-top: 14px; }
+  .student-page h5 { margin: 0 0 4px; font-size: 18px; }
+  .student-page .s { color: var(--sub); font-size: 13px; margin-bottom: 8px; }
+  .student-page .advice { background: #f8fafc; border-radius: 8px; padding: 8px 12px; font-size: 14px; margin-top: 10px; }
+  .wrong { font-size: 12px; color: #9b1c1c; }
+
+  @media (max-width: 640px) {
+    .report { padding: 18px 14px; }
+    .cover h2 { font-size: 21px; }
+  }
+  @media print {
+    @page { size: A4; margin: 14mm 12mm; }
+    body { background: #fff; font-size: 12px; }
+    header.bar, .picker, .no-print { display: none !important; }
+    main { padding: 0; max-width: none; }
+    .report { border: none; padding: 0; }
+    section.part { break-inside: auto; }
+    .tile, .card, tr, .student-page { break-inside: avoid; }
+    .page-break { break-before: page; }
+    .tablewrap { overflow: visible; border: none; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <h1>📋 진단분석보고서 <a href="./">← 진단시스템</a></h1>
+  <div class="who">
+    <span id="who"></span>
+    <button id="loginBtn" class="primary hidden">선생님 로그인</button>
+    <button id="logoutBtn" class="hidden">로그아웃</button>
+  </div>
+</header>
+
+<main>
+  <div id="msg" class="notice">불러오는 중입니다…</div>
+
+  <div id="picker" class="picker hidden">
+    <div class="row">
+      <label class="k" for="cls">학급</label>
+      <select id="cls"></select>
+      <label class="k" for="op">영역</label>
+      <select id="op"></select>
+    </div>
+    <div class="row" style="align-items:flex-start">
+      <label class="k">범위</label>
+      <div style="flex:1; min-width:260px">
+        <div class="opts" style="margin-bottom:8px">
+          <label><input type="checkbox" id="allLv" checked> 기록이 있는 모든 단계</label>
+          <span class="muted" id="lvCount"></span>
+        </div>
+        <div id="units" class="units"></div>
+      </div>
+    </div>
+    <div class="row">
+      <label class="k">기간</label>
+      <input type="date" id="from"> ~ <input type="date" id="to">
+      <span class="muted" style="font-size:13px">비워 두면 전체 기간</span>
+    </div>
+    <div class="row opts">
+      <label><input type="checkbox" id="showNames" checked> 이름 보기 (끄면 번호만)</label>
+      <label><input type="checkbox" id="perStudent"> 학생 개인 쪽 포함 (인쇄용)</label>
+    </div>
+    <div class="actions">
+      <button id="printBtn" disabled>🖨 인쇄 · PDF 저장</button>
+      <button id="makeBtn" class="primary">보고서 만들기</button>
+    </div>
+  </div>
+
+  <div id="report" class="report hidden"></div>
+</main>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('report_' + k); return v == null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('report_' + k, v); } catch (e) {} }
+};
+function msg(html) { $('msg').innerHTML = html; $('msg').classList.remove('hidden'); }
+
+let auth = null, am = null, scope = null, levelsByOp = [], lastData = null;
+
+/* ---------- 로그인 ---------- */
+async function boot() {
+  const cfg = window.APP_CONFIG && window.APP_CONFIG.FIREBASE;
+  if (!cfg || !cfg.apiKey) { msg('<b>config.js의 FIREBASE 설정이 비어 있습니다.</b><br>실시간 현황판과 같은 Firebase 설정이 필요합니다.'); return; }
+  const base = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  const [appm, authm] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js')]);
+  am = authm;
+  auth = am.getAuth(appm.initializeApp(cfg));
+  am.onAuthStateChanged(auth, (u) => {
+    const user = (u && !u.isAnonymous) ? u : null;
+    $('who').textContent = user ? user.email : '';
+    $('loginBtn').classList.toggle('hidden', !!user);
+    $('logoutBtn').classList.toggle('hidden', !user);
+    $('picker').classList.add('hidden'); $('report').classList.add('hidden');
+    if (user) loadScope();
+    else msg('<b>선생님 계정으로 로그인해 주세요.</b><br>교사학급 시트에 등록된 선생님만, 맡은 학급의 보고서를 볼 수 있습니다.');
+  });
+  $('loginBtn').onclick = () => {
+    const p = new am.GoogleAuthProvider();
+    p.setCustomParameters({ prompt: 'select_account' });
+    am.signInWithPopup(auth, p).catch((e) => msg('<b>로그인하지 못했습니다.</b><br>' + esc(e.message)));
+  };
+  $('logoutBtn').onclick = () => am.signOut(auth);
+}
+
+async function token() {
+  const u = auth && auth.currentUser;
+  if (!u || u.isAnonymous) throw new Error('로그인이 필요합니다.');
+  return { idToken: await u.getIdToken() };
+}
+
+async function call(action, ...args) {
+  const res = await window.callApi(action, [await token(), ...args]);
+  if (res && res.status === 'error') throw new Error(res.message);
+  return res;
+}
+
+/* ---------- 학급·영역·단계 ---------- */
+async function loadScope() {
+  msg('선생님 권한을 확인하는 중입니다…');
+  try { scope = await call('getReportScope'); }
+  catch (e) { msg('<b>' + esc(e.message) + '</b>'); return; }
+  if (!scope.classes.length) { msg('<b>볼 수 있는 학급이 없습니다.</b><br>학생명부 시트에 학급이 있는지, 교사학급 시트의 학년·반이 맞는지 확인해 주세요.'); return; }
+  $('cls').innerHTML = scope.classes.map((c) =>
+    `<option value="${esc(c.grade + '|' + c.classNum)}">${esc(c.grade)}학년 ${esc(c.classNum)} (${c.count}명)</option>`).join('');
+  const saved = store.get('cls', '');
+  if ([...$('cls').options].some((o) => o.value === saved)) $('cls').value = saved;
+  $('msg').classList.add('hidden');
+  $('picker').classList.remove('hidden');
+  await loadLevels();
+}
+
+async function loadLevels() {
+  const [g, c] = $('cls').value.split('|');
+  store.set('cls', $('cls').value);
+  $('op').innerHTML = '<option>불러오는 중…</option>'; $('units').innerHTML = '';
+  try { levelsByOp = (await call('getReportLevels', g, c)).ops || []; }
+  catch (e) { $('op').innerHTML = ''; $('units').innerHTML = '<span class="muted">' + esc(e.message) + '</span>'; return; }
+  if (!levelsByOp.length) { $('op').innerHTML = '<option value="">기록 없음</option>'; $('units').innerHTML = '<span class="muted">이 학급은 아직 진단 기록이 없습니다.</span>'; return; }
+  $('op').innerHTML = levelsByOp.map((o) => `<option value="${esc(o.operation)}">${esc(o.operation)} (${o.levels.length}단계)</option>`).join('');
+  const savedOp = store.get('op', '');
+  if (levelsByOp.some((o) => o.operation === savedOp)) $('op').value = savedOp;
+  renderUnits();
+}
+
+function unitLabel(u) {
+  if (!u) return '교육과정 코드 없음';
+  const [g, s, n] = u.split('-');
+  return `${g}학년 ${s}학기 ${n}단원`;
+}
+
+function renderUnits() {
+  store.set('op', $('op').value);
+  const op = levelsByOp.find((o) => o.operation === $('op').value);
+  if (!op) { $('units').innerHTML = ''; return; }
+  const units = [];
+  op.levels.forEach((l) => {
+    let u = units.find((x) => x.unit === l.unit);
+    if (!u) units.push(u = { unit: l.unit, levels: [] });
+    u.levels.push(l);
+  });
+  $('units').innerHTML = units.map((u, i) => `
+    <div class="unit">
+      <label class="unit-h"><input type="checkbox" data-unit="${i}" checked> ${esc(unitLabel(u.unit))}
+        <small>${u.levels.map((l) => l.no).join('·')}단계</small></label>
+      <div class="lvls">${u.levels.map((l) => `
+        <label class="lv" title="${esc(l.level)}"><input type="checkbox" data-u="${i}" value="${esc(l.level)}" checked>
+          ${l.no}단계 <small>${esc(l.code)} · ${l.students}명</small></label>`).join('')}</div>
+    </div>`).join('');
+  $('units').querySelectorAll('[data-unit]').forEach((cb) => {
+    cb.onchange = () => { $('units').querySelectorAll(`[data-u="${cb.dataset.unit}"]`).forEach((x) => { x.checked = cb.checked; }); syncAll(); };
+  });
+  $('units').querySelectorAll('[data-u]').forEach((cb) => {
+    cb.onchange = () => {
+      const sib = [...$('units').querySelectorAll(`[data-u="${cb.dataset.u}"]`)];
+      $('units').querySelector(`[data-unit="${cb.dataset.u}"]`).checked = sib.some((x) => x.checked);
+      syncAll();
+    };
+  });
+  syncAll();
+}
+
+function picked() { return [...$('units').querySelectorAll('[data-u]')].filter((x) => x.checked).map((x) => x.value); }
+function syncAll() {
+  const all = [...$('units').querySelectorAll('[data-u]')];
+  $('allLv').checked = all.length > 0 && all.every((x) => x.checked);
+  $('lvCount').textContent = `${picked().length} / ${all.length}단계 선택`;
+}
+$('allLv').onchange = () => { $('units').querySelectorAll('input').forEach((x) => { x.checked = $('allLv').checked; }); syncAll(); };
+$('cls').onchange = loadLevels;
+$('op').onchange = renderUnits;
+
+/* ---------- 보고서 만들기 ---------- */
+$('makeBtn').onclick = async () => {
+  const levels = picked();
+  if (!$('op').value) { alert('영역을 골라 주세요.'); return; }
+  if (!levels.length) { alert('단계를 하나 이상 골라 주세요.'); return; }
+  const [grade, classNum] = $('cls').value.split('|');
+  $('makeBtn').disabled = true; $('makeBtn').textContent = '만드는 중…';
+  try {
+    lastData = await call('getReportData', { grade, classNum, operation: $('op').value, levels, from: $('from').value, to: $('to').value });
+    render();
+    $('printBtn').disabled = false;
+    $('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    $('report').classList.remove('hidden');
+    $('report').innerHTML = '<div class="notice"><b>보고서를 만들지 못했습니다.</b><br>' + esc(e.message) + '</div>';
+  } finally {
+    $('makeBtn').disabled = false; $('makeBtn').textContent = '보고서 만들기';
+  }
+};
+$('printBtn').onclick = () => window.print();
+$('showNames').checked = store.get('names', '1') === '1';
+$('showNames').onchange = () => { store.set('names', $('showNames').checked ? '1' : '0'); if (lastData) render(); };
+$('perStudent').onchange = () => { if (lastData) render(); };
+
+/* ---------- 그리기 ---------- */
+const BAND = { reach: '도달', effort: '노력 중', support: '보충 필요' };
+function who(d, num) {
+  const s = d.students.find((x) => x.num === num);
+  return $('showNames').checked && s && s.name ? `${num}번 ${s.name}` : `${num}번`;
+}
+function chips(d, nums, cls) { return nums.length ? `<div class="chips">${nums.map((n) => `<span class="chip ${cls || ''}">${esc(who(d, n))}</span>`).join('')}</div>` : '<span class="muted">없음</span>'; }
+function lvShort(L) { return `${L.no}단계${L.code ? ' (' + L.code + ')' : ''}`; }
+function lvDesc(level) { const i = String(level).indexOf(':'); return i === -1 ? '' : String(level).slice(i + 1).trim(); }
+function bandOf(score, sc) { return score == null ? 'none' : score >= sc.reach ? 'reach' : score < sc.support ? 'support' : 'effort'; }
+function delta(a, b) {
+  if (a == null || b == null) return '';
+  const d = b - a;
+  return d > 0 ? `<span class="delta up">▲${d}</span>` : d < 0 ? `<span class="delta down">▼${-d}</span>` : '<span class="delta same">±0</span>';
+}
+function meter(first, latest) {
+  if (latest == null) return '<span class="muted">—</span>';
+  return `<div class="meter" title="첫 시도 ${first}점 → 최근 ${latest}점">
+    <div class="track"><div class="fill" style="width:${latest}%"></div>${first != null ? `<div class="first" style="left:calc(${first}% - 1px)"></div>` : ''}</div>
+    <span>${latest}</span></div>`;
+}
+function fmtSec(s) { if (s == null) return '—'; const m = Math.floor(s / 60); return m ? `${m}분 ${s % 60}초` : `${s}초`; }
+function fmtRange(d) {
+  const s = d.scope;
+  const a = s.from || s.firstDay, b = s.to || s.lastDay;
+  return a || b ? `${a || '처음'} ~ ${b || '오늘'}` : '전체 기간';
+}
+
+function render() {
+  const d = lastData, sc = d.scope, sm = d.summary;
+  const tested = d.levels.filter((L) => L.tested);
+  const unitSet = [...new Set(d.levels.map((L) => L.unit))].map(unitLabel);
+  const nos = d.levels.map((L) => L.no);
+  const r = $('report');
+  r.classList.remove('hidden');
+
+  if (!tested.length) {
+    r.innerHTML = `<div class="notice"><b>선택한 범위에 진단 기록이 없습니다.</b><br>${esc(sc.grade)}학년 ${esc(sc.classNum)} · ${esc(sc.operation)} · ${esc(fmtRange(d))}</div>`;
+    return;
+  }
+
+  /* 한 줄 요약 문장 (규칙으로 만듦) */
+  const weak = d.weak.filter((w) => w.latestAvg < sc.reach);
+  const lines = [];
+  lines.push(`재적 ${sm.enrolled}명 중 <b>${sm.testedStudents}명</b>이 ${d.levels.length}개 단계를 진단했고, 최근 결과 기준 학급 평균은 <b>${sm.latestAvg}점</b>, 도달률은 <b>${sm.reachRate}%</b>입니다.`);
+  if (sm.firstAvg != null && sm.latestAvg != null && sm.latestAvg !== sm.firstAvg)
+    lines.push(`첫 시도 평균 ${sm.firstAvg}점에서 다시 풀기를 거쳐 ${sm.latestAvg}점으로 ${sm.latestAvg > sm.firstAvg ? '올랐습니다' : '내려갔습니다'}.`);
+  if (weak.length) lines.push(`가장 어려워한 단계는 <b>${weak.map((w) => `${w.no}단계(평균 ${w.latestAvg}점)`).join(', ')}</b>입니다.`);
+  else lines.push('모든 단계의 학급 평균이 도달 기준 이상입니다.');
+  const reteach = d.levels.filter((L) => L.action.kind === 'reteach');
+  if (reteach.length) lines.push(`<b>${reteach.map((L) => L.no + '단계').join(', ')}</b>는 도달 학생이 절반이 안 되어 학급 전체 재지도가 필요합니다.`);
+
+  r.innerHTML = `
+  <div class="cover">
+    <div class="school">${esc(d.meta.schoolName)} ${esc(d.meta.schoolYear)}학년도 · 초등수학 연산영역 진단시스템</div>
+    <h2>${esc(sc.grade)}학년 ${esc(sc.classNum)} · ${esc(sc.operation)} 진단분석보고서</h2>
+    <div class="meta">
+      <span>범위: ${esc(unitSet.join(', '))} · ${nos.length ? Math.min(...nos) + '~' + Math.max(...nos) + '단계 중 ' + nos.length + '개' : ''}</span>
+      <span>기간: ${esc(fmtRange(d))}</span>
+      <span>작성: ${esc(d.meta.made)} · ${esc(d.meta.email)}</span>
+    </div>
+    <div class="flow"><span>Ⅰ 진단</span><i>→</i><span>Ⅱ 분석</span><i>→</i><span>Ⅲ 처방</span><i>→</i><span>Ⅳ 학생별</span></div>
+  </div>
+
+  <section class="part">
+    <h3><span class="no">Ⅰ</span> 진단 — 어디까지 왔나</h3>
+    <p class="lead">도달 ${sc.reach}점 이상 · 노력 중 ${sc.support}~${sc.reach - 1}점 · 보충 필요 ${sc.support}점 미만. 학생마다 단계별 <b>가장 최근 결과</b>로 판단하고, 첫 시도 점수를 함께 봅니다.</p>
+    <div class="tiles">
+      <div class="tile"><div class="k">응시 학생</div><div class="v">${sm.testedStudents}<small>/ ${sm.enrolled}명</small></div><div class="d">진단 ${sm.attempts}회 · ${d.levels.length}개 단계</div></div>
+      <div class="tile"><div class="k">학급 평균 (최근)</div><div class="v">${sm.latestAvg ?? '—'}<small>점</small></div><div class="d">첫 시도 ${sm.firstAvg ?? '—'}점 ${delta(sm.firstAvg, sm.latestAvg)}</div></div>
+      <div class="tile"><div class="k">도달률</div><div class="v">${sm.reachRate}<small>%</small></div><div class="d">학생×단계 기준</div></div>
+      <div class="tile"><div class="k">도움 요청</div><div class="v">${sm.helpTotal}<small>회</small></div><div class="d">🤔 모르겠어요 + 🙋 확인해 주세요</div></div>
+    </div>
+    <div class="summary-text">${lines.map((l) => `<p>${l}</p>`).join('')}</div>
+
+    <h4>단계별 결과 <small>막대 = 최근 평균, 세로선 = 첫 시도 평균</small></h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>단계</th><th class="n">응시</th><th>평균 점수</th><th class="n">변화</th><th class="n">도달률</th><th class="n">평균 시간</th><th class="n">평균 시도</th></tr></thead>
+      <tbody>${d.levels.map((L) => `<tr>
+        <td class="lvname"><b>${esc(lvShort(L))}</b><small>${esc(lvDesc(L.level))}</small></td>
+        <td class="n">${L.tested}/${L.enrolled}</td>
+        <td>${meter(L.firstAvg, L.latestAvg)}</td>
+        <td class="n">${delta(L.firstAvg, L.latestAvg)}</td>
+        <td class="n"><span class="badge ${bandOf(L.reachRate, { reach: 80, support: 50 })}">${L.reachRate}%</span></td>
+        <td class="n">${fmtSec(L.avgSec)}</td>
+        <td class="n">${L.avgTries}회</td></tr>`).join('')}</tbody>
+    </table></div>
+  </section>
+
+  <section class="part">
+    <h3><span class="no">Ⅱ</span> 분석 — 어디서 막히나</h3>
+    <p class="lead">단계별 성취 수준의 분포와, 문항마다 학생들이 맞힌 비율을 봅니다.</p>
+
+    <h4>단계별 성취 분포</h4>
+    <div class="legend"><span><i style="background:var(--reach)"></i>도달</span><span><i style="background:var(--effort)"></i>노력 중</span><span><i style="background:var(--support)"></i>보충 필요</span><span><i style="background:var(--none)"></i>미응시</span></div>
+    <div class="tablewrap"><table>
+      <tbody>${d.levels.map((L) => {
+        const segs = [['reach', L.dist.reach.length], ['effort', L.dist.effort.length], ['support', L.dist.support.length], ['none', L.notTested.length]];
+        const tot = L.enrolled || L.tested || 1;
+        return `<tr><td class="lvname" style="width:32%"><b>${esc(lvShort(L))}</b><small>${esc(lvDesc(L.level))}</small></td>
+          <td><div class="stack">${segs.filter((s) => s[1]).map((s) => `<div class="${s[0]}" style="flex:${s[1]}" title="${s[0] === 'none' ? '미응시' : BAND[s[0]]} ${s[1]}명 (${Math.round(s[1] * 100 / tot)}%)">${s[1]}</div>`).join('')}</div></td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+
+    <h4>문항별 정답률 <small>최근 결과 기준 · <sup>●</sup>숫자 = 그 문항의 도움 요청 수</small></h4>
+    ${(() => {
+      const nQ = Math.max(0, ...d.levels.map((L) => L.items.length));
+      if (!nQ) return '<p class="muted">문항별 기록이 없습니다.</p>';
+      return `<div class="tablewrap"><table class="qgrid"><thead><tr><th>단계</th>${Array.from({ length: nQ }, (_, i) => `<th class="c">${i + 1}번</th>`).join('')}</tr></thead>
+        <tbody>${d.levels.map((L) => `<tr><td class="lvname"><b>${esc(lvShort(L))}</b></td>${Array.from({ length: nQ }, (_, i) => {
+          const it = L.items[i];
+          if (!it || it.rate == null) return '<td class="q na">—</td>';
+          return `<td class="q ${bandOf(it.rate, sc)}" title="${L.no}단계 ${it.q}번: ${it.n}명 중 ${Math.round(it.rate * it.n / 100)}명 정답${it.help ? ', 도움 요청 ' + it.help + '회' : ''}">${it.rate}%${it.help ? `<sup>●${it.help}</sup>` : ''}</td>`;
+        }).join('')}</tr>`).join('')}</tbody></table></div>`;
+    })()}
+
+    <div class="cards" style="margin-top:14px">
+      <div class="card"><div class="t">오답이 몰린 문항</div><div class="s">정답률 60% 미만, 3명 이상 응시한 문항</div>
+        ${d.hotItems.length ? `<ul class="plain">${d.hotItems.map((h) => `<li><b>${h.no}단계 ${h.q}번</b> — 정답률 ${h.rate}% (${h.n}명)${h.help ? ` · 도움 요청 ${h.help}회` : ''}</li>`).join('')}</ul>` : '<span class="muted">해당 문항이 없습니다.</span>'}
+      </div>
+      <div class="card"><div class="t">도움 요청이 많은 단계</div><div class="s">학생이 문제 옆 버튼을 누른 횟수</div>
+        ${(() => { const h = d.levels.filter((L) => L.help.total).sort((a, b) => b.help.total - a.help.total).slice(0, 5);
+          return h.length ? `<ul class="plain">${h.map((L) => `<li><b>${L.no}단계</b> — ${L.help.total}회 (모르겠어요 ${L.help.unknown} · 확인해 주세요 ${L.help.check})</li>`).join('')}</ul>` : '<span class="muted">도움 요청이 없습니다.</span>'; })()}
+      </div>
+    </div>
+  </section>
+
+  <section class="part">
+    <h3><span class="no">Ⅲ</span> 처방 — 무엇을 할까</h3>
+    <p class="lead">도달 학생이 절반 미만이면 학급 전체 재지도, 보충 필요 학생이 있으면 소그룹, 노력 중 학생만 있으면 개별 확인으로 판단합니다.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>단계</th><th>지도 방안</th><th>대상 학생</th></tr></thead>
+      <tbody>${d.levels.slice().sort((a, b) => (a.latestAvg ?? 999) - (b.latestAvg ?? 999) || a.no - b.no).map((L) => {
+        let target;
+        if (L.action.kind === 'reteach') target = '<span class="muted">학급 전체</span>' + (L.dist.support.length ? `<div style="margin-top:4px">특히 ${chips(d, L.dist.support, 'support')}</div>` : '');
+        else if (L.action.kind === 'group') target = chips(d, L.dist.support, 'support') + (L.dist.effort.length ? `<div style="margin-top:4px">${chips(d, L.dist.effort, 'effort')}</div>` : '');
+        else if (L.action.kind === 'check') target = chips(d, L.dist.effort, 'effort');
+        else target = '<span class="muted">—</span>';
+        const weakQ = L.items.filter((it) => it.n >= 3 && it.rate != null && it.rate < 60).map((it) => it.q + '번');
+        return `<tr><td class="lvname"><b>${esc(lvShort(L))}</b><small>${esc(lvDesc(L.level))}</small></td>
+          <td><span class="badge ${L.action.kind}">${esc(L.action.text)}</span>${weakQ.length ? `<div class="note">다시 설명할 문항: ${weakQ.join(', ')}</div>` : ''}</td>
+          <td>${target}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+
+    ${d.groups.length ? `<h4>보충 지도 묶음 <small>같은 단계에서 ${sc.support}점 미만인 학생</small></h4>
+    <div class="cards">${d.groups.map((g) => { const L = d.levels.find((x) => x.level === g.level);
+      return `<div class="card"><div class="t">${g.no}단계 보충 (${g.nums.length}명)</div><div class="s">${esc(lvDesc(g.level))}</div>${chips(d, g.nums, 'support')}</div>`; }).join('')}</div>` : ''}
+
+    ${(() => { const nt = d.students.filter((s) => s.inRoster && !s.tested);
+      return nt.length ? `<h4>진단하지 않은 학생 <small>선택한 범위에 기록이 하나도 없음</small></h4>${chips(d, nt.map((s) => s.num))}` : ''; })()}
+  </section>
+
+  <section class="part">
+    <h3><span class="no">Ⅳ</span> 학생별 진단표</h3>
+    <p class="lead">학생마다 진단한 단계의 평균과, 다시 지도할 단계를 정리했습니다.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>학생</th><th class="n">진단</th><th>평균 (첫→최근)</th><th>보충 필요</th><th>노력 중</th><th>지도 방안</th></tr></thead>
+      <tbody>${d.students.map((s) => `<tr>
+        <td style="white-space:nowrap"><b>${esc(who(d, s.num))}</b></td>
+        <td class="n">${s.tested}/${d.levels.length}</td>
+        <td style="white-space:nowrap">${s.tested ? `${s.firstAvg} → <b>${s.latestAvg}</b> ${delta(s.firstAvg, s.latestAvg)}` : '<span class="muted">—</span>'}</td>
+        <td>${s.needs.length ? `<span class="badge support">${s.needs.join('·')}단계</span>` : ''}</td>
+        <td>${s.efforts.length ? `<span class="badge effort">${s.efforts.join('·')}단계</span>` : ''}</td>
+        <td style="font-size:13px">${esc(s.advice)}</td></tr>`).join('')}</tbody>
+    </table></div>
+    ${$('perStudent').checked ? studentPages(d) : ''}
+  </section>
+  <p class="note">이 보고서는 연산진단시스템의 평가데이터(종합평가결과·도움요청 시트)로 자동 작성되었습니다. 지도 방안은 점수 기준에 따른 제안이므로 학생 관찰과 함께 판단해 주세요.</p>`;
+}
+
+function studentPages(d) {
+  const sc = d.scope;
+  return d.students.filter((s) => s.tested).map((s, i) => `
+    <div class="student-page ${i === 0 ? 'page-break' : ''}">
+      <h5>${esc(who(d, s.num))}</h5>
+      <div class="s">${esc(sc.grade)}학년 ${esc(sc.classNum)} · ${esc(sc.operation)} · 진단 ${s.tested}개 단계 · 평균 ${s.firstAvg} → ${s.latestAvg}점</div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>단계</th><th class="n">첫 시도</th><th class="n">최근</th><th class="n">시도</th><th>수준</th><th>최근에 틀린 문항</th></tr></thead>
+        <tbody>${s.levels.map((l) => `<tr>
+          <td class="lvname"><b>${l.no}단계${l.code ? ' (' + esc(l.code) + ')' : ''}</b><small>${esc(lvDesc(l.level))}</small></td>
+          <td class="n">${l.first}</td><td class="n"><b>${l.latest}</b> ${delta(l.first, l.latest)}</td><td class="n">${l.tries}회</td>
+          <td><span class="badge ${l.band}">${BAND[l.band]}</span></td>
+          <td class="wrong">${l.wrong.length ? l.wrong.join(', ') + '번' : '<span class="muted">없음</span>'}</td></tr>`).join('')}</tbody>
+      </table></div>
+      <div class="advice">💡 ${esc(s.advice)}</div>
+    </div>`).join('');
+}
+
+boot().catch((e) => msg('<b>화면을 준비하지 못했습니다.</b><br>' + esc(e.message)));
+</script>
+</body>
+</html>
