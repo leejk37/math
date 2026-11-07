@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 5학년 분수 도우미(m5f) → 6학년 분수 도우미(m6f) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m6f-common.js?v=20261107-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>(분수) ÷ (자연수)</title>
+</head>
+<body>
+
+<div class="header-text">(분수) ÷ (자연수)</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 분자를 자연수로 나누어요</div>
+  <div class="rule-line"><span class="rule-tag">배수</span> 분자가 자연수의 배수이면 분자만 나눠요. <sup>6</sup>⁄<sub>7</sub> ÷ 3 = <sup>6 ÷ 3</sup>⁄<sub>7</sub> = <b><sup>2</sup>⁄<sub>7</sub></b></div>
+  <div class="rule-line"><span class="rule-tag t2">배수 아님</span> 크기가 같은 분수 중 분자가 자연수의 배수인 분수로 바꾸어요. <sup>3</sup>⁄<sub>5</sub> ÷ 4 = <sup>12</sup>⁄<sub>20</sub> ÷ 4 = <sup>12 ÷ 4</sup>⁄<sub>20</sub> = <b><sup>3</sup>⁄<sub>20</sub></b></div>
+  <div class="rule-line"><span class="rule-tag t3">주의</span> 분모는 그대로 두고 분자만 나누어요. 자연수를 곱하면 안 돼요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 6113 — (분수) ÷ (자연수) (교과서 6-1-1 16~17쪽, 수학 익힘 14~15쪽, 성취기준 [6수01-11])
+// 진단 포인트: 분자가 자연수의 배수가 아닐 때 크기가 같은 분수로 바꾸는지, 분모를 나누거나 자연수를 곱하는 오류
+const R = M.rand;
+M.inlineQuestion = true;
+const { EQ, DV, X, J, ro } = G;
+const ft = F.ft;
+const STORY = [
+  (x, k) => ({ unit: 'm', text: `리본 ${ft(x)} m를 ${k}도막으로 똑같이 잘랐습니다. 리본 한 도막은 몇 m인가요?` }),
+  (x, k) => ({ unit: 'm²', text: `넓이가 ${ft(x)} m²인 텃밭을 똑같이 ${k}부분으로 나누어 채소를 심었습니다. 한 부분의 넓이는 몇 m²인가요?` }),
+  (x, k) => ({ unit: 'L', text: `주스 ${ft(x)} L를 ${k}명이 똑같이 나누어 마셨습니다. 한 명이 마신 주스는 몇 L인가요?` }),
+  (x, k) => ({ unit: 't', text: `다슬기 ${ft(x)} t을 트럭 ${k}대에 똑같이 나누어 실었습니다. 트럭 한 대에 실은 다슬기는 몇 t인가요?` })
+];
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 분자가 자연수의 배수인 경우 (그림)
+  const [x1, k1] = F.gen(() => [G.proper(5, 13), R(2, 4)], ([x, k]) => x.n % k === 0);
+  const m1 = x1.n / k1;
+  cards.push(M.card(0, `<div class="q-text">그림을 보고 ${G.sf(x1.n, x1.d)} ÷ ${J(k1, '을', '를')} 계산해 보세요.</div>` + G.jumps(x1.d, x1.n, 0, { ticks: false }) +
+    `<div class="q-small">${M.frac(x1.n, x1.d, true)}${M.josa(x1.n, '은', '는')} ${M.frac(1, x1.d, true)}이 ${x1.n}개인 수예요.</div>` +
+    `<div class="eq">${F.fr(x1.n, x1.d)}${DV}${k1}${EQ}${F.ex(M.box(x1.n) + ' ÷ ' + k1, x1.d)}${EQ}${F.fn(m1, x1.d)}</div>`, true));
+  hints.push(`${M.frac(1, x1.d, true)}이 ${x1.n}개를 ${k1}묶음으로 똑같이 나누면 한 묶음은 ${M.frac(1, x1.d, true)}이 ${x1.n} ÷ ${k1}개예요. 분모 ${x1.d}${M.josa(x1.d, '은', '는')} 그대로예요.`);
+
+  // 2번: 분자가 자연수의 배수가 아닌 경우 — 크기가 같은 분수로
+  const [x2, k2] = F.gen(() => [G.proper(3, 9), R(2, 5)], ([x, k]) => x.n >= 2 && x.n % k !== 0 && G.coprime(x.n, k) && x.d * k <= 45);
+  cards.push(M.card(1, `<div class="q-text">크기가 같은 분수로 바꾸어 ${G.sf(x2.n, x2.d)} ÷ ${J(k2, '을', '를')} 계산해 보세요.</div>` +
+    `<div class="q-small">분자 ${x2.n}${M.josa(x2.n, '은', '는')} ${ro(k2)} 나누어떨어지지 않아요. 분자가 ${k2}의 배수가 되도록 분모와 분자에 같은 수를 곱해요.</div>` +
+    `<div class="eq">${F.fr(x2.n, x2.d)}${DV}${k2}${EQ}${F.ex(x2.n + ' × ' + M.box(k2), x2.d + ' × ' + M.box(k2))}${DV}${k2}${EQ}${F.fn(x2.n * k2, x2.d * k2)}${DV}${k2}</div>` +
+    `<div class="eq">${EQ}${F.ex(M.box(x2.n * k2) + ' ÷ ' + k2, x2.d * k2)}${EQ}${F.ff(x2.n, x2.d * k2)}</div>`, true));
+  hints.push(`분모와 분자에 ${J(k2, '을', '를')} 곱하면 분자가 ${k2}의 배수가 돼요. 그다음 분자만 ${ro(k2)} 나누어요.`);
+
+  // 3번: 계산 (배수인 것, 배수가 아닌 것, 가분수)
+  const c3 = [
+    F.gen(() => [G.proper(5, 15), R(2, 5)], ([x, k]) => x.n % k === 0 && x.n > k),
+    F.gen(() => [G.proper(3, 11), R(2, 6)], ([x, k]) => x.n % k !== 0),
+    F.gen(() => [{ n: R(7, 20), d: R(3, 9) }, R(2, 6)], ([x, k]) => x.n > x.d && G.coprime(x.n, x.d))
+  ];
+  cards.push(M.card(2, `<div class="q-text">계산해 보세요.</div>` +
+    M.line(...c3.map(([x, k]) => `<div class="qbox">${F.calc(F.fr(x.n, x.d) + DV + k, G.div(x, G.nat(k)))}</div>`)), true));
+  hints.push('분자가 자연수의 배수인지 먼저 살펴요. 배수가 아니면 크기가 같은 분수로 바꾸어 계산해요.<br>답이 약분되면 기약분수로, 1보다 크면 대분수로 나타내요.');
+
+  // 4번: 문장제
+  const [x4, k4] = F.gen(() => [G.proper(4, 15), R(2, 8)], ([x, k]) => x.n >= 2 && x.d * k <= 60);
+  const s4 = M.pick(STORY)(x4, k4);
+  cards.push(M.card(3, `<div class="q-text">문제를 읽고 식을 쓰고 답을 구해 보세요.</div>` + G.word(s4.text) +
+    M.line(`<div class="eq">식: ${F.ff(x4.n, x4.d)}${DV}${M.box(k4)}</div>`, `<div class="eq">답: ${F.ans(G.div(x4, G.nat(k4)))} ${s4.unit}</div>`), true));
+  hints.push(`전체 ${ft(x4)}${M.josa(x4.n, '을', '를')} ${ro(k4)} 똑같이 나누므로 ${ft(x4)} ÷ ${G.ye(k4)}.`);
+
+  // 5번: 가장 작은 수를 자연수로 나눈 몫 (분수의 크기 비교 + 나눗셈)
+  const D5 = M.pick([6, 8, 9, 10, 12, 14, 15]);
+  const divs = F.divisors(D5).filter(v => v > 1);
+  const f5 = F.gen(() => [0, 1, 2].map(() => { const d = M.pick(divs); return F.simp(R(1, d - 1), d); }),
+    arr => new Set(arr.map(v => v.n * D5 / v.d)).size === 3 && new Set(arr.map(v => v.d)).size >= 2);
+  const k5 = R(2, 5);
+  const min5 = f5.reduce((a, b) => F.lt(b, a) ? b : a);
+  cards.push(M.card(4, `<div class="q-text">가장 작은 수를 ${ro(k5)} 나눈 몫을 구해 보세요.</div>` +
+    `<div class="frac-row">${f5.map(v => F.fr(v.n, v.d)).join('')}</div>` +
+    `<div class="eq">${F.ans(G.div(min5, G.nat(k5)))}</div>`, true));
+  hints.push('분모를 같게 통분하여 가장 작은 분수를 찾아요. 그다음 그 분수를 자연수로 나누어요.');
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

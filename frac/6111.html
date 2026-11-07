@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 5학년 분수 도우미(m5f) → 6학년 분수 도우미(m6f) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m6f-common.js?v=20261107-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>(자연수) ÷ (자연수)의 몫을 분수로 — 몫이 1보다 작은 경우</title>
+</head>
+<body>
+
+<div class="header-text">(자연수) ÷ (자연수)의 몫을 분수로 나타내요 — 몫이 1보다 작은 경우</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 나누어지는 수는 분자, 나누는 수는 분모!</div>
+  <div class="rule-line"><span class="rule-tag">원리</span> 1 ÷ 5 → 1을 똑같이 5로 나눈 것 중 하나 → <b><sup>1</sup>⁄<sub>5</sub></b></div>
+  <div class="rule-line"><span class="rule-tag t2">확장</span> 3 ÷ 5 → <sup>1</sup>⁄<sub>5</sub>이 3개 → <b><sup>3</sup>⁄<sub>5</sub></b></div>
+  <div class="rule-line"><span class="rule-tag t3">정리</span> ● ÷ ▲ = <sup>●</sup>⁄<sub>▲</sub> &nbsp;(분자와 분모를 바꾸어 쓰지 않도록 조심해요)</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 6111 — (자연수) ÷ (자연수)의 몫을 분수로 나타내기 ⑴ 몫이 1보다 작은 경우
+//        (교과서 6-1-1 12~13쪽, 수학 익힘 10~11쪽, 성취기준 [6수01-10])
+// 진단 포인트: 몫을 분수로 쓸 때 분자와 분모를 뒤바꿈(3 ÷ 10 = 10/3, 익힘 11쪽 5번)
+const R = M.rand;
+M.inlineQuestion = true;
+const { EQ, DV, J } = G;
+const STORY = [
+  (a, b) => ({ unit: 'L', text: `페인트 ${a} L를 통 ${b}개에 똑같이 나누어 담으려고 합니다. 통 한 개에 담을 수 있는 페인트는 몇 L인가요?` }),
+  (a, b) => ({ unit: '장', text: `크기가 같은 종이 ${a}장을 ${b}명에게 똑같이 나누어 주려고 합니다. 한 명에게 줄 수 있는 종이는 몇 장인가요?` }),
+  (a, b) => ({ unit: 'm', text: `길이가 ${a} m인 끈을 ${b}명이 똑같이 나누어 가지려고 합니다. 한 명이 가지는 끈은 몇 m인가요?` }),
+  (a, b) => ({ unit: 'kg', text: `찰흙 ${a} kg을 ${b}모둠에 똑같이 나누어 주려고 합니다. 한 모둠에 줄 수 있는 찰흙은 몇 kg인가요?` })
+];
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 1 ÷ d를 막대에 색칠하고 분수로
+  const d1 = R(3, 8);
+  cards.push(M.card(0, `<div class="q-text">1 ÷ ${J(d1, '을', '를')} 그림에 색칠하여 나타내고, 몫을 분수로 나타내어 보세요.</div>` +
+    M.stripPick(1, d1, 480) +
+    `<div class="eq">1${DV}${d1}${EQ}${F.ff(1, d1)}</div>`, true));
+  hints.push(`막대 전체가 1이에요. 1을 똑같이 ${d1}칸으로 나눈 것 중의 한 칸만 색칠해요.<br>그 한 칸은 분모가 ${d1}인 단위분수예요.`);
+
+  // 2번: 그림 — 1 ÷ b가 a개
+  const [a2, b2] = G.pair(2, 4, 3, 8, ([a, b]) => a < b);
+  cards.push(M.card(1, `<div class="q-text">그림을 보고 ${a2} ÷ ${b2}의 몫을 분수로 나타내어 보세요.</div>` + G.unitBars(a2, b2, 1) +
+    `<div class="eq">1${DV}${b2}${EQ}${F.fr(1, b2)} 이고, ${a2}${DV}${b2}${M.josa(b2, '은', '는')} ${F.fr(1, b2)}이 ${M.box(a2)}개입니다.</div>` +
+    `<div class="eq">${a2}${DV}${b2}${EQ}${F.ff(a2, b2)}</div>`, true));
+  hints.push(`1 하나를 ${b2}명이 나누면 한 사람은 ${M.frac(1, b2, true)}씩이에요. 1이 ${a2}개 있으니 ${M.frac(1, b2, true)}이 ${a2}개가 돼요.`);
+
+  // 3번: 몫을 분수로 (1 ÷ 자연수 1개 + 자연수 ÷ 자연수 2개)
+  const q3 = [[1, R(4, 12)]];
+  while (q3.length < 3) {
+    const p = G.pair(2, 11, 3, 15, ([a, b]) => a < b);
+    if (!q3.some(q => q[0] === p[0] && q[1] === p[1])) q3.push(p);
+  }
+  cards.push(M.card(2, `<div class="q-text">나눗셈의 몫을 분수로 나타내어 보세요.</div>` +
+    M.line(...q3.map(([a, b]) => `<div class="eq qbox">${a}${DV}${b}${EQ}${F.ff(a, b)}</div>`)), true));
+  hints.push('나누어지는 수(÷ 앞의 수)를 분자에, 나누는 수(÷ 뒤의 수)를 분모에 써요.');
+
+  // 4번: 문장제 — 식과 답
+  const [a4, b4] = G.pair(2, 7, 3, 9, ([a, b]) => a < b);
+  const s4 = M.pick(STORY)(a4, b4);
+  cards.push(M.card(3, `<div class="q-text">문제를 읽고 식을 쓰고 답을 분수로 나타내어 보세요.</div>` + G.word(s4.text) +
+    M.line(`<div class="eq">식: ${M.box(a4)}${DV}${M.box(b4)}</div>`, `<div class="eq">답: ${F.ff(a4, b4)} ${s4.unit}</div>`), true));
+  hints.push(`전체를 똑같이 나누는 상황이므로 식은 ${a4} ÷ ${G.ye(b4)}.<br>몫은 ${J(a4, '을', '를')} 분자, ${J(b4, '을', '를')} 분모로 하는 분수예요.`);
+
+  // 5번: 바르게 나타낸 사람 고르기 (분자·분모 뒤바꿈 오개념)
+  const people = ['나현', '규민', '서윤'];
+  const ok5 = R(0, 2);
+  const items5 = people.map((name, i) => {
+    const [a, b] = G.pair(2, 9, 5, 13, ([x, y]) => x < y);
+    return [name, `${a} ÷ ${b} = ` + (i === ok5 ? M.frac(a, b, true) : M.frac(b, a, true)), i === ok5];
+  });
+  cards.push(M.card(4, `<div class="q-text">나눗셈의 몫을 분수로 바르게 나타낸 사람을 골라 보세요.</div>` + G.speech(items5), true));
+  hints.push('몫이 1보다 작은 나눗셈이에요. 나눗셈의 몫이 1보다 큰 분수로 쓰여 있다면 분자와 분모가 바뀐 거예요.');
+
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
