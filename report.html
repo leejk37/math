@@ -338,6 +338,9 @@ async function call(action, ...args) {
 }
 
 /* ---------- 학급·영역·단계 ---------- */
+// 첫 화면(index.html) 영역 탭과 같은 이름·순서. 탭을 고치면 여기도 함께 고쳐 주세요.
+const AREAS = ['덧셈', '뺄셈', '곱셈', '나눗셈', '혼합계산', '수의 범위·어림',
+  '3학년 분수·소수', '4학년 분수·소수', '5학년 분수', '5학년 소수', '6학년 분수', '6학년 소수'];
 async function loadScope() {
   msg('선생님 권한을 확인하는 중입니다…');
   try { scope = await call('getReportScope'); }
@@ -358,10 +361,15 @@ async function loadLevels() {
   $('op').innerHTML = '<option>불러오는 중…</option>'; $('units').innerHTML = '';
   try { levelsByOp = (await call('getReportLevels', g, c)).ops || []; }
   catch (e) { $('op').innerHTML = ''; $('units').innerHTML = '<span class="muted">' + esc(e.message) + '</span>'; return; }
-  if (!levelsByOp.length) { $('op').innerHTML = '<option value="">기록 없음</option>'; $('units').innerHTML = '<span class="muted">이 학급은 아직 진단 기록이 없습니다.</span>'; return; }
-  $('op').innerHTML = levelsByOp.map((o) => `<option value="${esc(o.operation)}">${esc(o.operation)} (${o.levels.length}단계)</option>`).join('');
+  // 영역 목록은 첫 화면(index.html) 탭과 같은 이름·순서로 보여 줌. 기록이 없는 영역도 목록에 둠
+  const opt = (name, o) => `<option value="${esc(name)}">${esc(name)} (${o ? o.levels.length + '단계' : '기록 없음'})</option>`;
+  const find = (name) => levelsByOp.find((o) => o.operation === name);
+  const old = levelsByOp.filter((o) => !AREAS.includes(o.operation));   // 예전 이름으로 저장된 기록
+  $('op').innerHTML = AREAS.map((a) => opt(a, find(a))).join('') +
+    (old.length ? `<optgroup label="예전 영역 이름 (기록만 남아 있음)">${old.map((o) => opt(o.operation, o)).join('')}</optgroup>` : '');
   const savedOp = store.get('op', '');
-  if (levelsByOp.some((o) => o.operation === savedOp)) $('op').value = savedOp;
+  const firstWith = AREAS.find((a) => find(a)) || (old[0] && old[0].operation) || AREAS[0];
+  $('op').value = [...$('op').options].some((o) => o.value === savedOp) ? savedOp : firstWith;
   renderUnits();
 }
 
@@ -374,7 +382,7 @@ function unitLabel(u) {
 function renderUnits() {
   store.set('op', $('op').value);
   const op = levelsByOp.find((o) => o.operation === $('op').value);
-  if (!op) { $('units').innerHTML = ''; return; }
+  if (!op) { $('units').innerHTML = '<span class="muted">이 학급은 이 영역의 진단 기록이 아직 없습니다.</span>'; syncAll(); return; }
   const units = [];
   op.levels.forEach((l) => {
     let u = units.find((x) => x.unit === l.unit);
