@@ -299,6 +299,36 @@
 
   // 페이지 뼈대 HTML 이후 공통 시작: generate()를 만들어 두면 첫 화면에서 자동 실행
   // hints[i]가 있으면 i번 카드에 '💡 도움' 버튼을 붙임 (카드에 이미 도움이 있으면 그대로 둠)
+
+  /* ---------- 글 속 분수 표기 (m423-common.js의 M.typeset과 같음) ---------- */
+  // 안내 상자·힌트 안의 '3/4', '1 1/2' 같은 글자를 교과서처럼 위아래 분수로
+  (function () {
+    var c = '.fi{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 3px;font-size:.95em;line-height:1.2;text-align:center}' +
+      '.fi>span{padding:0 2px;white-space:nowrap}.fi>i{display:block;align-self:stretch;height:1.5px;background:currentColor;margin:1px 0}' +
+      '.fm{display:inline-flex;align-items:center;vertical-align:middle;white-space:nowrap}.fm>.fw{font-size:1.2em;margin-right:1px}' +
+      '.rule-line,.hint-box{line-height:2.1}';
+    var s2 = document.createElement('style'); s2.textContent = c; document.head.appendChild(s2);
+  })();
+  var TS_RE = /\(([^()\/]+)\)\/(\d+)|(\d+)[  ](\d+)\/(\d+)|(\d+)\/(\d+)/g;
+  function fi(n, d) { return '<span class="fi"><span>' + n + '</span><i></i><span>' + d + '</span></span>'; }
+  M.typeset = function (root) {
+    (root || document).querySelectorAll('.rule-box, .hint-box').forEach(function (box) {
+      var walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT), nodes = [], n;
+      while ((n = walker.nextNode())) { if (n.parentNode.closest('.fi')) continue; TS_RE.lastIndex = 0; if (TS_RE.test(n.nodeValue)) nodes.push(n); }
+      nodes.forEach(function (t) {
+        var esc = t.nodeValue.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        var span = document.createElement('span');
+        span.innerHTML = esc.replace(TS_RE, function (m, ex, exd, w, mn, md, sn, sd) {
+          if (ex != null) return fi(ex.trim(), exd);
+          if (w != null) return '<span class="fm"><span class="fw">' + w + '</span>' + fi(mn, md) + '</span>';
+          return fi(sn, sd);
+        });
+        t.parentNode.replaceChild(span, t);
+      });
+    });
+  };
+  document.addEventListener('DOMContentLoaded', function () { M.typeset(); });
+
   M.render = function (cardsHtml, hints) {
     var html = cardsHtml.map(function (c, i) {
       var h = hints && hints[i];
@@ -308,6 +338,7 @@
         '<div class="hint-box">' + h + '</div>' + c.slice(cut);
     });
     document.getElementById('quiz').innerHTML = html.join('');
+    M.typeset(document.getElementById('quiz'));
     M.wire();
   };
 })();

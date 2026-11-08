@@ -116,7 +116,15 @@
     '.place-table{border-collapse:collapse;font-size:18px;font-weight:bold}' +
     '.place-table th{font-size:12px;color:#475569;background:#f1f5f9;padding:4px 6px;border:1px solid #cbd5e1}' +
     '.place-table td{width:46px;height:38px;text-align:center;border:1px solid #cbd5e1}' +
-    'svg{max-width:100%;height:auto}';
+    'svg{max-width:100%;height:auto}' +
+    // 글 속 분수(안내 상자·문장제·보기·힌트)를 교과서처럼 위아래로 (M.typeset)
+    '.fi{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 3px;font-size:.95em;line-height:1.2;text-align:center}' +
+    '.fi>span{padding:0 2px;white-space:nowrap}' +
+    '.fi>i{display:block;align-self:stretch;height:1.5px;background:currentColor;margin:1px 0}' +
+    '.fm{display:inline-flex;align-items:center;vertical-align:middle;white-space:nowrap}' +
+    '.fm>.fw{font-size:1.2em;margin-right:1px}' +
+    '.rule-line,.word,.hint-box{line-height:2.1}' +
+    '.choice-btn .fi{font-size:.9em}';
   var st = document.createElement('style');
   st.textContent = css;
   document.head.appendChild(st);
@@ -504,6 +512,35 @@
   // PICKS는 그림 글자를 만들 때 쌓이므로, generate() 맨 앞에서 M.reset()을 불러 비웁니다.
   M.reset = function () { PICKS = []; SEQ = 0; };
   // cards: M.card(...) 글자 배열, hints[i]: i번 문제의 💡 도움말
+  /* ---------- 글 속 분수 표기 ---------- */
+  // 글자로 쓴 분수를 교과서처럼 위아래로 바꿈: '3/5' → 분수, '2 4/9' → 대분수, '(2 + 3)/7' → 분자에 식
+  // 안내 상자·문장제·보기 버튼·힌트·그림 설명 안의 글자에만 적용 (입력칸·채점 값은 그대로)
+  var TS_SEL = '.rule-box, .word, .choice-btn, .hint-box, .bar-legend, .q-text, .q-small';
+  var TS_RE = /\(([^()\/]+)\)\/(\d+)|(\d+)[  ](\d+)\/(\d+)|(\d+)\/(\d+)/g;
+  function fi(n, d) { return '<span class="fi"><span>' + n + '</span><i></i><span>' + d + '</span></span>'; }
+  M.typeset = function (root) {
+    (root || document).querySelectorAll(TS_SEL).forEach(function (box) {
+      var walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT), nodes = [], n;
+      while ((n = walker.nextNode())) {
+        if (n.parentNode.closest('.fi, script, style')) continue;
+        TS_RE.lastIndex = 0;
+        if (TS_RE.test(n.nodeValue)) nodes.push(n);
+      }
+      nodes.forEach(function (t) {
+        var esc = t.nodeValue.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        var html = esc.replace(TS_RE, function (m, ex, exd, w, mn, md, sn, sd) {
+          if (ex != null) return fi(ex.trim(), exd);
+          if (w != null) return '<span class="fm"><span class="fw">' + w + '</span>' + fi(mn, md) + '</span>';
+          return fi(sn, sd);
+        });
+        var span = document.createElement('span');
+        span.innerHTML = html;
+        t.parentNode.replaceChild(span, t);
+      });
+    });
+  };
+  document.addEventListener('DOMContentLoaded', function () { M.typeset(); });
+
   M.render = function (cards, hints) {
     var html = cards.map(function (c, i) {
       var h = hints && hints[i];
@@ -524,6 +561,7 @@
         card.classList.add('inline-q');
       });
     }
+    M.typeset(document.getElementById('quiz'));
     bindPicks();
     M.wire();
   };
