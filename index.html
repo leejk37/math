@@ -236,7 +236,7 @@
             <input type="text" id="featureName" placeholder="이름" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;">
           </div>
           <select id="featureOperation" onchange="updateFeatureSubLevels()" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;">
-            <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈">곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수·소수">5학년 분수·소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
+            <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈">곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option><option value="5학년 소수">5학년 소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
           </select>
           <select id="featureLevel" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;"></select>
           <textarea id="featureComment" rows="4" placeholder="불편사항을 입력해주세요" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
@@ -256,7 +256,7 @@
         </select>
         <select id="resetClass" style="padding: 5px; width: 65px;"></select>
         <select id="resetOperation" onchange="updateResetSubLevels()" style="padding: 5px; width: 70px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수·소수">5학년 분수·소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option><option value="5학년 소수">5학년 소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
         </select>
         <select id="resetTargetLevel" style="padding: 5px; flex-grow: 1; max-width: 450px;"></select>
         <button class="action-btn" style="background-color: #dc2626; margin-left: auto;" onclick="executeResetRecords()">기록 삭제</button>
@@ -269,7 +269,7 @@
         <select id="searchGrade" style="padding: 5px; width: 75px;"></select>
         <select id="searchClass" style="padding: 5px; width: 65px;"></select>
         <select id="searchOperation" onchange="updateSearchSubLevels()" style="padding: 5px; width: 75px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수·소수">5학년 분수·소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option><option value="5학년 소수">5학년 소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
         </select>
         <select id="searchTargetLevel" style="padding: 5px; flex-grow: 1; max-width: 300px;"><option value="전체">모든 단계</option></select>
         <input type="number" id="searchScore" value="80" style="width: 45px; text-align: right; padding: 5px;"> 점
@@ -305,7 +305,8 @@
       <div class="nav-group"><span class="nav-label">분수·소수</span><div class="nav-row">
         <button id="btn-frac3" class="nav-btn" onclick="switchScreen('frac3')">🍕 3학년 분수·소수</button>
         <button id="btn-frac4" class="nav-btn" onclick="switchScreen('frac4')">🍰 4학년 분수·소수</button>
-        <button id="btn-frac5" class="nav-btn" onclick="switchScreen('frac5')">🥧 5학년 분수·소수</button>
+        <button id="btn-frac5" class="nav-btn" onclick="switchScreen('frac5')">🥧 5학년 분수</button>
+        <button id="btn-dec5" class="nav-btn" onclick="switchScreen('dec5')">🍫 5학년 소수</button>
         <button id="btn-frac6" class="nav-btn" onclick="switchScreen('frac6')">🧁 6학년 분수</button>
         <button id="btn-dec6" class="nav-btn" onclick="switchScreen('dec6')">🔢 6학년 소수</button>
       </div></div>
@@ -468,18 +469,32 @@
       <iframe id="mix5-frame" title="혼합계산 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
     </div>
 
-    <!-- 5학년 분수·소수: 1학기 약수와 배수(M512) → 약분과 통분(M514) → 분수의 덧셈과 뺄셈(M515), 2학기 분수의 곱셈(M522) → 소수의 곱셈(M524) — 문제 화면은 frac 폴더, 검토용 화면: frac/m5f-review.html, frac/m524-review.html -->
+    <!-- 5학년 분수: 1학기 약수와 배수(M512) → 약분과 통분(M514) → 분수의 덧셈과 뺄셈(M515), 2학기 분수의 곱셈(M522) — 문제 화면은 frac 폴더, 검토용 화면: frac/m5f-review.html -->
     <div id="screen-frac5" class="screen">
       <div id="frac5-curriculumControls" style="background: #dcfce7; border: 2px solid #86efac; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
         <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
           <label style="color: #15803d;"><b>세부 단계 : </b></label>
-          <select id="frac5-subLevel" data-op="5학년 분수·소수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
+          <select id="frac5-subLevel" data-op="5학년 분수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
         </div>
         <div id="frac5-startSection" style="text-align: center;">
-          <button class="submit-btn" id="frac5-startBtn" style="background-color: #15803d; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac5')">5학년 분수·소수 진단 시작</button>
+          <button class="submit-btn" id="frac5-startBtn" style="background-color: #15803d; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac5')">5학년 분수 진단 시작</button>
         </div>
       </div>
-      <iframe id="frac5-frame" title="5학년 분수·소수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
+      <iframe id="frac5-frame" title="5학년 분수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
+    </div>
+
+    <!-- 5학년 소수: 2학기 4단원 소수의 곱셈(M524) — 문제 화면은 frac 폴더, 검토용 화면: frac/m524-review.html -->
+    <div id="screen-dec5" class="screen">
+      <div id="dec5-curriculumControls" style="background: #ccfbf1; border: 2px solid #5eead4; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
+        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
+          <label style="color: #0f766e;"><b>세부 단계 : </b></label>
+          <select id="dec5-subLevel" data-op="5학년 소수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
+        </div>
+        <div id="dec5-startSection" style="text-align: center;">
+          <button class="submit-btn" id="dec5-startBtn" style="background-color: #0f766e; width: auto; padding: 8px 60px;" onclick="startFracQuiz('dec5')">5학년 소수 진단 시작</button>
+        </div>
+      </div>
+      <iframe id="dec5-frame" title="5학년 소수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
     </div>
 
     <!-- 6학년 분수: 1학기 분수의 나눗셈(M611) → 2학기 분수의 나눗셈(M621) — 문제 화면은 frac 폴더, 검토용 화면: frac/m6f-review.html -->
@@ -571,7 +586,7 @@
           <option value="student">학생 개인 단계별 평균 기록</option>
         </select>
         <select id="dashOperation" style="padding: 5px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수·소수">5학년 분수·소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수">5학년 분수</option><option value="5학년 소수">5학년 소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
         </select>
         <select id="dashGrade"></select>
         <select id="dashClassNum"></select>
@@ -691,8 +706,8 @@
           "3단계(5113): 덧셈, 뺄셈, 곱셈이 섞여 있는 식",
           "4단계(5114): 덧셈, 뺄셈, 나눗셈이 섞여 있는 식",
           "5단계(5115): 덧셈, 뺄셈, 곱셈, 나눗셈이 섞여 있는 식"],
-      // 5학년 1학기 분수: 약수와 배수(M512) → 약분과 통분(M514) → 분수의 덧셈과 뺄셈(M515) — 검토용 화면: frac/m5f-review.html
-      "5학년 분수·소수": [
+      // 5학년 분수: 1학기 약수와 배수(M512) → 약분과 통분(M514) → 분수의 덧셈과 뺄셈(M515), 2학기 분수의 곱셈(M522) — 검토용 화면: frac/m5f-review.html
+      "5학년 분수": [
           "1단계(5121): 약수",
           "2단계(5122): 배수",
           "3단계(5123): 공약수와 최대공약수",
@@ -715,15 +730,16 @@
           "19단계(5223): (자연수) × (진분수)",
           "20단계(5224): (자연수) × (대분수)",
           "21단계(5225): 진분수의 곱셈",
-          "22단계(5226): 여러 가지 분수의 곱셈",
-          // 5학년 2학기 4단원 소수의 곱셈(M524) — 검토용 화면: frac/m524-review.html
-          "23단계(5241): (소수) × (자연수) — 1보다 작은 소수",
-          "24단계(5242): (소수) × (자연수) — 1보다 큰 소수",
-          "25단계(5243): (자연수) × (소수) — 1보다 작은 소수",
-          "26단계(5244): (자연수) × (소수) — 1보다 큰 소수",
-          "27단계(5245): (소수) × (소수) — 1보다 작은 소수",
-          "28단계(5246): (소수) × (소수) — 1보다 큰 소수",
-          "29단계(5247): 곱의 소수점 위치"],
+          "22단계(5226): 여러 가지 분수의 곱셈"],
+      // 5학년 2학기 4단원 소수의 곱셈(M524) — 검토용 화면: frac/m524-review.html
+      "5학년 소수": [
+          "1단계(5241): (소수) × (자연수) — 1보다 작은 소수",
+          "2단계(5242): (소수) × (자연수) — 1보다 큰 소수",
+          "3단계(5243): (자연수) × (소수) — 1보다 작은 소수",
+          "4단계(5244): (자연수) × (소수) — 1보다 큰 소수",
+          "5단계(5245): (소수) × (소수) — 1보다 작은 소수",
+          "6단계(5246): (소수) × (소수) — 1보다 큰 소수",
+          "7단계(5247): 곱의 소수점 위치"],
       // 5학년 2학기 1단원 수의 범위와 어림하기(M521) — 문제 화면은 52 폴더, 검토용 화면: 52/m521-review.html
       "수의 범위·어림": [
           "1단계(5211): 이상과 이하",
@@ -770,11 +786,11 @@
       "4학년 분수·소수": ["4213.html","4214a.html","4214b.html","4215.html","4216.html",
                  "4231.html","4232.html","4233.html","4234.html","4235.html","4236.html","4237.html","4238.html"],
       "혼합계산": ["5111.html","5112.html","5113.html","5114.html","5115.html"],
-      "5학년 분수·소수": ["5121.html","5122.html","5123.html","5124.html",
+      "5학년 분수": ["5121.html","5122.html","5123.html","5124.html",
                  "5141.html","5142.html","5143.html","5144.html","5145.html","5146.html",
                  "5151.html","5152.html","5153.html","5154.html","5155.html","5156.html",
-                 "5221.html","5222.html","5223.html","5224.html","5225.html","5226.html",
-                 "5241.html","5242.html","5243.html","5244.html","5245.html","5246.html","5247.html"],
+                 "5221.html","5222.html","5223.html","5224.html","5225.html","5226.html"],
+      "5학년 소수": ["5241.html","5242.html","5243.html","5244.html","5245.html","5246.html","5247.html"],
       "수의 범위·어림": ["5211.html","5212.html","5213.html","5214.html","5215.html","5216.html","5217.html"],
       "6학년 분수": ["6111.html","6112.html","6113.html","6114.html","6115.html",
                 "6211.html","6212.html","6213.html","6214.html","6215.html","6216.html"],
@@ -821,7 +837,7 @@
     });
 
     function switchScreen(type) {
-      ['add', 'sub', 'mul', 'div', 'frac3', 'frac4', 'mix5', 'frac5', 'range5', 'frac6', 'dec6'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
+      ['add', 'sub', 'mul', 'div', 'frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'frac6', 'dec6'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
       document.getElementById('screen-' + type).classList.add('active'); document.getElementById('btn-' + type).classList.add('active');
     }
 
@@ -5121,12 +5137,12 @@ setTimeout(() => {
     })();
 
     // ==========================================
-    // 🍕 분수 영역 (3학년 분수·소수 / 4학년 분수·소수) + 🧮 혼합계산(51 폴더) + 🥧 5학년 분수·소수(frac 폴더) + 📏 수의 범위·어림(52 폴더) + 🧁 6학년 분수 · 🔢 6학년 소수(frac 폴더)
+    // 🍕 분수 영역 (3학년 분수·소수 / 4학년 분수·소수) + 🧮 혼합계산(51 폴더) + 🥧 5학년 분수 · 🍫 5학년 소수(frac 폴더) + 📏 수의 범위·어림(52 폴더) + 🧁 6학년 분수 · 🔢 6학년 소수(frac 폴더)
     //  - 문제 화면은 frac 폴더의 페이지를 iframe으로 띄움
     //  - 학생 정보는 sessionStorage로 넘기고(주소에 이름을 넣지 않음), 저장은 각 페이지의 frac-kit.js가 담당
     // ==========================================
     function initFracLevelSelects() {
-      ['frac3', 'frac4', 'mix5', 'frac5', 'range5', 'frac6', 'dec6'].forEach(function(key) {
+      ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'frac6', 'dec6'].forEach(function(key) {
         const sel = document.getElementById(key + '-subLevel');
         if (!sel) return;
         sel.innerHTML = '';
@@ -5166,7 +5182,7 @@ setTimeout(() => {
     }
 
     function resetFracScreen() {
-      ['frac3', 'frac4', 'mix5', 'frac5', 'range5', 'frac6', 'dec6'].forEach(function(key) {
+      ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'frac6', 'dec6'].forEach(function(key) {
         const frame = document.getElementById(key + '-frame');
         if (frame) { frame.style.display = 'none'; frame.src = 'about:blank'; }
         const ctrl = document.getElementById(key + '-curriculumControls');
@@ -5181,7 +5197,7 @@ setTimeout(() => {
     window.addEventListener('message', function(e) {
       if (e.origin !== location.origin || !e.data) return;
       if (e.data.type === 'frac-height') {
-        ['frac3', 'frac4', 'mix5', 'frac5', 'range5', 'frac6', 'dec6'].forEach(function(key) {
+        ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'frac6', 'dec6'].forEach(function(key) {
           const frame = document.getElementById(key + '-frame');
           if (frame && frame.contentWindow === e.source) frame.style.height = Math.max(400, e.data.h) + 'px';
         });

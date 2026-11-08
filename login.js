@@ -141,7 +141,7 @@
   }
 
   // 내 학년의 분수·소수 탭을 노랗게 강조 (자연수 탭은 모든 학년 공통이라 강조하지 않음)
-  var MINE = { '3': ['btn-frac3'], '4': ['btn-frac4'], '5': ['btn-frac5', 'btn-range5', 'btn-mix5'], '6': ['btn-frac6', 'btn-dec6'] };
+  var MINE = { '3': ['btn-frac3'], '4': ['btn-frac4'], '5': ['btn-frac5', 'btn-dec5', 'btn-range5', 'btn-mix5'], '6': ['btn-frac6', 'btn-dec6'] };
   function markMine(grade) {
     [].forEach.call(document.querySelectorAll('#nav-menu .nav-btn.mine'), function (b) { b.classList.remove('mine'); b.title = ''; });
     (MINE[String(grade)] || []).forEach(function (id) { var b = $(id); if (b) { b.classList.add('mine'); b.title = '우리 학년 영역'; } });
