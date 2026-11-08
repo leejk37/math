@@ -32,6 +32,10 @@
     '.fraction .num,.fraction .den{display:flex;align-items:center;justify-content:center;min-width:30px;height:32px;padding:0 6px;font-size:21px;font-weight:bold}' +
     '.fraction .frac-line{width:100%;height:3px;background:#1e293b;border-radius:2px;margin:1px 0}' +
     '.fraction.sm .num,.fraction.sm .den{height:24px;min-width:22px;font-size:16px;padding:0 3px}' +
+    // 분자·분모 자리에 입력칸이 있으면 칸 높이만큼 늘리고 가로선과 띄움 (칸이 선에 닿지 않게)
+    '.fraction .num:has(.ans-box),.fraction .den:has(.ans-box){height:auto;padding:4px 6px}' +
+    '.fraction .num:has(.ans-box){padding-bottom:6px}.fraction .den:has(.ans-box){padding-top:6px}' +
+    '.fraction:has(.ans-box) .frac-line{min-width:52px}' +
     '.mixed{display:inline-flex;align-items:center;gap:2px;vertical-align:middle}' +
     '.mixed .whole{font-size:26px;font-weight:bold;display:flex;align-items:center}' +
     '.ans-box{width:44px;height:38px;border:2px solid #94a3b8;border-radius:6px;font-size:20px;font-weight:bold;text-align:center;outline:none;background:#fff;color:#0284c7;padding:0;font-family:inherit}' +

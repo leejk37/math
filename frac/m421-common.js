@@ -13,7 +13,7 @@
  */
 (function () {
   var css = '' +
-    '.fraction .num.expr{height:auto;min-height:32px;gap:4px;padding:2px 4px}' +   // 분자 자리에 '□ + □' 같은 식
+    '.fraction .num.expr{height:auto;min-height:32px;gap:4px;padding:4px 6px 6px}' +   // 분자 자리에 '□ + □' 같은 식
     '.fraction .num.expr .op{font-size:20px}' +
     '.paren{font-size:30px;font-weight:normal;color:#64748b;margin:0 1px}' +
     '.bar-legend{font-size:15px;color:#475569;font-weight:bold;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}' +
