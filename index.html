@@ -9,6 +9,7 @@
   <script src="config.js"></script>
   <script src="api.js"></script>
   <script src="help.js"></script>
+  <script src="home.js"></script> <!-- 첫 화면: 진단 중 평가자 잠금, 통계 대시보드 접기 -->
   <script src="login.js"></script> <!-- 구글 로그인 → 평가자 자동 선택 (학생은 잠금, 담임은 학년·반만) -->
   <style>
     /* 1. 공통 기본 스타일 */
@@ -188,6 +189,27 @@
     .add-hexpr { font-size: 15px; font-weight: bold; color: #334155; white-space: nowrap; }
     .add-hcarry { position: absolute; top: -24px; }
 
+    /* ===== 첫 화면 정리 (2026-11-08): 평가자 → 영역 → 단계 순서, 영역 탭 두 줄, 선생님 통계는 맨 아래 ===== */
+    .container { box-sizing: border-box; max-width: 1060px; } /* 안쪽 너비는 예전과 같은 1000px, 태블릿에서 화면 밖으로 넘치지 않게 */
+    .top-link { font-size: 15px; color: #475569; text-decoration: none; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; border: 1px solid #e2e8f0; }
+    .top-link:hover { background: #e2e8f0; color: #0f172a; }
+    #nav-menu { flex-direction: column; gap: 8px; }
+    .nav-group { display: flex; align-items: stretch; gap: 10px; width: 100%; }
+    .nav-label { flex: 0 0 64px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .nav-row { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+    #nav-menu .nav-btn { flex: 1 1 110px; border-radius: 8px; padding: 10px 6px; font-size: 15px; }
+    #nav-menu .nav-btn.active { padding-bottom: 10px; box-shadow: 0 3px 0 #f59e0b inset; }
+    #nav-menu .nav-btn.mine:not(.active) { background: #fef3c7; color: #92400e; box-shadow: 0 0 0 2px #fcd34d inset; }
+    .evaluator-bar { flex-wrap: wrap; }
+    .evaluator-bar select:disabled { background: #f1f5f9; color: #334155; opacity: 1; cursor: not-allowed; }
+    .evaluator-bar.quiz-locked::after { content: '🔒 진단 중에는 바꿀 수 없어요'; font-size: 13px; color: #64748b; width: 100%; text-align: center; }
+    .teacher-stats { margin-top: 30px; border-top: 2px dashed #e2e8f0; padding-top: 14px; }
+    .teacher-stats > summary { cursor: pointer; font-weight: bold; color: #be185d; font-size: 15px; list-style: none; padding: 8px 12px; border-radius: 8px; background: #fdf2f8; display: inline-block; }
+    .teacher-stats > summary::-webkit-details-marker { display: none; }
+    .teacher-stats > summary small { color: #9d174d; font-weight: normal; }
+    .teacher-stats[open] > summary { margin-bottom: 12px; }
+    @media (max-width: 800px) { body { padding: 10px; } .container { padding: 18px; } }
+    @media (max-width: 700px) { .nav-group { flex-direction: column; gap: 4px; } .nav-label { flex: none; padding: 4px; } #nav-menu .nav-btn { flex-basis: 30%; font-size: 14px; } }
   </style>
 </head>
 <body>
@@ -196,9 +218,9 @@
     <h1>초등수학 연산영역 진단시스템</h1>
     
     <div style="text-align: right; width: 100%; margin-bottom: 5px; display: flex; justify-content: flex-end; align-items: center; gap: 14px;">
-      <span onclick="openFeatureRequestModal()" style="cursor: pointer; font-size: 16px; color: #cbd5e1; user-select: none;">🔧 기능개선요구</span>
-      <a href="report.html" style="font-size: 16px; color: #cbd5e1; text-decoration: none;">📋 분석보고서</a>
-      <span onclick="unlockAdmin()" style="cursor: pointer; font-size: 16px; color: #cbd5e1; user-select: none;">🔒 선생님</span>
+      <span onclick="openFeatureRequestModal()" class="top-link" style="cursor: pointer; user-select: none;">🔧 기능개선요구</span>
+      <a href="report.html" class="top-link">📋 분석보고서</a>
+      <span onclick="unlockAdmin()" class="top-link" style="cursor: pointer; user-select: none;">🔒 선생님</span>
     </div>
 
     <div id="featureRequestOverlay" onclick="if(event.target===this) closeFeatureRequestModal();" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.45); z-index: 1000; align-items: center; justify-content: center;">
@@ -261,47 +283,34 @@
 
     <hr style="border: 1px solid #e2e8f0; width: 100%; margin-bottom: 20px;">
 
-    <div class="dashboard-controls" id="dashboardControls">
-      <div style="display:flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <label style="color: #be185d;"><b>📊 통계 대시보드 : </b></label>
-        <select id="dashViewType" onchange="toggleDashStudent()">
-          <option value="class" selected>학급 전체 단계별 평균</option>
-          <option value="student">학생 개인 단계별 평균 기록</option>
-        </select>
-        <select id="dashOperation" style="padding: 5px;">
-          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수·소수">5학년 분수·소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
-        </select>
-        <select id="dashGrade"></select>
-        <select id="dashClassNum"></select>
-        <select id="dashStudentNum" style="display:none;"></select>
-        <input type="text" id="dashStudentName" readonly style="display:none; width: 80px; background-color: #e2e8f0; text-align: center;">
-      </div>
-      <button class="action-btn" onclick="fetchDashboard()">그래프 조회</button>
-    </div>
-
-    <div id="chartContainer" class="chart-container"></div>
-
-    <div id="nav-menu">
-      <button id="btn-add" class="nav-btn" onclick="switchScreen('add')">➕ 덧셈</button>
-      <button id="btn-sub" class="nav-btn" onclick="switchScreen('sub')">➖ 뺄셈</button>
-      <button id="btn-mul" class="nav-btn active" onclick="switchScreen('mul')">✖️ 곱셈</button>
-      <button id="btn-div" class="nav-btn" onclick="switchScreen('div')">➗ 나눗셈</button>
-      <button id="btn-mix5" class="nav-btn" onclick="switchScreen('mix5')">🧮 혼합계산</button>
-      <button id="btn-frac3" class="nav-btn" onclick="switchScreen('frac3')">🍕 3학년 분수·소수</button>
-      <button id="btn-frac4" class="nav-btn" onclick="switchScreen('frac4')">🍰 4학년 분수·소수</button>
-      <button id="btn-frac5" class="nav-btn" onclick="switchScreen('frac5')">🥧 5학년 분수·소수</button>
-      <button id="btn-range5" class="nav-btn" onclick="switchScreen('range5')">📏 수의 범위·어림</button>
-      <button id="btn-frac6" class="nav-btn" onclick="switchScreen('frac6')">🧁 6학년 분수</button>
-      <button id="btn-dec6" class="nav-btn" onclick="switchScreen('dec6')">🔢 6학년 소수</button>
-    </div>
-
-    <div style="background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 25px; width: calc(100% - 30px); display: flex; gap: 10px; align-items: center; justify-content: center; border: 2px solid #cbd5e1;">
+    <div id="evaluatorBar" class="evaluator-bar" style="background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 25px; width: calc(100% - 30px); display: flex; gap: 10px; align-items: center; justify-content: center; border: 2px solid #cbd5e1;">
       <label style="color: #334155; font-size: 18px;"><b>평가자 선택 : </b></label>
       <select id="grade" style="font-size: 16px; font-weight:bold;"></select>
       <select id="classNum" style="font-size: 16px; font-weight:bold;"></select>
       <select id="studentNum" style="font-size: 16px; font-weight:bold;"><option value="">번호 선택</option></select>
-      <input type="text" id="studentName" placeholder="이름 자동입력" readonly style="width: 100px; background-color: #fff; border: 2px solid #94a3b8; text-align: center; font-weight: bold; font-size: 16px;">
+      <input type="text" id="studentName" placeholder="이름" readonly tabindex="-1" title="번호를 고르면 이름이 자동으로 나와요" style="width: 100px; background-color: transparent; border: none; border-bottom: 2px dashed #94a3b8; border-radius: 0; text-align: center; font-weight: bold; font-size: 17px; color: #0f172a;">
     </div>
+
+    <div id="nav-menu">
+      <div class="nav-group"><span class="nav-label">자연수</span><div class="nav-row">
+        <button id="btn-add" class="nav-btn" onclick="switchScreen('add')">➕ 덧셈</button>
+        <button id="btn-sub" class="nav-btn" onclick="switchScreen('sub')">➖ 뺄셈</button>
+        <button id="btn-mul" class="nav-btn active" onclick="switchScreen('mul')">✖️ 곱셈</button>
+        <button id="btn-div" class="nav-btn" onclick="switchScreen('div')">➗ 나눗셈</button>
+        <button id="btn-mix5" class="nav-btn" onclick="switchScreen('mix5')">🧮 혼합계산</button>
+      </div></div>
+      <div class="nav-group"><span class="nav-label">분수·소수</span><div class="nav-row">
+        <button id="btn-frac3" class="nav-btn" onclick="switchScreen('frac3')">🍕 3학년 분수·소수</button>
+        <button id="btn-frac4" class="nav-btn" onclick="switchScreen('frac4')">🍰 4학년 분수·소수</button>
+        <button id="btn-frac5" class="nav-btn" onclick="switchScreen('frac5')">🥧 5학년 분수·소수</button>
+        <button id="btn-range5" class="nav-btn" onclick="switchScreen('range5')">📏 수의 범위·어림</button>
+        <button id="btn-frac6" class="nav-btn" onclick="switchScreen('frac6')">🧁 6학년 분수</button>
+        <button id="btn-dec6" class="nav-btn" onclick="switchScreen('dec6')">🔢 6학년 소수</button>
+      </div></div>
+    </div>
+
+
+
 
     <div id="screen-add" class="screen">
       <div id="add-curriculumControls" style="background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
@@ -549,6 +558,29 @@
         <button class="submit-btn" style="background-color: #059669; margin-top: 0;" onclick="resetToMulLevelSelection()">다른 단계 선택하기</button>
       </div>
     </div>
+
+    <details id="teacherStats" class="teacher-stats">
+      <summary>📊 통계 대시보드 <small>(선생님용 · 눌러서 열기)</small></summary>
+    <div class="dashboard-controls" id="dashboardControls">
+      <div style="display:flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <label style="color: #be185d;"><b>📊 통계 대시보드 : </b></label>
+        <select id="dashViewType" onchange="toggleDashStudent()">
+          <option value="class" selected>학급 전체 단계별 평균</option>
+          <option value="student">학생 개인 단계별 평균 기록</option>
+        </select>
+        <select id="dashOperation" style="padding: 5px;">
+          <option value="덧셈">덧셈</option><option value="뺄셈">뺄셈</option><option value="곱셈" selected>곱셈</option><option value="나눗셈">나눗셈</option><option value="3학년 분수·소수">3학년 분수·소수</option><option value="4학년 분수·소수">4학년 분수·소수</option><option value="혼합계산">혼합계산</option><option value="5학년 분수·소수">5학년 분수·소수</option><option value="수의 범위·어림">수의 범위·어림</option><option value="6학년 분수">6학년 분수</option><option value="6학년 소수">6학년 소수</option>
+        </select>
+        <select id="dashGrade"></select>
+        <select id="dashClassNum"></select>
+        <select id="dashStudentNum" style="display:none;"></select>
+        <input type="text" id="dashStudentName" readonly style="display:none; width: 80px; background-color: #e2e8f0; text-align: center;">
+      </div>
+      <button class="action-btn" onclick="fetchDashboard()">그래프 조회</button>
+    </div>
+
+    <div id="chartContainer" class="chart-container"></div>
+    </details>
 
   </div>
 

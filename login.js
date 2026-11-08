@@ -28,8 +28,8 @@
     bar.style.flexWrap = 'wrap';
     box = document.createElement('span');
     box.id = 'loginBox';
-    box.style.cssText = 'display:inline-flex;align-items:center;gap:8px;margin-left:6px;font-size:14px;color:#334155;';
-    bar.appendChild(box);
+    box.style.cssText = 'display:inline-flex;align-items:center;gap:8px;margin-right:10px;font-size:14px;color:#334155;';
+    bar.insertBefore(box, bar.firstChild); // 로그인을 맨 앞에: 로그인하면 뒤의 선택 칸이 자동으로 채워짐
     show('<button type="button" disabled style="' + btnCss('#94a3b8') + '">🔑 로그인 준비 중…</button>');
 
     var base = 'https://www.gstatic.com/firebasejs/' + FB_VER + '/';
@@ -49,6 +49,7 @@
 
   function signedOut() {
     unlock();
+    markMine(null);
     applied = null;
     show('<button type="button" id="loginBtn" style="' + btnCss('#2563eb') + '">🔑 구글 로그인</button>');
     $('loginBtn').onclick = function () {
@@ -80,6 +81,7 @@
           var ok = choose(res.grade, res.classNum, res.num);
           if (!ok) { show(tag('#fef3c7', '#92400e', '⚠ 명부와 맞지 않아요: ' + esc(res.grade + '학년 ' + res.classNum + ' ' + res.num + '번')) + logoutLink()); bindLogout(); return; }
           lock();
+          markMine(res.grade);
           applied = res;
           show(tag('#dcfce7', '#166534', '🎒 ' + esc(res.grade + '학년 ' + res.classNum + ' ' + res.num + '번 ' + res.name)) + logoutLink());
           bindLogout();
@@ -88,6 +90,7 @@
         unlock();
         var h = res.homeroom || [];
         if (h.length) whenListReady(function () { choose(h[0].grade, h[0].classNum, null); });
+        markMine(h.length ? h[0].grade : null);
         show(tag('#e0e7ff', '#3730a3', '👩‍🏫 ' + esc(h.length ? h.map(function (x) { return x.grade + '학년 ' + x.classNum; }).join(', ') + ' 담임' : '선생님')) + logoutLink());
         bindLogout();
       } else {
@@ -135,6 +138,13 @@
     setSel('dashGrade', grade); setSel('dashClassNum', classNum);
     if (num == null) return true;
     return setSel('studentNum', num);
+  }
+
+  // 내 학년의 분수·소수 탭을 노랗게 강조 (자연수 탭은 모든 학년 공통이라 강조하지 않음)
+  var MINE = { '3': ['btn-frac3'], '4': ['btn-frac4'], '5': ['btn-frac5', 'btn-range5', 'btn-mix5'], '6': ['btn-frac6', 'btn-dec6'] };
+  function markMine(grade) {
+    [].forEach.call(document.querySelectorAll('#nav-menu .nav-btn.mine'), function (b) { b.classList.remove('mine'); b.title = ''; });
+    (MINE[String(grade)] || []).forEach(function (id) { var b = $(id); if (b) { b.classList.add('mine'); b.title = '우리 학년 영역'; } });
   }
 
   function lock() {
