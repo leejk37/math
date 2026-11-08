@@ -143,6 +143,83 @@
   .student-page .advice { background: #f8fafc; border-radius: 8px; padding: 8px 12px; font-size: 14px; margin-top: 10px; }
   .wrong { font-size: 12px; color: #9b1c1c; }
 
+  /* ---------- 청량 테마: 하늘색·민트, 넉넉한 여백, 부드러운 그림자 ---------- */
+  :root {
+    --bg: #eef8fd; --line: #d9ecf6; --ink: #12324a; --sub: #5b7489; --muted: #93a9ba;
+    --accent: #0b8fd8; --accent-2: #14b8a6; --accent-soft: #e3f4fd; --mint-soft: #e6f8f5;
+    --shadow: 0 10px 30px rgba(11, 110, 160, .08), 0 2px 6px rgba(11, 110, 160, .05);
+  }
+  body { background: linear-gradient(180deg, #dff3fc 0, #eef9fb 260px, #f6fbfd 100%) fixed; }
+  header.bar { background: rgba(255, 255, 255, .82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(11, 143, 216, .14); padding: 14px 24px; }
+  header.bar h1 { display: flex; align-items: center; gap: 10px; font-size: 20px; letter-spacing: -.3px; color: var(--ink); }
+  header.bar h1 .logo { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 17px;
+    background: linear-gradient(135deg, #38bdf8, #2dd4bf); box-shadow: 0 4px 12px rgba(20, 184, 166, .3); }
+  header.bar h1 a { color: var(--accent); font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); margin-left: 4px; }
+  header.bar h1 a:hover { background: #d3edfb; }
+  .who { color: var(--sub); }
+
+  select, input[type=date], button { border-color: #cfe5f2; border-radius: 10px; padding: 8px 12px; transition: border-color .15s, box-shadow .15s, background .15s; }
+  select:focus, input[type=date]:focus, button:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(11, 143, 216, .18); }
+  select:hover, input[type=date]:hover { border-color: #a9d6ef; }
+  button:hover:not(:disabled) { background: #f3faff; border-color: #a9d6ef; }
+  button.primary { background: linear-gradient(135deg, #0ea5e9, #14b8a6); border: none; color: #fff; padding: 9px 18px;
+    box-shadow: 0 6px 16px rgba(14, 165, 233, .28); }
+  button.primary:hover:not(:disabled) { background: linear-gradient(135deg, #0b95d6, #0fa596); }
+
+  main { max-width: 1080px; padding: 24px 20px 70px; }
+  .notice { border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 36px 28px; }
+
+  .picker { border: 1px solid var(--line); border-radius: 18px; padding: 22px 24px 18px; box-shadow: var(--shadow); }
+  .row { gap: 10px 16px; margin-bottom: 16px; }
+  .row > label.k { color: var(--accent); font-size: 13px; letter-spacing: .5px; min-width: 40px; }
+  .unit { background: linear-gradient(180deg, #f7fcff, #fbfefe); border-color: var(--line); border-radius: 14px; padding: 10px 14px 12px; }
+  .unit-h { color: var(--ink); }
+  .unit-h small { color: var(--muted); }
+  .lvls { gap: 7px; margin-top: 10px; }
+  .lv { border-color: #d7e9f3; color: var(--sub); padding: 5px 12px 5px 9px; transition: background .15s, border-color .15s, color .15s; }
+  .lv:hover { border-color: #9fd8ee; }
+  .lv:has(input:checked) { background: var(--mint-soft); border-color: #7fdccd; color: #0b6b62; font-weight: 600; }
+  .lv:has(input:checked) small { color: #3f9c92; font-weight: 400; }
+  .lv input, .unit-h input, .opts input { accent-color: var(--accent-2); width: 15px; height: 15px; }
+  .actions { gap: 10px; margin-top: 6px; padding-top: 14px; border-top: 1px dashed #d4e9f4; }
+
+  .report { border: 1px solid var(--line); border-radius: 20px; padding: 0 34px 30px; box-shadow: var(--shadow); overflow: hidden; }
+  .cover { margin: 0 -34px 8px; padding: 26px 34px 18px; border-bottom: none;
+    background: linear-gradient(120deg, #e0f4fe 0%, #e4faf6 100%); position: relative; }
+  .cover::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, #38bdf8, #2dd4bf); }
+  .cover .school { color: #2f7aa6; font-weight: 600; }
+  .cover h2 { color: var(--ink); }
+  .flow span { background: #fff; color: var(--accent); border: 1px solid #c6e6f6; }
+  section.part > h3 .no { display: inline-grid; place-items: center; min-width: 32px; height: 32px; border-radius: 10px; font-size: 16px;
+    color: #fff; background: linear-gradient(135deg, #38bdf8, #2dd4bf); }
+  section.part > h3 { align-items: center; }
+  h4 { color: var(--ink); }
+
+  .tiles { gap: 12px; }
+  .tile { border: none; border-radius: 16px; padding: 14px 16px; background: linear-gradient(160deg, #f0f9ff, #effbf8); }
+  .tile .k { color: #3c7fa6; font-weight: 600; }
+  .tile .v { color: var(--ink); }
+  .summary-text { background: var(--mint-soft); border-left-color: var(--accent-2); border-radius: 0 14px 14px 0; }
+
+  .tablewrap { border-color: var(--line); border-radius: 14px; }
+  th { background: #f1f9fe; color: #2f6f96; }
+  th, td { border-bottom-color: #e6f2f9; }
+  tbody tr:hover td { background: #f8fcff; }
+  .meter .track { background: #e4f1f8; }
+  .meter .fill { background: linear-gradient(90deg, #38bdf8, #14b8a6); }
+  .qgrid td.q sup { color: var(--accent); }
+  .card { border-color: var(--line); border-radius: 16px; background: #fbfeff; }
+  .chip { border-color: #d7e9f3; border-radius: 999px; padding: 2px 10px; }
+  .student-page { border-color: var(--line); border-radius: 16px; }
+  .student-page .advice { background: var(--mint-soft); border-radius: 10px; }
+
+  @media (max-width: 640px) {
+    .report { padding: 0 16px 20px; }
+    .cover { margin: 0 -16px 8px; padding: 20px 16px 16px; }
+    header.bar { padding: 12px 16px; }
+  }
+
   @media (max-width: 640px) {
     .report { padding: 18px 14px; }
     .cover h2 { font-size: 21px; }
@@ -152,7 +229,9 @@
     body { background: #fff; font-size: 12px; }
     header.bar, .picker, .no-print { display: none !important; }
     main { padding: 0; max-width: none; }
-    .report { border: none; padding: 0; }
+    .report { border: none; padding: 0; box-shadow: none; overflow: visible; }
+    .cover { margin: 0 0 8px; padding: 14px 16px 12px; }
+    tbody tr:hover td { background: none; }
     section.part { break-inside: auto; }
     .tile, .card, tr, .student-page { break-inside: avoid; }
     .page-break { break-before: page; }
@@ -163,7 +242,7 @@
 </head>
 <body>
 <header class="bar">
-  <h1>📋 진단분석보고서 <a href="./">← 진단시스템</a></h1>
+  <h1><span class="logo">📋</span>진단분석보고서 <a href="./">← 진단시스템</a></h1>
   <div class="who">
     <span id="who"></span>
     <button id="loginBtn" class="primary hidden">선생님 로그인</button>
