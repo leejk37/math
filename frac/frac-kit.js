@@ -18,6 +18,17 @@
  *             주면 시트 '종합평가결과'의 '풀이방법' 칸에 함께 저장됩니다. (4215·4216은 FracKit.cardMethods 사용)
  */
 (function () {
+  // 확인 창을 누른 자리 가까이 띄우는 공통 파일(../confirm-near.js)을 불러옴. 아직 못 불러왔으면 기본 confirm 사용.
+  (function () {
+    if (window.confirmNear) return;
+    var me = document.currentScript;
+    var sc = document.createElement('script');
+    sc.src = new URL('../confirm-near.js', me ? me.src : location.href).href;
+    document.head.appendChild(sc);
+  })();
+  function askNear(msg) {
+    return window.confirmNear ? window.confirmNear(msg) : Promise.resolve(confirm(msg));
+  }
   var SESSION_KEY = 'frac_session';
   var params = new URLSearchParams(location.search);
   var nonce = params.get('s');
@@ -176,8 +187,10 @@
       return b;
     }
     if (embedded) addAction('↩ 단계 선택으로', 'fk-btn-sub', function () {
-      if (K.isDiagnostic && started && !submitted && !confirm('풀던 문제가 저장되지 않습니다. 단계 선택으로 돌아갈까요?')) return;
-      post({ type: 'frac-exit' });
+      if (!(K.isDiagnostic && started && !submitted)) { post({ type: 'frac-exit' }); return; }
+      askNear('풀던 문제가 저장되지 않습니다. 단계 선택으로 돌아갈까요?').then(function (ok) {
+        if (ok) post({ type: 'frac-exit' });
+      });
     });
 
     // 진단 모드에서 숨길 것들
@@ -221,7 +234,10 @@
         }
         if (submitted) return;
         if (!started) { alert('아직 풀이를 시작하지 않았습니다.'); return; }
-        if (!confirm('제출하면 고칠 수 없습니다. 제출할까요?')) return;
+        askNear('제출하면 고칠 수 없습니다. 제출할까요?').then(function (ok) { if (ok) doSubmit(); });
+      };
+      function doSubmit() {
+        if (submitted) return;
 
         submitted = true;
         clearInterval(timerId);
