@@ -3,480 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 -->
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 분수 빈칸(m5f) → 3학년 그림 도우미(m316) -->
 <script src="../config.js"></script>
 <script src="../api.js"></script>
 <script src="frac-kit.js"></script>
-
-<title>분수 크기 비교 문제 모음</title>
+<script src="m423-common.js?v=20261109-4"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m316-common.js?v=20261109-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>분모가 같은 분수의 크기 비교</title>
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-<style>
-  body {
-    font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-    background: #fafafa;
-    padding: 30px;
-    color: #222;
-  }
-  h2 { font-size: 19px; margin-bottom: 24px; }
-
-  .problem {
-    background: #fff;
-    border: 2px solid #eee;
-    border-radius: 16px;
-    padding: 20px 22px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  }
-  .problem-num {
-    display: inline-block;
-    background: #6a5acd;
-    color: #fff;
-    font-weight: bold;
-    font-size: 13px;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    text-align: center;
-    line-height: 24px;
-    margin-right: 8px;
-  }
-  .problem-title {
-    font-size: 15px;
-    font-weight: bold;
-    margin-bottom: 14px;
-  }
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  .bar-col {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .bar-col.vertical { flex-direction: column; }
-  svg { display: block; }
-  .piece { cursor: pointer; }
-
-  /* 읽기 전용 인라인 분수 */
-  .inline-fraction {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    vertical-align: middle;
-    margin: 0 6px;
-    background: #e4e4ea;
-    border-radius: 8px;
-    padding: 4px 10px;
-  }
-  .inline-fraction .cell { font-size: 18px; font-weight: bold; line-height: 1.2; }
-  .inline-fraction .bar { width: 100%; height: 2px; background: #333; margin: 1px 0; }
-
-  /* 연산자 선택 버튼 */
-  .operator-selector { display: flex; gap: 6px; }
-  .op-btn {
-    width: 40px; height: 40px;
-    font-size: 20px; font-weight: bold;
-    border: 2px solid #7ec8e3;
-    border-radius: 50%;
-    background: #fff;
-    cursor: pointer;
-    color: #333;
-  }
-  .op-btn:hover { background: #eef8fc; }
-  .op-btn.selected {
-    background: #7ec8e3;
-    color: #fff;
-  }
-
-  /* 3~5번 문제: 학생이 직접 기호를 입력하는 원형 빈칸 */
-  .op-input {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    border: 2px solid #7ec8e3;
-    text-align: center;
-    font-size: 20px;
-    font-weight: bold;
-    color: #333;
-    background: #fff;
-  }
-
-  .op-dropdown {
-    font-size: 18px;
-    font-weight: bold;
-    border: 2px solid #7ec8e3;
-    border-radius: 8px;
-    padding: 8px 10px;
-    background: #fff;
-    color: #333;
-    cursor: pointer;
-  }
-
-  .feedback {
-    min-height: 20px;
-    font-size: 13px;
-    font-weight: bold;
-    margin-top: 12px;
-  }
-  .feedback.correct { color: #2e9e44; }
-  .feedback.wrong { color: #e05656; }
-
-  .global-controls {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .global-btn {
-    font-size: 15px;
-    font-weight: bold;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 20px;
-    cursor: pointer;
-  }
-  .global-check-btn { background: #6a5acd; color: #fff; }
-  .global-check-btn:hover { background: #5a4bb8; }
-  .global-reset-btn { background: #eee; color: #555; }
-  .global-reset-btn:hover { background: #ddd; }
-  .summary { font-size: 15px; font-weight: bold; }
-</style>
 </head>
 <body>
 
-<h2>분수의 크기 비교 문제 모음</h2>
+<div class="header-text">분모가 같은 분수의 크기 비교</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 분모가 같으면 분자가 클수록 큰 분수예요</div>
+  <div class="rule-line"><span class="rule-tag">개수</span> 4/7는 1/7이 4개, 2/7는 1/7이 2개 → <b>4/7 &gt; 2/7</b></div>
+  <div class="rule-line"><span class="rule-tag t2">그림</span> 같은 막대에 색칠하면 더 많이 색칠한 쪽이 더 커요.</div>
+</div></div>
 
-<div id="problems"></div>
+<div class="quiz-container" id="quiz"></div>
 
-<div class="global-controls">
-  <button class="global-btn global-check-btn" id="checkAllBtn">전체 정답 확인</button>
-  <button class="global-btn global-reset-btn" id="newAllBtn">새 문제 (전체)</button>
-  <span class="summary" id="summary"></span>
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
 </div>
 
 <script>
-/* ===================== 공통 유틸 ===================== */
-function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+// 3165 — 분모가 같은 분수의 크기 비교 (교과서 3-1 6단원 '분수와 소수')
+// 진단 포인트: 분자가 작을수록 크다고 생각함(단위분수 비교와 헷갈림), 단위분수의 개수로 비교하지 못함
+M.inlineQuestion = true;
+// 분모 d, 서로 다른 분자 두 개
+function two(lo) { const d = M.rand(lo || 4, 9); let a, b; do { a = M.rand(1, d - 1); b = M.rand(1, d - 1); } while (a === b); return { d, a, b }; }
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
 
-// 서로 다른 두 정수를 [min,max] 범위에서 뽑기 (같은 크기의 분수가 나오지 않도록)
-function randomDistinctPair(min, max) {
-  const a = randomInt(min, max);
-  let b = randomInt(min, max);
-  while (b === a) b = randomInt(min, max);
-  return [a, b];
+  // 1번: 막대에 색칠하고 비교
+  const p1 = two(5);
+  cards.push(M.card(0, `<div class="q-text">두 분수만큼 각각 색칠하고, 크기를 비교해 보세요.</div>` +
+    `<div style="display:flex;flex-direction:column;gap:6px;align-items:center">` +
+    `<div class="row" style="align-items:center;gap:10px"><div class="eq" style="width:44px">${M.frac(p1.a, p1.d)}</div>${M.cellPick(p1.a, S.bar(p1.d, 0, { pick: true, w: 320 }), true)}</div>` +
+    `<div class="row" style="align-items:center;gap:10px"><div class="eq" style="width:44px">${M.frac(p1.b, p1.d)}</div>${M.cellPick(p1.b, S.bar(p1.d, 0, { pick: true, w: 320 }), true)}</div></div>` +
+    `<div class="cmp-row">${M.frac(p1.a, p1.d)}${M.cmp(p1.a, p1.b)}${M.frac(p1.b, p1.d)}</div>`, true));
+  hints.push('왼쪽 칸부터 눌러서 분자만큼 색칠해요. 색칠한 부분이 더 긴 분수가 더 커요.');
+
+  // 2번: 단위분수의 개수로 비교
+  const p2 = two();
+  const u2 = M.frac(1, p2.d, true);
+  cards.push(M.card(1, `<div class="q-text">단위분수가 몇 개인지 세어 크기를 비교해 보세요.</div>` +
+    `<div class="eq" style="font-size:18px">${M.frac(p2.a, p2.d)} ${M.josa(p2.a, '은', '는')} ${u2} 이 ${M.box(p2.a)}개, &nbsp;${M.frac(p2.b, p2.d)} ${M.josa(p2.b, '은', '는')} ${u2} 이 <span class="tail">${M.box(p2.b)}개</span></div>` +
+    `<div class="cmp-row">${M.frac(p2.a, p2.d)}${M.cmp(p2.a, p2.b)}${M.frac(p2.b, p2.d)}</div>`, true));
+  hints.push(`${u2} 이 더 많이 있는 분수가 더 커요.`);
+
+  // 3번: 크기 비교 (3쌍)
+  const c3 = [two(), two(), two()];
+  cards.push(M.card(2, `<div class="q-text">두 분수의 크기를 비교하여 &gt;, =, &lt; 중 알맞은 것을 골라 보세요.</div>` +
+    M.line(...c3.map(p => `<div class="qbox"><div class="cmp-row">${M.frac(p.a, p.d)}${M.cmp(p.a, p.b)}${M.frac(p.b, p.d)}</div></div>`)), true));
+  hints.push('분모가 같으니 분자만 비교하면 돼요. 분자가 큰 쪽이 더 커요.');
+
+  // 4번: 가장 큰 분수 고르기
+  const d4 = M.rand(5, 9), ns4 = M.shuffle(Array.from({ length: d4 - 1 }, (_, i) => i + 1)).slice(0, 4);
+  const max4 = Math.max(...ns4);
+  cards.push(M.card(3, `<div class="q-text">가장 큰 분수를 골라 보세요.</div>` +
+    M.choices(max4, ns4.map(n => [n, n + '/' + d4])), true));
+  hints.push('분모가 모두 같아요. 분자가 가장 큰 분수를 찾아요.');
+
+  // 5번: 문장제
+  const p5 = two();
+  const who = M.shuffle(['민수', '지혜', '서아', '도하']).slice(0, 2);
+  cards.push(M.card(4, `<div class="q-text">문제를 읽고 답을 골라 보세요.</div>` +
+    `<div class="word">우유를 ${who[0]}는 ${p5.a}/${p5.d} L, ${who[1]}는 ${p5.b}/${p5.d} L 마셨습니다. 우유를 더 많이 마신 사람은 누구인가요?</div>` +
+    M.choices(p5.a > p5.b ? 0 : 1, [[0, who[0]], [1, who[1]]]), true));
+  hints.push('두 분수의 분모가 같아요. 분자가 큰 사람이 더 많이 마셨어요.');
+  M.render(cards, hints);
 }
-
-const svgNS = "http://www.w3.org/2000/svg";
-function el(tag, attrs) {
-  const e = document.createElementNS(svgNS, tag);
-  for (const k in attrs) e.setAttribute(k, attrs[k]);
-  return e;
-}
-
-function inlineFraction(numerator, denominator) {
-  const wrap = document.createElement('span');
-  wrap.className = 'inline-fraction';
-  const num = document.createElement('div'); num.className = 'cell'; num.textContent = numerator;
-  const bar = document.createElement('div'); bar.className = 'bar';
-  const den = document.createElement('div'); den.className = 'cell'; den.textContent = denominator;
-  wrap.appendChild(num); wrap.appendChild(bar); wrap.appendChild(den);
-  return wrap;
-}
-
-// 두 분수(분모가 같음)를 비교하는 정답 연산자 계산
-function correctOperator(num1, num2) {
-  if (num1 < num2) return '<';
-  if (num1 > num2) return '>';
-  return '=';
-}
-
-// <, =, > 선택 버튼
-function createOperatorSelector() {
-  const wrap = document.createElement('div');
-  wrap.className = 'operator-selector';
-  let selected = null;
-  const buttons = {};
-  ['<', '=', '>'].forEach(sym => {
-    const btn = document.createElement('button');
-    btn.className = 'op-btn';
-    btn.textContent = sym;
-    btn.onclick = () => {
-      selected = sym;
-      Object.values(buttons).forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    };
-    buttons[sym] = btn;
-    wrap.appendChild(btn);
-  });
-  return {
-    wrap,
-    getSelected: () => selected,
-    reset: () => { selected = null; Object.values(buttons).forEach(b => b.classList.remove('selected')); }
-  };
-}
-
-// 3~5번 문제용: 학생이 직접 <, =, > 기호를 입력하는 원형 빈칸
-function createOperatorInput() {
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'op-input';
-  input.maxLength = 1;
-  input.addEventListener('keydown', (e) => {
-    // 이동/삭제 키는 허용, 그 외에는 <, =, > 만 입력 가능
-    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight'];
-    if (allowedKeys.includes(e.key)) return;
-    if (!['<', '=', '>'].includes(e.key)) e.preventDefault();
-  });
-  return {
-    input,
-    getValue: () => input.value.trim(),
-    reset: () => { input.value = ''; }
-  };
-}
-
-// 3~5번 문제용: 드롭다운(select)으로 <, =, > 중 하나를 선택
-function createOperatorDropdown() {
-  const select = document.createElement('select');
-  select.className = 'op-dropdown';
-
-  const placeholderOpt = document.createElement('option');
-  placeholderOpt.value = '';
-  placeholderOpt.textContent = '기호';
-  placeholderOpt.disabled = true;
-  placeholderOpt.selected = true;
-  select.appendChild(placeholderOpt);
-
-  ['<', '=', '>'].forEach(sym => {
-    const opt = document.createElement('option');
-    opt.value = sym;
-    opt.textContent = sym;
-    select.appendChild(opt);
-  });
-
-  return {
-    select,
-    getSelected: () => select.value || null,
-    reset: () => { select.value = ''; }
-  };
-}
-
-function makeProblemWrapper(num, titleText) {
-  const wrap = document.createElement('div');
-  wrap.className = 'problem';
-  const title = document.createElement('div');
-  title.className = 'problem-title';
-  const badge = document.createElement('span');
-  badge.className = 'problem-num';
-  badge.textContent = num;
-  title.appendChild(badge);
-  title.appendChild(document.createTextNode(titleText));
-  wrap.appendChild(title);
-  return wrap;
-}
-
-// 클릭해서 색칠하는 수막대 (세로/가로 공통)
-function makeClickableBar(orientation, n, color) {
-  const shaded = new Set();
-  const svg = document.createElementNS(svgNS, 'svg');
-  let w, h;
-  if (orientation === 'vertical') { w = 50; h = 170; } else { w = 220; h = 40; }
-  svg.setAttribute('width', w);
-  svg.setAttribute('height', h);
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-
-  const x0 = 5, y0 = 5;
-  const innerW = w - 10, innerH = h - 10;
-  const pieces = [];
-
-  for (let i = 0; i < n; i++) {
-    let attrs;
-    if (orientation === 'vertical') {
-      const segH = innerH / n;
-      attrs = { x: x0, y: y0 + i * segH, width: innerW, height: segH };
-    } else {
-      const segW = innerW / n;
-      attrs = { x: x0 + i * segW, y: y0, width: segW, height: innerH };
-    }
-    const piece = el('rect', { ...attrs, fill: '#ffffff', class: 'piece' });
-    piece.addEventListener('click', () => {
-      if (shaded.has(i)) shaded.delete(i); else shaded.add(i);
-      piece.setAttribute('fill', shaded.has(i) ? color : '#ffffff');
-    });
-    svg.appendChild(piece);
-    pieces.push(piece);
-  }
-
-  // 테두리
-  svg.appendChild(el('rect', { x: x0, y: y0, width: innerW, height: innerH, fill: 'none', stroke: '#333', 'stroke-width': 2, 'pointer-events': 'none' }));
-  // 내부 구분선
-  for (let i = 1; i < n; i++) {
-    if (orientation === 'vertical') {
-      const segH = innerH / n;
-      const y = y0 + i * segH;
-      svg.appendChild(el('line', { x1: x0, y1: y, x2: x0 + innerW, y2: y, stroke: '#333', 'stroke-width': 1.3, 'stroke-dasharray': '4,3', 'pointer-events': 'none' }));
-    } else {
-      const segW = innerW / n;
-      const x = x0 + i * segW;
-      svg.appendChild(el('line', { x1: x, y1: y0, x2: x, y2: y0 + innerH, stroke: '#333', 'stroke-width': 1.3, 'stroke-dasharray': '4,3', 'pointer-events': 'none' }));
-    }
-  }
-
-  return {
-    svg,
-    getShadedCount: () => shaded.size,
-    resetShading: () => { shaded.clear(); pieces.forEach(p => p.setAttribute('fill', '#ffffff')); }
-  };
-}
-
-/* ===================== 문제 1 / 2: 수막대 색칠 + 크기 비교 (공통 로직) ===================== */
-function makeBarComparisonProblem(num, orientation, titleText, color) {
-  const wrap = makeProblemWrapper(num, titleText);
-  const row = document.createElement('div'); row.className = 'row'; wrap.appendChild(row);
-
-  let n, num1, num2;
-  let bar1, bar2, fracLabel1, fracLabel2;
-
-  function buildBars() {
-    row.innerHTML = '';
-
-    bar1 = makeClickableBar(orientation, n, color);
-    bar2 = makeClickableBar(orientation, n, color);
-
-    const col1 = document.createElement('div');
-    col1.className = orientation === 'vertical' ? 'bar-col vertical' : 'bar-col';
-    fracLabel1 = inlineFraction(num1, n);
-    if (orientation === 'vertical') { col1.appendChild(fracLabel1); col1.appendChild(bar1.svg); }
-    else { col1.appendChild(fracLabel1); col1.appendChild(bar1.svg); }
-
-    const col2 = document.createElement('div');
-    col2.className = orientation === 'vertical' ? 'bar-col vertical' : 'bar-col';
-    fracLabel2 = inlineFraction(num2, n);
-    col2.appendChild(fracLabel2); col2.appendChild(bar2.svg);
-
-    row.appendChild(col1);
-    if (orientation === 'horizontal') {
-      // 가로 막대는 위아래로 쌓아서 표시 (그림처럼)
-      row.style.flexDirection = 'column';
-      row.style.alignItems = 'flex-start';
-    } else {
-      row.style.flexDirection = 'row';
-      row.style.alignItems = 'center';
-    }
-    row.appendChild(col2);
-  }
-
-  function regenerate() {
-    n = randomInt(4, 9);
-    [num1, num2] = randomDistinctPair(1, n - 1);
-    buildBars();
-  }
-  regenerate();
-
-  const feedback = document.createElement('div'); feedback.className = 'feedback'; wrap.appendChild(feedback);
-
-  function check() {
-    const c1ok = bar1.getShadedCount() === num1;
-    const c2ok = bar2.getShadedCount() === num2;
-
-    if (!c1ok || !c2ok) {
-      feedback.textContent = '주어진 분수만큼 정확히 색칠해 주세요.';
-      feedback.className = 'feedback wrong';
-      return false;
-    }
-    feedback.textContent = '정답이에요! 색칠된 길이로 두 분수의 크기를 비교해 보세요. 👏';
-    feedback.className = 'feedback correct';
-    return true;
-  }
-
-  function reset() {
-    regenerate();
-    feedback.textContent = ''; feedback.className = 'feedback';
-  }
-
-  return { wrap, check, regenerate: reset };
-}
-
-/* ===================== 문제 3~5: 분모가 같은 두 진분수 크기 비교 (도형 없음, 선택형) ===================== */
-function makeFractionCompareProblem(num, titleText) {
-  const wrap = makeProblemWrapper(num, titleText);
-  const row = document.createElement('div'); row.className = 'row'; wrap.appendChild(row);
-
-  let n, num1, num2;
-  let fracLabel1, fracLabel2;
-  const opSelector = createOperatorDropdown();
-
-  function build() {
-    row.innerHTML = '';
-    fracLabel1 = inlineFraction(num1, n);
-    fracLabel2 = inlineFraction(num2, n);
-    row.appendChild(fracLabel1);
-    row.appendChild(opSelector.select);
-    row.appendChild(fracLabel2);
-  }
-
-  function regenerate() {
-    n = randomInt(4, 12);
-    [num1, num2] = randomDistinctPair(1, n - 1);
-    build();
-    opSelector.reset();
-  }
-  regenerate();
-
-  const feedback = document.createElement('div'); feedback.className = 'feedback'; wrap.appendChild(feedback);
-
-  function check() {
-    const val = opSelector.getSelected();
-    if (!val) {
-      feedback.textContent = '<, =, > 중 하나를 선택해 주세요.';
-      feedback.className = 'feedback wrong';
-      return false;
-    }
-    const correct = val === correctOperator(num1, num2);
-    feedback.textContent = correct ? '정답이에요! 👏' : '다시 한 번 확인해 볼까요?';
-    feedback.className = correct ? 'feedback correct' : 'feedback wrong';
-    return correct;
-  }
-
-  function reset() {
-    regenerate();
-    feedback.textContent = ''; feedback.className = 'feedback';
-  }
-
-  return { wrap, check, regenerate: reset };
-}
-
-/* ===================== 초기화 ===================== */
-const problemsEl = document.getElementById('problems');
-const summaryEl = document.getElementById('summary');
-
-const problems = [
-  makeBarComparisonProblem(1, 'vertical', '세로 수막대에 주어진 분수만큼 색칠하고, 두 분수의 크기를 비교해 보세요.', '#bfe0ff'),
-  makeBarComparisonProblem(2, 'horizontal', '가로 수막대에 주어진 분수만큼 색칠하고, 두 분수의 크기를 비교해 보세요.', '#d3cbee'),
-  makeFractionCompareProblem(3, '두 분수의 크기를 비교해 보세요.'),
-  makeFractionCompareProblem(4, '두 분수의 크기를 비교해 보세요.'),
-  makeFractionCompareProblem(5, '두 분수의 크기를 비교해 보세요.')
-];
-
-problems.forEach(p => problemsEl.appendChild(p.wrap));
-
-document.getElementById('checkAllBtn').onclick = () => {
-  const results = problems.map(p => p.check());
-  const correctCount = results.filter(r => r === true).length;
-  summaryEl.textContent = `${problems.length}문제 중 ${correctCount}개 정답`;
-};
-
-document.getElementById('newAllBtn').onclick = () => {
-  problems.forEach(p => p.regenerate());
-  summaryEl.textContent = '';
-};
+document.addEventListener('DOMContentLoaded', generate);
 </script>
-
 <script>
-// 진단시스템 연결 (frac-kit.js)
-FracKit.init({ check: '#checkAllBtn', newBtn: '#newAllBtn', grade: () => { const r = problems.map(p => p.check()); summaryEl.textContent = `${r.length}문제 중 ${r.filter(Boolean).length}개 정답`; return r; } });
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
 </script>
 </body>
 </html>

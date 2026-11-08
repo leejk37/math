@@ -435,6 +435,15 @@
     s += '<text x="12" y="' + (H + 22) + '" font-size="14" text-anchor="middle" fill="#334155">0</text><text x="' + (W + 12) + '" y="' + (H + 22) + '" font-size="14" text-anchor="middle" fill="#334155">1</text>';
     return '<div class="pick" data-pick="' + id + '" data-ans="' + ans + '" tabindex="-1">' + s + '</svg></div>';
   };
+  // 그림 조각 색칠하기 (3학년 분수 등): svgHtml 안의 조각마다 class="pick-cell" data-k="0,1,…" 를 붙여 넘김
+  //  seq = true  : 막대처럼 앞에서부터 차례로 칠해짐 (누른 칸까지)
+  //  seq = false : 아무 조각이나 눌러서 칠하고, 다시 누르면 지움 (원·도형)
+  //  채점은 칠한 조각의 개수 = ans
+  M.cellPick = function (ans, svgHtml, seq, color) {
+    var id = PICKS.length;
+    PICKS.push({ kind: seq ? 'seq' : 'free', base: 0, val: 0, sel: {}, color: color });
+    return '<div class="pick" data-pick="' + id + '" data-ans="' + ans + '" tabindex="-1">' + svgHtml + '</div>';
+  };
   // 색칠된 10칸 막대 그림 (보기용)
   M.bar = function (n, vertical, topLabel, color) { return barSvg(n, vertical, topLabel, false, color); };
   function barSvg(n, vertical, topLabel, pick, color) {
@@ -485,6 +494,8 @@
     cells.forEach(function (r) {
       var k = +r.dataset.k;
       var fill = '#fff';
+      if (st.kind === 'free') { r.setAttribute('fill', st.sel[k] ? (st.color || '#93c5fd') : '#fff'); return; }
+      if (st.kind === 'seq') { r.setAttribute('fill', k < st.val ? (st.color || '#93c5fd') : '#fff'); return; }
       if (k < st.base) fill = '#f9a8d4';
       else if (k < st.val) fill = st.kind === 'grid' ? '#86efac' : '#93c5fd';
       r.setAttribute('fill', fill);
@@ -497,6 +508,13 @@
         r.addEventListener('click', function () {
           if (document.body.classList.contains('fk-locked')) return;
           var st = PICKS[+el.dataset.pick], k = +r.dataset.k;
+          if (st.kind === 'free') {
+            if (st.sel[k]) delete st.sel[k]; else st.sel[k] = true;
+            st.val = Object.keys(st.sel).length;
+            paintPick(el);
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            return;
+          }
           if (k < st.base) return;
           st.val = (k < st.val) ? k : k + 1;
           if (st.val < st.base) st.val = st.base;
@@ -710,6 +728,7 @@
     document.querySelectorAll('#quiz .pick').forEach(function (el) {
       var st = PICKS[+el.dataset.pick];
       st.val = on ? +el.getAttribute('data-ans') : st.base;
+      if (st.kind === 'free') { st.sel = {}; for (var k = 0; k < st.val; k++) st.sel[k] = true; }
       paintPick(el);
     });
   };

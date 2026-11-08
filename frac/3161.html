@@ -3,281 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 -->
+<!-- 진단시스템 연결(활동 페이지: 기록 없음): 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 분수 빈칸(m5f) → 3학년 그림 도우미(m316) -->
 <script src="../config.js"></script>
 <script src="../api.js"></script>
 <script src="frac-kit.js"></script>
-
+<script src="m423-common.js?v=20261109-4"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m316-common.js?v=20261109-1"></script>
 <title>원을 똑같이 나누어 봅시다</title>
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <style>
-  body {
-    font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-    background: #fafafa;
-    padding: 30px;
-  }
-  h2 {
-    font-size: 20px;
-    margin-bottom: 24px;
-    color: #222;
-  }
-  .board {
-    display: flex;
-    gap: 28px;
-    flex-wrap: wrap;
-  }
-  .card {
-    border: 2px dashed #b9b6e0;
-    border-radius: 16px;
-    padding: 16px;
-    width: 240px;
-    text-align: center;
-    background: #fff;
-  }
-  .input-box {
-    background: #e6e3f5;
-    border-radius: 12px;
-    padding: 10px 12px;
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-  }
-  .input-box input {
-    width: 60px;
-    font-size: 18px;
-    font-weight: bold;
-    text-align: center;
-    border: 2px solid #b9b6e0;
-    border-radius: 8px;
-    padding: 4px 2px;
-  }
-  .input-box button {
-    font-size: 14px;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 12px;
-    background: #6a5acd;
-    color: #fff;
-    cursor: pointer;
-  }
-  .input-box button:hover {
-    background: #5a4bb8;
-  }
-  .error-msg {
-    min-height: 18px;
-    font-size: 13px;
-    color: #e05656;
-    font-weight: bold;
-    margin-bottom: 8px;
-  }
-  svg {
-    display: block;
-    margin: 0 auto;
-  }
-  .reset-btn {
-    margin-top: 12px;
-    font-size: 13px;
-    color: #888;
-    background: none;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 4px 10px;
-    cursor: pointer;
-  }
-  .reset-btn:hover {
-    background: #f0f0f0;
-  }
+  .act-in{display:flex;gap:8px;align-items:center;justify-content:center;font-size:18px;font-weight:bold;color:#1e293b}
+  .act-in input{width:64px;height:40px;border:2px solid #94a3b8;border-radius:8px;font-size:20px;font-weight:bold;text-align:center;font-family:inherit;color:#0284c7}
+  .act-in input:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.2)}
+  .act-btn{border:none;border-radius:8px;padding:9px 16px;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;background:#3b82f6;color:#fff}
+  .act-btn.sub{background:#e2e8f0;color:#334155}
+  .act-msg{font-size:15px;font-weight:bold;min-height:22px;text-align:center}
+  .act-msg.bad{color:#b91c1c}.act-msg.ok{color:#15803d}
 </style>
 </head>
 <body>
 
-<h2>나누고 싶은 수를 입력하고, 원을 똑같이 나누어 봅시다.</h2>
+<div class="header-text">원을 똑같이 나누어 봅시다</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 똑같이 나누면 조각의 모양과 크기가 모두 같아요</div>
+  <div class="rule-line"><span class="rule-tag">해 보기</span> 나누고 싶은 수(2~12)를 쓰고 <b>나누기</b>를 누르세요.</div>
+  <div class="rule-line"><span class="rule-tag t2">색칠</span> 조각을 누르면 색칠돼요. 몇 조각 중 몇 조각인지 말해 보세요.</div>
+</div></div>
 
-<div class="board" id="board"></div>
+<div class="quiz-container" id="quiz"></div>
 
 <script>
-// ===== 등분 가능 범위 설정 =====
-const MIN_N = 2;   // 최소 등분 수 (1은 나누는 의미가 없어서 제외)
-const MAX_N = 24;  // 최대 등분 수 (너무 많으면 선이 겹쳐 보기 어려움)
-
-const R = 80;          // 원 반지름
-const CX = 100, CY = 100; // 원 중심 (svg 좌표)
-const DOT_COUNT = 12;  // 둘레에 찍힌 점 개수 (보기용)
-
-function makeCircleCard(index) {
-  const card = document.createElement('div');
-  card.className = 'card';
-
-  // 입력창 + 확인 버튼
-  const inputBox = document.createElement('div');
-  inputBox.className = 'input-box';
-
-  const input = document.createElement('input');
-  input.type = 'number';
-  input.placeholder = '숫자';
-  input.min = String(MIN_N);
-  input.max = String(MAX_N);
-  input.step = '1';
-  input.inputMode = 'numeric'; // 모바일에서 숫자 키패드만 뜨도록
-
-  // 자연수가 아닌 문자(-, ., e, +)는 입력 자체를 막음
-  input.addEventListener('keydown', (e) => {
-    if (['-', '.', 'e', 'E', '+'].includes(e.key)) {
-      e.preventDefault();
-    }
+// 3161 — 원을 똑같이 나누기 (교과서 3-1 6단원 '분수와 소수' 도입 활동) — 채점·기록 없음
+M.inlineQuestion = true;
+const SHAPES = [
+  ['원', n => S.circle(n, 0, { pick: true, size: 200 })],
+  ['직사각형', n => S.rect(n, 0, { pick: true, w: 280, h: 150 })]
+];
+function generate() {
+  M.reset();
+  const cards = SHAPES.map(([name], i) => M.card(i,
+    `<div class="q-text">${name}을(를) 똑같이 나누어 보세요.</div>`.replace('원을(를)', '원을').replace('직사각형을(를)', '직사각형을') +
+    `<div class="act-in"><input type="text" inputmode="numeric" maxlength="2" id="n-${i}" value="${[4, 3][i]}"> 조각으로 ` +
+    `<button type="button" class="act-btn" onclick="draw(${i})">나누기</button>` +
+    `<button type="button" class="act-btn sub" onclick="draw(${i})">색칠 지우기</button></div>` +
+    `<div id="pic-${i}"></div><div class="act-msg" id="msg-${i}"></div>`, true));
+  M.render(cards, [
+    '조각의 크기가 서로 다르면 똑같이 나눈 것이 아니에요. 가운데 점에서 똑같은 간격으로 나누어요.',
+    '세로로 같은 너비만큼 나누면 똑같이 나눌 수 있어요.'
+  ]);
+  document.querySelectorAll('#quiz .quiz-number').forEach((e, i) => { e.textContent = '활동 ' + (i + 1); });
+  SHAPES.forEach((_, i) => {
+    const inp = document.getElementById('n-' + i);
+    inp.addEventListener('input', () => { inp.value = inp.value.replace(/[^0-9]/g, ''); });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') draw(i); });
+    draw(i);
   });
-
-  const confirmBtn = document.createElement('button');
-  confirmBtn.textContent = '확인';
-
-  inputBox.appendChild(input);
-  inputBox.appendChild(confirmBtn);
-  card.appendChild(inputBox);
-
-  // 오류 메시지 영역
-  const errorMsg = document.createElement('div');
-  errorMsg.className = 'error-msg';
-  card.appendChild(errorMsg);
-
-  // SVG 원
-  const svgNS = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(svgNS, "svg");
-  svg.setAttribute("width", "200");
-  svg.setAttribute("height", "200");
-  svg.setAttribute("viewBox", "0 0 200 200");
-
-  // 둘레 원
-  const circle = document.createElementNS(svgNS, "circle");
-  circle.setAttribute("cx", CX);
-  circle.setAttribute("cy", CY);
-  circle.setAttribute("r", R);
-  circle.setAttribute("fill", "none");
-  circle.setAttribute("stroke", "#333");
-  circle.setAttribute("stroke-width", "2");
-  svg.appendChild(circle);
-
-  // 둘레 점들 (보기용)
-  for (let i = 0; i < DOT_COUNT; i++) {
-    const angle = (360 / DOT_COUNT) * i - 90;
-    const rad = angle * Math.PI / 180;
-    const dx = CX + R * Math.cos(rad);
-    const dy = CY + R * Math.sin(rad);
-    const dot = document.createElementNS(svgNS, "circle");
-    dot.setAttribute("cx", dx);
-    dot.setAttribute("cy", dy);
-    dot.setAttribute("r", 3);
-    dot.setAttribute("fill", "#333");
-    svg.appendChild(dot);
-  }
-
-  // 중심 점
-  const centerDot = document.createElementNS(svgNS, "circle");
-  centerDot.setAttribute("cx", CX);
-  centerDot.setAttribute("cy", CY);
-  centerDot.setAttribute("r", 3);
-  centerDot.setAttribute("fill", "#333");
-  svg.appendChild(centerDot);
-
-  // 등분선 그룹
-  const linesGroup = document.createElementNS(svgNS, "g");
-  svg.appendChild(linesGroup);
-
-  card.appendChild(svg);
-
-  // 초기화 버튼
-  const resetBtn = document.createElement('button');
-  resetBtn.className = 'reset-btn';
-  resetBtn.textContent = '다시 하기';
-  resetBtn.onclick = () => {
-    linesGroup.innerHTML = '';
-    input.value = '';
-    errorMsg.textContent = '';
-  };
-  card.appendChild(resetBtn);
-
-  // 확인 동작
-  const handleSubmit = () => {
-    const raw = input.value.trim();
-    const result = validateN(raw);
-
-    if (!result.valid) {
-      errorMsg.textContent = result.message;
-      linesGroup.innerHTML = '';
-      return;
-    }
-
-    errorMsg.textContent = '';
-    drawDivisions(linesGroup, result.n);
-  };
-
-  confirmBtn.onclick = handleSubmit;
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleSubmit();
-  });
-
-  return card;
 }
-
-// 입력값 검증: 자연수(1, 2, 3...)인지, 범위(MIN_N ~ MAX_N) 안에 있는지 확인
-function validateN(raw) {
-  if (raw === '') {
-    return { valid: false, message: '자연수를 입력해 주세요.' };
-  }
-
-  const num = Number(raw);
-
-  if (Number.isNaN(num)) {
-    return { valid: false, message: '자연수만 입력할 수 있어요.' };
-  }
-
-  // 자연수 = 소수점이 없고, 0보다 큰 정수
-  if (!Number.isInteger(num) || num <= 0) {
-    return { valid: false, message: '자연수(1, 2, 3…)만 입력할 수 있어요.' };
-  }
-
-  if (num < MIN_N) {
-    return { valid: false, message: `${MIN_N} 이상의 자연수를 입력해 주세요.` };
-  }
-
-  if (num > MAX_N) {
-    return { valid: false, message: `${MAX_N} 이하의 자연수를 입력해 주세요.` };
-  }
-
-  return { valid: true, n: num };
+// 색칠한 조각 수 세기 (활동용 — 채점하지 않음)
+function draw(i) {
+  const n = parseInt(document.getElementById('n-' + i).value, 10), msg = document.getElementById('msg-' + i), pic = document.getElementById('pic-' + i);
+  if (!(n >= 2 && n <= 12)) { msg.className = 'act-msg bad'; msg.textContent = '2부터 12까지의 수를 써 주세요.'; return; }
+  pic.innerHTML = SHAPES[i][1](n);
+  msg.className = 'act-msg ok';
+  msg.textContent = `똑같이 ${n}조각으로 나누었어요. 조각을 눌러 색칠해 보세요.`;
+  pic.querySelectorAll('.pick-cell').forEach(c => c.addEventListener('click', () => {
+    c.setAttribute('fill', c.getAttribute('fill') === '#fff' ? '#93c5fd' : '#fff');
+    const k = pic.querySelectorAll('.pick-cell[fill="#93c5fd"]').length;
+    msg.innerHTML = k ? `${n}조각 중 ${k}조각을 색칠했어요. → ${M.frac(k, n, true)}` : `똑같이 ${n}조각으로 나누었어요. 조각을 눌러 색칠해 보세요.`;
+  }));
 }
-
-// n등분 선 그리기
-function drawDivisions(linesGroup, n) {
-  linesGroup.innerHTML = '';
-  const svgNS = "http://www.w3.org/2000/svg";
-
-  for (let i = 0; i < n; i++) {
-    const angle = (360 / n) * i - 90;
-    const rad = angle * Math.PI / 180;
-    const x2 = CX + R * Math.cos(rad);
-    const y2 = CY + R * Math.sin(rad);
-
-    const line = document.createElementNS(svgNS, "line");
-    line.setAttribute("x1", CX);
-    line.setAttribute("y1", CY);
-    line.setAttribute("x2", x2);
-    line.setAttribute("y2", y2);
-    line.setAttribute("stroke", "#e05656");
-    line.setAttribute("stroke-width", "2.5");
-    linesGroup.appendChild(line);
-  }
-}
-
-// 원 1개 생성
-const board = document.getElementById('board');
-board.appendChild(makeCircleCard(0));
+document.addEventListener('DOMContentLoaded', generate);
 </script>
-
 <script>
-// 진단시스템 연결 (frac-kit.js)
+// 진단시스템 연결 (frac-kit.js): 활동 페이지라 채점·기록 없음
 FracKit.init({ activity: true });
 </script>
 </body>

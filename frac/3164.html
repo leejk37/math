@@ -3,610 +3,82 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 -->
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 분수 빈칸(m5f) → 3학년 그림 도우미(m316) -->
 <script src="../config.js"></script>
 <script src="../api.js"></script>
 <script src="frac-kit.js"></script>
-
-<title>단위분수 문제 모음</title>
+<script src="m423-common.js?v=20261109-4"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m316-common.js?v=20261109-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>단위분수 알기</title>
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-<style>
-  body {
-    font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-    background: #fafafa;
-    padding: 30px;
-    color: #222;
-  }
-  h2 { font-size: 19px; margin-bottom: 24px; }
-
-  .problem {
-    background: #fff;
-    border: 2px solid #eee;
-    border-radius: 16px;
-    padding: 20px 22px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  }
-  .problem-num {
-    display: inline-block;
-    background: #6a5acd;
-    color: #fff;
-    font-weight: bold;
-    font-size: 13px;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    text-align: center;
-    line-height: 24px;
-    margin-right: 8px;
-  }
-  .problem-title {
-    font-size: 15px;
-    font-weight: bold;
-    margin-bottom: 14px;
-  }
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    flex-wrap: wrap;
-  }
-  svg { display: block; }
-
-  /* 큰 분수 입력 박스 (도형 문제용) */
-  .fraction-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .fraction-box .cell {
-    width: 44px;
-    height: 38px;
-    font-size: 17px;
-    text-align: center;
-    border-radius: 8px;
-    margin: 3px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .fraction-box input.cell {
-    border: 2px solid #7ec8e3;
-    background: #fff;
-  }
-  .fraction-line { width: 44px; height: 2px; background: #333; margin: 2px 0; }
-
-  /* 문장 안에 들어가는 작은 고정 분수 표시 (읽기 전용) */
-  .inline-fraction {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    vertical-align: middle;
-    margin: 0 4px;
-  }
-  .inline-fraction .cell {
-    font-size: 17px;
-    font-weight: bold;
-    line-height: 1.2;
-  }
-  .inline-fraction .bar { width: 100%; height: 2px; background: #333; margin: 1px 0; }
-
-  .sentence { font-size: 16px; line-height: 2.2; }
-
-  .count-input, .small-input {
-    width: 46px;
-    height: 34px;
-    font-size: 16px;
-    text-align: center;
-    border: 2px solid #7ec8e3;
-    border-radius: 8px;
-    margin: 0 3px;
-    vertical-align: middle;
-  }
-
-  .speaker-btn {
-    font-size: 20px;
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-
-  .feedback {
-    min-height: 20px;
-    font-size: 13px;
-    font-weight: bold;
-    margin-top: 12px;
-  }
-  .feedback.correct { color: #2e9e44; }
-  .feedback.wrong { color: #e05656; }
-
-  .global-controls {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .global-btn {
-    font-size: 15px;
-    font-weight: bold;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 20px;
-    cursor: pointer;
-  }
-  .global-check-btn { background: #6a5acd; color: #fff; }
-  .global-check-btn:hover { background: #5a4bb8; }
-  .global-reset-btn { background: #eee; color: #555; }
-  .global-reset-btn:hover { background: #ddd; }
-  .summary { font-size: 15px; font-weight: bold; }
-</style>
 </head>
 <body>
 
-<h2>단위분수 문제 모음</h2>
+<div class="header-text">단위분수 알기</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 분자가 1인 분수를 단위분수라고 해요</div>
+  <div class="rule-line"><span class="rule-tag">단위분수</span> 1/2, 1/3, 1/4 …처럼 전체를 똑같이 나눈 것 중의 <b>한 조각</b></div>
+  <div class="rule-line"><span class="rule-tag t2">몇 개</span> 3/5는 1/5이 <b>3개</b>예요. 1/5이 5개이면 <b>1</b>이에요.</div>
+</div></div>
 
-<div id="problems"></div>
+<div class="quiz-container" id="quiz"></div>
 
-<div class="global-controls">
-  <button class="global-btn global-check-btn" id="checkAllBtn">전체 정답 확인</button>
-  <button class="global-btn global-reset-btn" id="newAllBtn">새 문제 (전체)</button>
-  <span class="summary" id="summary"></span>
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
 </div>
 
 <script>
-/* ===================== 공통 유틸 ===================== */
-function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+// 3164 — 단위분수 알기 (교과서 3-1 6단원 '분수와 소수')
+// 진단 포인트: 분자가 1이 아닌 분수를 단위분수로 고름, 분수를 단위분수의 개수로 보지 못함
+M.inlineQuestion = true;
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
 
-const svgNS = "http://www.w3.org/2000/svg";
-function el(tag, attrs) {
-  const e = document.createElementNS(svgNS, tag);
-  for (const k in attrs) e.setAttribute(k, attrs[k]);
-  return e;
+  // 1번: 한 조각은 전체의 얼마
+  const d1 = M.rand(2, 8);
+  cards.push(M.card(0, `<div class="q-text">색칠한 한 조각은 전체의 얼마인지 분수로 나타내 보세요.</div>` +
+    `<div class="row" style="align-items:center;gap:30px">${S.any(d1, 1, { kind: d1 < 3 ? 'circle' : undefined })}<div class="eq">${F.ff(1, d1)}</div></div>`, true));
+  hints.push('전체가 몇 조각으로 똑같이 나뉘었는지 세어요. 한 조각은 분자가 1이에요.');
+
+  // 2번: 단위분수 모두 고르기
+  const nu = M.rand(2, 3);
+  const units = M.shuffle([2, 3, 4, 5, 6, 7, 8, 9]).slice(0, nu).map(d => [1, d]);
+  const others = M.shuffle([3, 4, 5, 6, 7, 8, 9]).slice(0, 6 - nu).map(d => [M.rand(2, d - 1), d]);
+  const pool = M.shuffle(units.concat(others));
+  cards.push(M.card(1, `<div class="q-text">단위분수를 모두 골라 보세요.</div>` +
+    F.multi(pool.map((p, i) => [i, p[0] + '/' + p[1]]), pool.map((p, i) => p[0] === 1 ? i : null).filter(v => v !== null)), true));
+  hints.push('<b>분자가 1</b>인 분수가 단위분수예요. 분모는 어떤 수든 괜찮아요.');
+
+  // 3번: 막대 그림 — 단위분수가 몇 개
+  const d3 = M.rand(4, 9), a3 = M.rand(2, d3 - 1);
+  cards.push(M.card(2, `<div class="q-text">색칠한 부분은 단위분수가 몇 개인지 알아보세요.</div>` + S.bar(d3, a3) +
+    `<div class="eq" style="font-size:18px">색칠한 부분은 ${F.ff(a3, d3)} 이고, ${M.frac(1, d3, true)} 이 <span class="tail">${M.box(a3)}개입니다.</span></div>`, true));
+  hints.push(`한 칸이 ${M.frac(1, d3, true)} 이에요. 색칠한 칸을 세어 보세요.`);
+
+  // 4번: 단위분수의 개수 ↔ 분수
+  const d4 = M.rand(3, 9), a4 = M.rand(2, d4 - 1), d4b = M.rand(3, 9), a4b = M.rand(2, d4b - 1);
+  cards.push(M.card(3, `<div class="q-text">빈칸에 알맞은 수를 써넣으세요.</div>` +
+    M.line(`<div class="qbox"><div class="eq" style="font-size:18px">${M.frac(a4, d4)} ${M.josa(a4, '은', '는')} ${M.frac(1, d4, true)} 이 <span class="tail">${M.box(a4)}개입니다.</span></div></div>`,
+      `<div class="qbox"><div class="eq" style="font-size:18px">${M.frac(1, d4b, true)} 이 ${a4b}개이면 ${F.ff(a4b, d4b)} 입니다.</div></div>`), true));
+  hints.push('분자가 단위분수의 개수예요. 분모는 그대로예요.');
+
+  // 5번: 단위분수가 분모만큼 모이면 1
+  const d5 = M.rand(2, 9);
+  cards.push(M.card(4, `<div class="q-text">빈칸에 알맞은 수를 써넣으세요.</div>` + S.bar(d5, d5) +
+    `<div class="eq" style="font-size:18px">${M.frac(1, d5, true)} 이 ${M.box(d5)}개이면 전체가 모두 색칠되므로 <span class="tail">${M.box(1)}입니다.</span></div>`, true));
+  hints.push(`${M.frac(1, d5, true)} 이 몇 개 있어야 막대 전체가 될까요? 전체는 자연수 1이에요.`);
+  M.render(cards, hints);
 }
-
-function blockNonNatural(inp) {
-  inp.addEventListener('keydown', (e) => {
-    if (['-', '.', 'e', 'E', '+', ' '].includes(e.key)) e.preventDefault();
-  });
-}
-
-function isNaturalNumber(raw) {
-  if (raw === '' || raw === undefined) return false;
-  const n = Number(raw);
-  return Number.isInteger(n) && n > 0;
-}
-
-// 읽기 전용 인라인 분수 (문장 속에 넣는 작은 분수 표시)
-function inlineFraction(numerator, denominator) {
-  const wrap = document.createElement('span');
-  wrap.className = 'inline-fraction';
-  const num = document.createElement('div'); num.className = 'cell'; num.textContent = numerator;
-  const bar = document.createElement('div'); bar.className = 'bar';
-  const den = document.createElement('div'); den.className = 'cell'; den.textContent = denominator;
-  wrap.appendChild(num); wrap.appendChild(bar); wrap.appendChild(den);
-  return wrap;
-}
-
-// 큰 분수 입력 박스 (분자/분모 모두 입력)
-// - 포커스가 분모(denominator)로 먼저 오도록 하고,
-// - 분모를 입력하면 자동으로 분자(numerator) 입력칸으로 넘어가도록 함
-function makeFractionInputBox() {
-  const box = document.createElement('div');
-  box.className = 'fraction-box';
-  const numInput = document.createElement('input');
-  numInput.className = 'cell'; numInput.type = 'text'; numInput.inputMode = 'numeric'; numInput.placeholder = '분자';
-  const line = document.createElement('div'); line.className = 'fraction-line';
-  const denInput = document.createElement('input');
-  denInput.className = 'cell'; denInput.type = 'text'; denInput.inputMode = 'numeric'; denInput.placeholder = '분모';
-  blockNonNatural(numInput); blockNonNatural(denInput);
-
-  // 분모가 아직 비어 있을 때만 분자 칸에서 분모 칸으로 되돌려 보냄 (분모 우선 입력)
-  // (예전 코드는 무조건 되돌려 보내서, 분모를 쓴 뒤에도 분자 칸에 들어갈 수 없었음)
-  numInput.addEventListener('focus', () => {
-    if (denInput.value.trim() === '') denInput.focus();
-  });
-
-  // 분모를 입력하면 자동으로 분자 칸으로 포커스 이동
-  denInput.addEventListener('input', () => {
-    if (denInput.value.trim() !== '') {
-      numInput.focus();
-    }
-  });
-
-  box.appendChild(numInput); box.appendChild(line); box.appendChild(denInput);
-  return { box, numInput, denInput };
-}
-
-function makeSpeakerBtn(getText) {
-  const btn = document.createElement('button');
-  btn.className = 'speaker-btn';
-  btn.textContent = '🔊';
-  btn.title = '읽어주기';
-  btn.onclick = () => {
-    const text = getText();
-    if (!text) return;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'ko-KR';
-    speechSynthesis.speak(utter);
-  };
-  return btn;
-}
-
-function makeProblemWrapper(num, titleText) {
-  const wrap = document.createElement('div');
-  wrap.className = 'problem';
-  const title = document.createElement('div');
-  title.className = 'problem-title';
-  const badge = document.createElement('span');
-  badge.className = 'problem-num';
-  badge.textContent = num;
-  title.appendChild(badge);
-  title.appendChild(document.createTextNode(titleText));
-  wrap.appendChild(title);
-  return wrap;
-}
-
-/* ===================== 문제 1: 원, 1조각 색칠 -> 전체의 몇분의 몇 ===================== */
-function makeProblem1() {
-  const wrap = makeProblemWrapper(1, '원을 나누고, 색칠한 1조각은 전체의 몇분의 몇인지 써 보세요.');
-  const row = document.createElement('div'); row.className = 'row'; wrap.appendChild(row);
-
-  let n, sliceIndex;
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('width', '160'); svg.setAttribute('height', '160'); svg.setAttribute('viewBox', '0 0 160 160');
-
-  function draw() {
-    svg.innerHTML = '';
-    const cx = 80, cy = 80, r = 65;
-    for (let i = 0; i < n; i++) {
-      const a0 = (-90 + (360 / n) * i) * Math.PI / 180;
-      const a1 = (-90 + (360 / n) * (i + 1)) * Math.PI / 180;
-      const x1 = cx + r * Math.cos(a0), y1 = cy + r * Math.sin(a0);
-      const x2 = cx + r * Math.cos(a1), y2 = cy + r * Math.sin(a1);
-      const largeArc = (360 / n) > 180 ? 1 : 0;
-      const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-      svg.appendChild(el('path', { d: path, fill: i === sliceIndex ? '#bfe0ff' : '#ffffff' }));
-    }
-    svg.appendChild(el('circle', { cx, cy, r, fill: 'none', stroke: '#333', 'stroke-width': 2 }));
-    for (let i = 0; i < n; i++) {
-      const a = (-90 + (360 / n) * i) * Math.PI / 180;
-      const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
-      svg.appendChild(el('line', { x1: cx, y1: cy, x2: x, y2: y, stroke: '#333', 'stroke-width': 1.5, 'stroke-dasharray': '4,3' }));
-    }
-  }
-
-  function regenerate() {
-    n = randomInt(2, 8);
-    sliceIndex = randomInt(0, n - 1);
-    draw();
-  }
-  regenerate();
-
-  row.appendChild(svg);
-
-  const textWrap = document.createElement('div'); textWrap.className = 'sentence';
-  textWrap.appendChild(document.createTextNode('1조각은 전체의 '));
-  const { box, numInput, denInput } = makeFractionInputBox();
-  textWrap.style.display = 'flex'; textWrap.style.alignItems = 'center';
-  textWrap.appendChild(box);
-  textWrap.appendChild(document.createTextNode(' 입니다.'));
-  row.appendChild(textWrap);
-
-  const feedback = document.createElement('div'); feedback.className = 'feedback'; wrap.appendChild(feedback);
-
-  function check() {
-    const numRaw = numInput.value.trim(), denRaw = denInput.value.trim();
-    if (!isNaturalNumber(numRaw) || !isNaturalNumber(denRaw)) {
-      feedback.textContent = '분자, 분모 모두 자연수로 입력해 주세요.';
-      feedback.className = 'feedback wrong';
-      return false;
-    }
-    const num = Number(numRaw), den = Number(denRaw);
-    const correct = (num * n === 1 * den); // 1/n 과 동치분수 인정
-    feedback.textContent = correct ? '정답이에요! 👏' : '다시 한 번 확인해 볼까요?';
-    feedback.className = correct ? 'feedback correct' : 'feedback wrong';
-    return correct;
-  }
-
-  function reset() {
-    regenerate();
-    numInput.value = ''; denInput.value = '';
-    feedback.textContent = ''; feedback.className = 'feedback';
-  }
-
-  return { wrap, check, regenerate: reset };
-}
-
-/* ===================== 문제 2: 정사각형, 1조각 색칠 -> 전체의 몇분의 몇 ===================== */
-function makeProblem2() {
-  const wrap = makeProblemWrapper(2, '정사각형을 나누고, 색칠한 1조각은 전체의 몇분의 몇인지 써 보세요.');
-  const row = document.createElement('div'); row.className = 'row'; wrap.appendChild(row);
-
-  let n, colIndex;
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('width', '150'); svg.setAttribute('height', '150'); svg.setAttribute('viewBox', '0 0 150 150');
-
-  function draw() {
-    svg.innerHTML = '';
-    const x0 = 10, y0 = 10, size = 130;
-    const stripW = size / n;
-    for (let i = 0; i < n; i++) {
-      svg.appendChild(el('rect', { x: x0 + i * stripW, y: y0, width: stripW, height: size, fill: i === colIndex ? '#d3cbee' : '#ffffff' }));
-    }
-    svg.appendChild(el('rect', { x: x0, y: y0, width: size, height: size, fill: 'none', stroke: '#333', 'stroke-width': 2 }));
-    for (let i = 1; i < n; i++) {
-      const x = x0 + i * stripW;
-      svg.appendChild(el('line', { x1: x, y1: y0, x2: x, y2: y0 + size, stroke: '#333', 'stroke-width': 1.5, 'stroke-dasharray': '4,3' }));
-    }
-  }
-
-  function regenerate() {
-    n = randomInt(2, 8);
-    colIndex = randomInt(0, n - 1);
-    draw();
-  }
-  regenerate();
-
-  row.appendChild(svg);
-
-  const textWrap = document.createElement('div'); textWrap.className = 'sentence';
-  textWrap.style.display = 'flex'; textWrap.style.alignItems = 'center';
-  textWrap.appendChild(document.createTextNode('1조각은 전체의 '));
-  const { box, numInput, denInput } = makeFractionInputBox();
-  textWrap.appendChild(box);
-  textWrap.appendChild(document.createTextNode(' 입니다.'));
-  row.appendChild(textWrap);
-
-  const feedback = document.createElement('div'); feedback.className = 'feedback'; wrap.appendChild(feedback);
-
-  function check() {
-    const numRaw = numInput.value.trim(), denRaw = denInput.value.trim();
-    if (!isNaturalNumber(numRaw) || !isNaturalNumber(denRaw)) {
-      feedback.textContent = '분자, 분모 모두 자연수로 입력해 주세요.';
-      feedback.className = 'feedback wrong';
-      return false;
-    }
-    const num = Number(numRaw), den = Number(denRaw);
-    const correct = (num * n === 1 * den);
-    feedback.textContent = correct ? '정답이에요! 👏' : '다시 한 번 확인해 볼까요?';
-    feedback.className = correct ? 'feedback correct' : 'feedback wrong';
-    return correct;
-  }
-
-  function reset() {
-    regenerate();
-    numInput.value = ''; denInput.value = '';
-    feedback.textContent = ''; feedback.className = 'feedback';
-  }
-
-  return { wrap, check, regenerate: reset };
-}
-
-/* ===================== 문제 3: 수막대, 제시된 분수만큼 색칠 -> 단위분수 몇 개인지 ===================== */
-function makeProblem3() {
-  const wrap = makeProblemWrapper(3, '수막대에서 색칠한 분수는 단위분수가 몇 개인지 써 보세요.');
-  const row = document.createElement('div'); row.className = 'row'; wrap.appendChild(row);
-
-  let n, k;
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('width', '220'); svg.setAttribute('height', '70'); svg.setAttribute('viewBox', '0 0 220 70');
-
-  function draw() {
-    svg.innerHTML = '';
-    const x0 = 10, y0 = 10, w = 200, h = 40;
-    const stripW = w / n;
-    for (let i = 0; i < n; i++) {
-      svg.appendChild(el('rect', { x: x0 + i * stripW, y: y0, width: stripW, height: h, fill: i < k ? '#f6c9cd' : '#ffffff' }));
-    }
-    svg.appendChild(el('rect', { x: x0, y: y0, width: w, height: h, fill: 'none', stroke: '#333', 'stroke-width': 2 }));
-    for (let i = 1; i < n; i++) {
-      const x = x0 + i * stripW;
-      svg.appendChild(el('line', { x1: x, y1: y0, x2: x, y2: y0 + h, stroke: '#333', 'stroke-width': 1.5, 'stroke-dasharray': '4,3' }));
-    }
-  }
-
-  function regenerate() {
-    n = randomInt(3, 9);
-    k = randomInt(1, n - 1);
-    draw();
-  }
-  regenerate();
-
-  const col = document.createElement('div');
-  col.appendChild(svg);
-  const label = document.createElement('div');
-  label.style.display = 'flex'; label.style.alignItems = 'center'; label.style.marginTop = '8px';
-  label.appendChild(document.createTextNode('색칠한 분수: '));
-  let givenFracEl = inlineFraction(k, n);
-  label.appendChild(givenFracEl);
-  col.appendChild(label);
-  row.appendChild(col);
-
-  const textWrap = document.createElement('div'); textWrap.className = 'sentence';
-  textWrap.style.display = 'flex'; textWrap.style.alignItems = 'center';
-  const unitFracHolder = document.createElement('span');
-  textWrap.appendChild(document.createTextNode('이 분수는 '));
-  textWrap.appendChild(unitFracHolder);
-  textWrap.appendChild(document.createTextNode('이 '));
-  const countInput = document.createElement('input');
-  countInput.type = 'text'; countInput.inputMode = 'numeric'; countInput.className = 'count-input';
-  blockNonNatural(countInput);
-  textWrap.appendChild(countInput);
-  textWrap.appendChild(document.createTextNode('개입니다.'));
-  row.appendChild(textWrap);
-
-  function updateUnitFrac() {
-    unitFracHolder.innerHTML = '';
-    unitFracHolder.appendChild(inlineFraction(1, n));
-  }
-  updateUnitFrac();
-
-  const feedback = document.createElement('div'); feedback.className = 'feedback'; wrap.appendChild(feedback);
-
-  function check() {
-    const raw = countInput.value.trim();
-    if (!isNaturalNumber(raw)) {
-      feedback.textContent = '개수를 자연수로 입력해 주세요.';
-      feedback.className = 'feedback wrong';
-      return false;
-    }
-    const correct = Number(raw) === k;
-    feedback.textContent = correct ? '정답이에요! 👏' : '다시 한 번 확인해 볼까요?';
-    feedback.className = correct ? 'feedback correct' : 'feedback wrong';
-    return correct;
-  }
-
-  function reset() {
-    regenerate();
-    label.replaceChild(inlineFraction(k, n), givenFracEl);
-    givenFracEl = label.lastChild;
-    updateUnitFrac();
-    countInput.value = '';
-    feedback.textContent = ''; feedback.className = 'feedback';
-  }
-
-  return { wrap, check, regenerate: reset };
-}
-
-/* ===================== 문제 4: 진분수 제시 + 단위분수 제시 -> 개수 빈칸 ===================== */
-function makeProblem4() {
-  const wrap = makeProblemWrapper(4, '빈칸에 알맞은 수를 써 보세요.');
-
-  let p, q;
-  const sentence = document.createElement('div');
-  sentence.className = 'sentence';
-  sentence.style.display = 'flex'; sentence.style.alignItems = 'center';
-
-  const properFracHolder = document.createElement('span');
-  const unitFracHolder = document.createElement('span');
-  const countInput = document.createElement('input');
-  countInput.type = 'text'; countInput.inputMode = 'numeric'; countInput.className = 'count-input';
-  blockNonNatural(countInput);
-
-  sentence.appendChild(properFracHolder);
-  sentence.appendChild(document.createTextNode('는 '));
-  sentence.appendChild(unitFracHolder);
-  sentence.appendChild(document.createTextNode('이 '));
-  sentence.appendChild(countInput);
-  sentence.appendChild(document.createTextNode('개입니다.'));
-  wrap.appendChild(sentence);
-
-  function draw() {
-    properFracHolder.innerHTML = ''; properFracHolder.appendChild(inlineFraction(p, q));
-    unitFracHolder.innerHTML = ''; unitFracHolder.appendChild(inlineFraction(1, q));
-  }
-
-  function regenerate() {
-    q = randomInt(2, 9);
-    p = randomInt(1, q - 1);
-    draw();
-  }
-  regenerate();
-
-  const feedback = document.createElement('div'); feedback.className = 'feedback'; wrap.appendChild(feedback);
-
-  function check() {
-    const raw = countInput.value.trim();
-    if (!isNaturalNumber(raw)) {
-      feedback.textContent = '개수를 자연수로 입력해 주세요.';
-      feedback.className = 'feedback wrong';
-      return false;
-    }
-    const correct = Number(raw) === p;
-    feedback.textContent = correct ? '정답이에요! 👏' : '다시 한 번 확인해 볼까요?';
-    feedback.className = correct ? 'feedback correct' : 'feedback wrong';
-    return correct;
-  }
-
-  function reset() {
-    regenerate();
-    countInput.value = '';
-    feedback.textContent = ''; feedback.className = 'feedback';
-  }
-
-  return { wrap, check, regenerate: reset };
-}
-
-/* ===================== 문제 5: 단위분수 + 개수 제시 -> 진분수 빈칸 ===================== */
-function makeProblem5() {
-  const wrap = makeProblemWrapper(5, '빈칸에 알맞은 분수를 써 보세요.');
-
-  let q, c;
-  const sentence = document.createElement('div');
-  sentence.className = 'sentence';
-  sentence.style.display = 'flex'; sentence.style.alignItems = 'center';
-
-  const unitFracHolder = document.createElement('span');
-  const countHolder = document.createElement('span');
-  const { box, numInput, denInput } = makeFractionInputBox();
-
-  sentence.appendChild(unitFracHolder);
-  sentence.appendChild(document.createTextNode('이 '));
-  sentence.appendChild(countHolder);
-  sentence.appendChild(document.createTextNode('개이면 '));
-  sentence.appendChild(box);
-  sentence.appendChild(document.createTextNode(' 입니다.'));
-  wrap.appendChild(sentence);
-
-  function draw() {
-    unitFracHolder.innerHTML = ''; unitFracHolder.appendChild(inlineFraction(1, q));
-    countHolder.textContent = c;
-  }
-
-  function regenerate() {
-    q = randomInt(2, 9);
-    c = randomInt(1, q - 1);
-    draw();
-  }
-  regenerate();
-
-  const feedback = document.createElement('div'); feedback.className = 'feedback'; wrap.appendChild(feedback);
-
-  function check() {
-    const numRaw = numInput.value.trim(), denRaw = denInput.value.trim();
-    if (!isNaturalNumber(numRaw) || !isNaturalNumber(denRaw)) {
-      feedback.textContent = '분자, 분모 모두 자연수로 입력해 주세요.';
-      feedback.className = 'feedback wrong';
-      return false;
-    }
-    const num = Number(numRaw), den = Number(denRaw);
-    const correct = (num * q === c * den); // c/q 와 동치분수 인정
-    feedback.textContent = correct ? '정답이에요! 👏' : '다시 한 번 확인해 볼까요?';
-    feedback.className = correct ? 'feedback correct' : 'feedback wrong';
-    return correct;
-  }
-
-  function reset() {
-    regenerate();
-    numInput.value = ''; denInput.value = '';
-    feedback.textContent = ''; feedback.className = 'feedback';
-  }
-
-  return { wrap, check, regenerate: reset };
-}
-
-/* ===================== 초기화 ===================== */
-const problemsEl = document.getElementById('problems');
-const summaryEl = document.getElementById('summary');
-
-const problems = [makeProblem1(), makeProblem2(), makeProblem3(), makeProblem4(), makeProblem5()];
-problems.forEach(p => problemsEl.appendChild(p.wrap));
-
-document.getElementById('checkAllBtn').onclick = () => {
-  const results = problems.map(p => p.check());
-  const correctCount = results.filter(r => r === true).length;
-  summaryEl.textContent = `${problems.length}문제 중 ${correctCount}개 정답`;
-};
-
-document.getElementById('newAllBtn').onclick = () => {
-  problems.forEach(p => p.regenerate());
-  summaryEl.textContent = '';
-};
+document.addEventListener('DOMContentLoaded', generate);
 </script>
-
 <script>
-// 진단시스템 연결 (frac-kit.js)
-FracKit.init({ check: '#checkAllBtn', newBtn: '#newAllBtn', grade: () => { const r = problems.map(p => p.check()); summaryEl.textContent = `${r.length}문제 중 ${r.filter(Boolean).length}개 정답`; return r; } });
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
 </script>
 </body>
 </html>
