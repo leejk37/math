@@ -280,7 +280,7 @@
     });
   };
 
-  // ---------- 채점 도우미: 입력칸에 정답이 data-속성으로 들어 있는 카드형 페이지(4213~4216)용 ----------
+  // ---------- 채점 도우미: 입력칸에 정답이 data-속성으로 들어 있는 카드형 페이지(4215·4216)용 ----------
   K.gradeCards = function (cardSel, attr, visibleOnly) {
     return Array.prototype.map.call(document.querySelectorAll(cardSel), function (card) {
       var ok = true;

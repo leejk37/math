@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 분수 빈칸(m5f) → 4학년 분수 도우미(m421) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m421-common.js?v=20261109-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>진분수의 덧셈</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+</head>
+<body>
+
+<div class="header-text">진분수의 덧셈</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 분모가 같은 분수의 덧셈: 분모는 그대로, 분자끼리 더해요</div>
+  <div class="rule-line"><span class="rule-tag">순서</span> 2/7 + 3/7 = (2 + 3)/7 = <b>5/7</b> (1/7이 2개 + 3개 = 5개)</div>
+  <div class="rule-line"><span class="rule-tag t2">대분수</span> 합이 가분수이면 대분수로 나타내요. 3/7 + 5/7 = 8/7 = <b>1 1/7</b></div>
+  <div class="rule-line"><span class="rule-tag t3">주의</span> 2/7 + 3/7 ≠ 5/14 (분모끼리 더하면 안 돼요)</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 4211 — 진분수의 덧셈 (교과서 4-2-1 12~13쪽, 수학익힘 10~11쪽)
+// 진단 포인트: 분모끼리도 더함, 단위분수의 개수로 생각하지 못함, 가분수를 대분수로 바꿀 때 자연수를 빠뜨림
+M.inlineQuestion = true;
+const small = (p) => p.a + p.b < p.d;           // 합이 1보다 작음
+const big = (p) => p.a + p.b > p.d;             // 합이 1보다 큼 (1과 같은 경우는 뺌)
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 그림을 보고 단위분수의 개수로 더하기 (합이 1보다 작음)
+  const p1 = G.pair(5, 9, p => small(p) && p.a >= 2 && p.b >= 2);
+  const u1 = M.frac(1, p1.d, true);
+  cards.push(M.card(0, `<div class="q-text">그림을 보고 계산해 보세요.</div>` +
+    G.addBars(p1.d, p1.a, p1.b, 320, [`${p1.a}/${p1.d}`, `${p1.b}/${p1.d}`]) +
+    `<div class="eq" style="font-size:18px">${M.frac(p1.a, p1.d)} ${M.josa(p1.a, '은', '는')} ${u1} 이 ${M.box(p1.a)}개, &nbsp;${M.frac(p1.b, p1.d)} ${M.josa(p1.b, '은', '는')} ${u1} 이 <span class="tail">${M.box(p1.b)}개</span></div>` +
+    `<div class="eq" style="font-size:18px">${M.frac(p1.a, p1.d)}${G.PLUS}${M.frac(p1.b, p1.d)} ${M.josa(p1.b, '은', '는')} ${u1} 이 ${M.box(p1.a + p1.b)}개이므로 ${G.EQ}${F.ff(p1.a + p1.b, p1.d)}</div>`, true));
+  hints.push(`${M.frac(1, p1.d, true)} 이 몇 개인지 세어 보세요. 파란 칸과 주황 칸을 모두 세면 돼요.`);
+
+  // 2번: 분자끼리 더하고, 가분수를 대분수로
+  const p2 = G.pair(3, 9, big);
+  cards.push(M.card(1, `<div class="q-text">분모는 그대로 두고 분자끼리 더해 보세요. 가분수는 대분수로 나타내세요.</div>` +
+    `<div class="eq">${M.frac(p2.a, p2.d)}${G.PLUS}${M.frac(p2.b, p2.d)}${G.EQ}${G.exfrac(M.box(p2.a) + G.PLUS + M.box(p2.b), p2.d)}${G.EQ}${F.fn(p2.a + p2.b, p2.d)}${G.EQ}${G.ansN(p2.a + p2.b, p2.d)}</div>`, true));
+  hints.push(`분모 ${p2.d}는 그대로 쓰고 분자 ${p2.a}과(와) ${p2.b}를 더해요.<br>분자가 분모보다 크면 ${M.frac(p2.d, p2.d, true)} = 1 이 몇 번 들어가는지 생각해서 대분수로 바꿔요.`);
+
+  // 3번: 계산 (합이 1보다 작은 것, 큰 것)
+  const c3 = [G.pair(4, 9, small), G.pair(3, 9, big)];
+  cards.push(M.card(2, `<div class="q-text">계산해 보세요.</div>` +
+    M.line(...c3.map(p => `<div class="qbox">${G.calc(M.frac(p.a, p.d) + G.PLUS + M.frac(p.b, p.d), p.a + p.b, p.d)}</div>`)), true));
+  hints.push('분모는 그대로, 분자끼리 더해요. 답이 가분수이면 대분수로 나타내요.');
+
+  // 4번: 문장제
+  const p4 = G.pair(3, 9, big);
+  cards.push(M.card(3, `<div class="q-text">문제를 읽고 답을 구해 보세요.</div>` +
+    `<div class="word">주스를 민지는 ${p4.a}/${p4.d} L, 준호는 ${p4.b}/${p4.d} L 마셨습니다. 두 사람이 마신 주스는 모두 몇 L인가요?</div>` +
+    `<div class="eq">${G.ans(p4.a + p4.b, p4.d)} <span class="unit">L</span></div>`, true));
+  hints.push('"모두"는 두 양을 더해요. 분모가 같으니 분자끼리 더하고, 가분수이면 대분수로 나타내요.');
+
+  // 5번: 바르게 계산한 것 고르기
+  const p5 = G.pair(3, 9, p => big(p) && p.a + p.b - p.d < p.d);
+  const e5 = `${p5.a}/${p5.d} + ${p5.b}/${p5.d} = `;
+  cards.push(M.card(4, `<div class="q-text">바르게 계산한 것을 골라 보세요.</div>` +
+    F.one(e5 + G.tm(p5.a + p5.b, p5.d), [e5 + `${p5.a + p5.b}/${p5.d * 2}`, e5 + `${p5.a + p5.b - p5.d}/${p5.d}`]), true));
+  hints.push('분모끼리는 더하지 않아요. 가분수를 대분수로 바꿀 때 자연수 부분을 빠뜨리지 않았는지 살펴봐요.');
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>

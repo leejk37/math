@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 진단시스템 연결: 서버 주소 → 서버 호출 → 분수 공통 도우미 → 공통 화면(m423) → 분수 빈칸(m5f) → 4학년 분수 도우미(m421) -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="frac-kit.js"></script>
+<script src="m423-common.js?v=20261105-1"></script>
+<script src="m5f-common.js?v=20261106-3"></script>
+<script src="m421-common.js?v=20261109-1"></script>
+<!-- 🤔 도움: 진단 모드에서 문제마다 선생님 호출 버튼(교사 현황판 live.html 알림 + 평가데이터 '도움요청' 탭 기록) -->
+<script src="../help.js"></script>
+<title>대분수의 덧셈</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+</head>
+<body>
+
+<div class="header-text">대분수의 덧셈</div>
+<div class="sub-text"><div class="rule-box">
+  <div class="rule-title">🔎 대분수의 덧셈은 두 가지 방법으로 할 수 있어요</div>
+  <div class="rule-line"><span class="rule-tag">방법 1</span> 자연수끼리, 분수끼리 더해요. 1 3/5 + 2 4/5 = (1 + 2) + (3/5 + 4/5) = 3 + 7/5 = <b>4 2/5</b></div>
+  <div class="rule-line"><span class="rule-tag t2">방법 2</span> 가분수로 바꾸어 더해요. 1 3/5 + 2 4/5 = 8/5 + 14/5 = 22/5 = <b>4 2/5</b></div>
+  <div class="rule-line"><span class="rule-tag t3">주의</span> 분수끼리 더한 값이 가분수이면 1을 자연수 쪽으로 올려 대분수로 나타내요.</div>
+</div></div>
+
+<div class="quiz-container" id="quiz"></div>
+
+<div class="btn-group">
+  <button class="action-btn reset-btn" onclick="generate()">새로운 문제 🎲</button>
+  <button id="checkBtn" class="action-btn check-btn">정답 확인하기 ✔️</button>
+</div>
+
+<script>
+// 4212 — 대분수의 덧셈 (교과서 4-2-1 14~15쪽, 수학익힘 12~13쪽)
+// 진단 포인트: 분수 부분의 합이 가분수일 때 자연수로 올리지 못함, 대분수를 가분수로 잘못 바꿈, 분모끼리 더함
+M.inlineQuestion = true;
+// 대분수 두 개: w1 a/d + w2 b/d
+function mm(test) {
+  return F.gen(() => { const d = M.rand(3, 9); return { d, w1: M.rand(1, 4), w2: M.rand(1, 3), a: M.rand(1, d - 1), b: M.rand(1, d - 1) }; },
+    p => (p.a + p.b) % p.d !== 0 && (!test || test(p)));
+}
+const tot = p => (p.w1 + p.w2) * p.d + p.a + p.b;   // 합을 가분수 분자로
+const L = p => G.mx(p.w1, p.a, p.d) + G.PLUS + G.mx(p.w2, p.b, p.d);
+function generate() {
+  M.reset();
+  const cards = [], hints = [];
+
+  // 1번: 방법 1 — 자연수끼리, 분수끼리 (분수 부분의 합이 1보다 작음)
+  const p1 = mm(p => p.a + p.b < p.d);
+  cards.push(M.card(0, `<div class="q-text">자연수끼리, 분수끼리 더해 보세요.</div>` +
+    `<div class="eq">${L(p1)}${G.EQ}${G.par(M.box(p1.w1) + G.PLUS + M.box(p1.w2))}${G.PLUS}${G.par(F.fn(p1.a, p1.d) + G.PLUS + F.fn(p1.b, p1.d))}${G.EQ}${G.ansN(tot(p1), p1.d)}</div>`, true));
+  hints.push(`자연수 ${p1.w1}과(와) ${p1.w2}를 더하고, 분수 ${M.frac(p1.a, p1.d, true)} ${M.josa(p1.a, '과', '와')} ${M.frac(p1.b, p1.d, true)} ${M.josa(p1.b, '을', '를')} 더해서 합쳐요.`);
+
+  // 2번: 방법 1 — 분수 부분의 합이 가분수 (자연수로 1 올리기)
+  const p2 = mm(p => p.a + p.b > p.d);
+  cards.push(M.card(1, `<div class="q-text">자연수끼리, 분수끼리 더한 다음 대분수로 나타내 보세요.</div>` +
+    `<div class="eq">${L(p2)}${G.EQ}${G.par(p2.w1 + G.PLUS + p2.w2)}${G.PLUS}${G.par(M.frac(p2.a, p2.d) + G.PLUS + M.frac(p2.b, p2.d))}${G.EQ}${M.box(p2.w1 + p2.w2)}${G.PLUS}${F.fn(p2.a + p2.b, p2.d)}${G.EQ}${G.ansN(tot(p2), p2.d)}</div>`, true));
+  hints.push(`분수끼리 더한 ${M.frac(p2.a + p2.b, p2.d, true)} ${M.josa(p2.a + p2.b, '은', '는')} 가분수예요. ${M.frac(p2.d, p2.d, true)} = 1을 자연수 쪽으로 옮기면 자연수가 1 커져요.`);
+
+  // 3번: 방법 2 — 가분수로 바꾸어 더하기
+  const p3 = mm(p => p.a + p.b > p.d);
+  const i1 = p3.w1 * p3.d + p3.a, i2 = p3.w2 * p3.d + p3.b;
+  cards.push(M.card(2, `<div class="q-text">대분수를 가분수로 바꾸어 계산해 보세요.</div>` +
+    `<div class="eq">${L(p3)}${G.EQ}${F.fn(i1, p3.d)}${G.PLUS}${F.fn(i2, p3.d)}${G.EQ}${F.fn(i1 + i2, p3.d)}${G.EQ}${G.ansN(i1 + i2, p3.d)}</div>`, true));
+  hints.push(`${M.mixed(p3.w1, p3.a, p3.d)} ${M.josa(p3.a, '은', '는')} ${M.frac(1, p3.d, true)} 이 ${p3.d} × ${p3.w1} + ${p3.a} = ${i1}개예요.<br>가분수끼리 더한 다음, 다시 대분수로 나타내요.`);
+
+  // 4번: 계산 — 대분수 + 대분수, 대분수 + 가분수
+  const p4 = mm();
+  const q4 = F.gen(() => { const d = M.rand(3, 9); return { d, w: M.rand(1, 4), a: M.rand(1, d - 1), B: M.rand(d + 1, 2 * d - 1) }; }, q => (q.a + q.B) % q.d !== 0);
+  cards.push(M.card(3, `<div class="q-text">계산해 보세요.</div>` +
+    M.line(`<div class="qbox">${G.calc(L(p4), tot(p4), p4.d)}</div>`,
+      `<div class="qbox">${G.calc(M.mixed(q4.w, q4.a, q4.d) + G.PLUS + M.frac(q4.B, q4.d), q4.w * q4.d + q4.a + q4.B, q4.d)}</div>`), true));
+  hints.push(`가분수 ${M.frac(q4.B, q4.d, true)} ${M.josa(q4.B, '은', '는')} 대분수로 바꾸거나, 대분수를 가분수로 바꾸어 같은 모양으로 만든 다음 더해요.`);
+
+  // 5번: 문장제
+  const p5 = mm();
+  cards.push(M.card(4, `<div class="q-text">문제를 읽고 답을 구해 보세요.</div>` +
+    `<div class="word">텃밭에 물을 어제는 ${G.t(p5.w1, p5.a, p5.d)} L, 오늘은 ${G.t(p5.w2, p5.b, p5.d)} L 주었습니다. 이틀 동안 준 물은 모두 몇 L인가요?</div>` +
+    `<div class="eq">${G.ans(tot(p5), p5.d)} <span class="unit">L</span></div>`, true));
+  hints.push('"모두"는 두 양을 더해요. 자연수끼리, 분수끼리 더하거나 가분수로 바꾸어 더해요.');
+  M.render(cards, hints);
+}
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+<script>
+// 진단시스템 연결 (frac-kit.js): 진단 모드에서는 '새로운 문제'가 숨겨지고, 정답 확인 버튼이 '제출 및 채점하기'로 바뀜
+FracKit.init({ check: '#checkBtn', newBtn: '.reset-btn', grade: M.grade });
+</script>
+</body>
+</html>
