@@ -37,6 +37,7 @@
       am = m[1];
       auth = am.getAuth(m[0].initializeApp(cfg, 'student-login'));
       am.onAuthStateChanged(auth, function (u) {
+        reportAccess(false);
         if (u && !u.isAnonymous) identify(u); else signedOut();
       });
     }).catch(function () { show(''); });
@@ -46,6 +47,8 @@
     return 'font-size:15px;font-weight:bold;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;color:#fff;background:' + bg + ';';
   }
   function show(html) { if (box) box.innerHTML = html; }
+  // 교사 계정으로 로그인하면 📋 분석보고서 링크를 보이게 (index.html의 setReportAccess)
+  function reportAccess(on) { if (window.setReportAccess) window.setReportAccess('login', on); }
 
   function signedOut() {
     unlock();
@@ -88,6 +91,7 @@
         });
       } else if (res.role === 'teacher') {
         unlock();
+        reportAccess(true);
         var h = res.homeroom || [];
         if (h.length) whenListReady(function () { choose(h[0].grade, h[0].classNum, null); });
         markMine(h.length ? h[0].grade : null);

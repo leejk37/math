@@ -221,7 +221,7 @@
     
     <div style="text-align: right; width: 100%; margin-bottom: 5px; display: flex; justify-content: flex-end; align-items: center; gap: 14px;">
       <span onclick="openFeatureRequestModal()" class="top-link" style="cursor: pointer; user-select: none;">🔧 기능개선요구</span>
-      <a href="report.html" class="top-link">📋 분석보고서</a>
+      <a href="report.html" id="reportLink" class="top-link" style="display: none;" title="선생님만 볼 수 있어요">📋 분석보고서</a>
       <span onclick="unlockAdmin()" class="top-link" style="cursor: pointer; user-select: none;">🔒 선생님</span>
     </div>
 
@@ -1063,13 +1063,23 @@ function executeTargetSearch() {
     }
 }
 
+    // 📋 분석보고서 링크: 선생님으로 들어왔을 때만 보임
+    //  - 'admin': 🔒 선생님 → 교사 비밀번호 확인 (unlockAdmin)
+    //  - 'login': 구글 로그인 결과가 교사 계정 (login.js)
+    const reportAccess = {};
+    window.setReportAccess = function (key, on) {
+      if (on) reportAccess[key] = true; else delete reportAccess[key];
+      const a = document.getElementById('reportLink');
+      if (a) a.style.display = Object.keys(reportAccess).length ? '' : 'none';
+    };
+
     function unlockAdmin() {
       const panel = document.getElementById('adminResetPanel'); if (!panel) return;
-      if (panel.style.display !== 'none') { panel.style.display = 'none'; setAdminPassword(''); return; }
+      if (panel.style.display !== 'none') { panel.style.display = 'none'; setAdminPassword(''); setReportAccess('admin', false); return; }
       const pwd = prompt("데이터 관리를 위한 교사 비밀번호를 입력하세요:");
       if (pwd === null) return;
       callApi('checkAdmin', [pwd]).then(function(res) {
-        if (res && res.ok) { setAdminPassword(pwd); panel.style.display = 'flex'; }
+        if (res && res.ok) { setAdminPassword(pwd); panel.style.display = 'flex'; setReportAccess('admin', true); }
         else { alert("비밀번호가 일치하지 않습니다."); }
       }).catch(function(err) { alert(err.message); });
     }
