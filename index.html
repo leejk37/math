@@ -196,6 +196,10 @@
     .top-link { font-size: 15px; color: #475569; text-decoration: none; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; border: 1px solid #e2e8f0; }
     .top-link:hover { background: #e2e8f0; color: #0f172a; }
     #nav-menu { flex-direction: column; gap: 8px; }
+    .h100-picker { display: grid; grid-template-columns: 70px repeat(3, 1fr); gap: 6px; max-width: 640px; margin: 0 auto; }
+    .h100-picker .op { display: flex; align-items: center; justify-content: center; font-weight: bold; color: #075985; font-size: 15px; }
+    .h100-picker button { padding: 12px 6px; font-size: 16px; font-weight: bold; border: 2px solid #7dd3fc; border-radius: 10px; background: #fff; color: #0c4a6e; cursor: pointer; }
+    .h100-picker button:hover { background: #0369a1; color: #fff; border-color: #0369a1; }
     .nav-group { display: flex; align-items: stretch; gap: 10px; width: 100%; }
     .nav-label { flex: 0 0 64px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
     .nav-row { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
@@ -501,15 +505,11 @@
 
     <!-- 💯 100칸 계산: 기초 연산 유창성 연습 — 문제 화면은 100 폴더(index.html 하나가 단계마다 문제를 만듦), 서버는 백칸.gs, 결과는 '100칸계산' 탭 -->
     <div id="screen-h100" class="screen">
-      <div id="h100-curriculumControls" style="background: #e0f2fe; border: 2px solid #7dd3fc; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
-          <label style="color: #0369a1;"><b>세부 단계 : </b></label>
-          <select id="h100-subLevel" data-op="100칸 계산" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
-        </div>
-        <div style="font-size: 13px; color: #475569; margin-bottom: 8px;">가로·세로가 만나는 칸마다 계산해요. 걸린 시간과 정답 수가 기록되고, 빨라지고 정확해질수록 포인트를 받아요.</div>
-        <div id="h100-startSection" style="text-align: center;">
-          <button class="submit-btn" id="h100-startBtn" style="background-color: #0369a1; width: auto; padding: 8px 60px;" onclick="startFracQuiz('h100')">100칸 계산 시작</button>
-        </div>
+      <div id="h100-curriculumControls" style="background: #e0f2fe; border: 2px solid #7dd3fc; border-radius: 8px; padding: 12px 20px; margin-bottom: 12px;">
+        <!-- 단계 버튼을 누르면 바로 100칸 계산이 시작됨 (startFracQuiz가 읽는 select는 숨겨 둠) -->
+        <select id="h100-subLevel" data-op="100칸 계산" style="display:none"></select>
+        <div style="font-size: 14px; color: #0369a1; margin-bottom: 8px; text-align:center;"><b>계산을 고르면 바로 시작해요</b> · 가로·세로가 만나는 칸을 계산하고, 빨라지고 정확해질수록 포인트를 받아요</div>
+        <div id="h100-picker" class="h100-picker"></div>
       </div>
       <iframe id="h100-frame" title="100칸 계산" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
     </div>
@@ -5242,6 +5242,24 @@ setTimeout(() => {
     });
 
     initFracLevelSelects();
+
+    // 💯 100칸 계산: 단계 버튼 (곱셈·나눗셈·덧셈·뺄셈 × 25·50·100칸) — 누르면 바로 시작
+    (function () {
+      const box = document.getElementById('h100-picker'), sel = document.getElementById('h100-subLevel');
+      if (!box || !sel) return;
+      const list = curriculumData['100칸 계산'] || [], icon = { '곱셈': '✖️', '나눗셈': '➗', '덧셈': '➕', '뺄셈': '➖' };
+      let html = '';
+      for (let i = 0; i < list.length; i += 3) {
+        const op = (list[i].split(': ')[1] || '').split(' ')[0];
+        html += '<div class="op">' + (icon[op] || '') + ' ' + op + '</div>' + list.slice(i, i + 3).map(function (t, j) {
+          return '<button type="button" data-i="' + (i + j) + '" title="' + t + '">' + t.split(' ').pop() + '</button>';
+        }).join('');
+      }
+      box.innerHTML = html;
+      box.querySelectorAll('button').forEach(function (b) {
+        b.onclick = function () { sel.selectedIndex = +b.dataset.i; startFracQuiz('h100'); };
+      });
+    })();
 
     // 학교명·학년도는 GAS '설정' 시트에서 읽어 옵니다 (코드에 학교명을 적지 않음)
     callApi('getPublicConfig').then(function(c) {
