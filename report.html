@@ -123,6 +123,10 @@
   .qgrid td.q.support { background: var(--support-soft); color: #9b1c1c; }
   .qgrid td.q.na { color: var(--muted); font-weight: 400; }
   .qgrid td.q sup { font-size: 10px; color: var(--accent); margin-left: 1px; }
+  /* 학생×단계 표: 칸 = 그 단계 평균 + 시도 횟수 */
+  .matrix th small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+  .matrix td.q { font-size: 15px; min-width: 54px; }
+  .matrix td.q .tries { display: block; font-size: 11px; font-weight: 400; opacity: .8; }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
   .card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
@@ -459,12 +463,16 @@ function delta(a, b) {
   const d = b - a;
   return d > 0 ? `<span class="delta up">▲${d}</span>` : d < 0 ? `<span class="delta down">▼${-d}</span>` : '<span class="delta same">±0</span>';
 }
-function meter(first, latest) {
-  if (latest == null) return '<span class="muted">—</span>';
-  return `<div class="meter" title="첫 시도 ${first}점 → 최근 ${latest}점">
-    <div class="track"><div class="fill" style="width:${latest}%"></div>${first != null ? `<div class="first" style="left:calc(${first}% - 1px)"></div>` : ''}</div>
-    <span>${latest}</span></div>`;
+// 막대 = 이 단계의 평균, 세로선 = 이 단계의 첫 시도 평균 (언제나 한 단계 안에서만)
+function meter(first, value) {
+  if (value == null) return '<span class="muted">—</span>';
+  return `<div class="meter" title="이 단계 평균 ${value}점 · 첫 시도 평균 ${first}점">
+    <div class="track"><div class="fill" style="width:${value}%"></div>${first != null ? `<div class="first" style="left:calc(${first}% - 1px)"></div>` : ''}</div>
+    <span>${value}</span></div>`;
 }
+const BASIS_TEXT = (sc) => sc.basis === '최근' ? '마지막 시도 점수' : '그 단계 모든 시도의 평균';
+// 서버가 예전 보고서.gs이면(단계 평균 없음) 섞인 평균을 보여 주지 않도록 막음
+function needsNewServer(d) { return !d.levels.every((L) => 'avg' in L); }
 function fmtSec(s) { if (s == null) return '—'; const m = Math.floor(s / 60); return m ? `${m}분 ${s % 60}초` : `${s}초`; }
 function fmtRange(d) {
   const s = d.scope;
@@ -484,15 +492,19 @@ function render() {
     r.innerHTML = `<div class="notice"><b>선택한 범위에 진단 기록이 없습니다.</b><br>${esc(sc.grade)}학년 ${esc(sc.classNum)} · ${esc(sc.operation)} · ${esc(fmtRange(d))}</div>`;
     return;
   }
+  if (needsNewServer(d)) {
+    r.innerHTML = `<div class="notice"><b>서버(Apps Script)의 보고서.gs가 아직 예전 버전입니다.</b><br>예전 버전은 여러 단계를 합친 평균을 내므로 보고서를 만들지 않았습니다.<br>보고서.gs를 새 파일로 바꾸고 새 버전으로 배포한 뒤 다시 만들어 주세요.</div>`;
+    return;
+  }
 
-  /* 한 줄 요약 문장 (규칙으로 만듦) */
-  const weak = d.weak.filter((w) => w.latestAvg < sc.reach);
+  /* 한 줄 요약 문장 (규칙으로 만듦) — 평균은 언제나 단계별로만 말함 */
+  const weak = d.weak.filter((w) => w.avg < sc.reach);
   const lines = [];
-  lines.push(`재적 ${sm.enrolled}명 중 <b>${sm.testedStudents}명</b>이 ${d.levels.length}개 단계를 진단했고, 최근 결과 기준 학급 평균은 <b>${sm.latestAvg}점</b>, 도달률은 <b>${sm.reachRate}%</b>입니다.`);
-  if (sm.firstAvg != null && sm.latestAvg != null && sm.latestAvg !== sm.firstAvg)
-    lines.push(`첫 시도 평균 ${sm.firstAvg}점에서 다시 풀기를 거쳐 ${sm.latestAvg}점으로 ${sm.latestAvg > sm.firstAvg ? '올랐습니다' : '내려갔습니다'}.`);
-  if (weak.length) lines.push(`가장 어려워한 단계는 <b>${weak.map((w) => `${w.no}단계(평균 ${w.latestAvg}점)`).join(', ')}</b>입니다.`);
-  else lines.push('모든 단계의 학급 평균이 도달 기준 이상입니다.');
+  lines.push(`재적 ${sm.enrolled}명 중 <b>${sm.testedStudents}명</b>이 ${d.levels.length}개 단계를 진단했습니다. 점수는 단계마다 따로 계산하며, 도달 판정은 <b>${BASIS_TEXT(sc)}</b>으로 합니다.`);
+  if (sm.notReached) lines.push(`학생×단계 ${sm.pairs}건 중 <b>${sm.notReached}건</b>이 아직 도달하지 못했습니다. 누가 어느 단계에서 막혔는지는 Ⅳ 학생×단계 표에서 확인합니다.`);
+  else lines.push('진단한 모든 학생이 진단한 모든 단계에 도달했습니다.');
+  if (weak.length) lines.push(`학급 단계 평균이 가장 낮은 단계는 <b>${weak.map((w) => `${w.no}단계(평균 ${w.avg}점)`).join(', ')}</b>입니다.`);
+  else lines.push('모든 단계의 학급 단계 평균이 도달 기준 이상입니다.');
   const reteach = d.levels.filter((L) => L.action.kind === 'reteach');
   if (reteach.length) lines.push(`<b>${reteach.map((L) => L.no + '단계').join(', ')}</b>는 도달 학생이 절반이 안 되어 학급 전체 재지도가 필요합니다.`);
 
@@ -510,23 +522,23 @@ function render() {
 
   <section class="part">
     <h3><span class="no">Ⅰ</span> 진단 — 어디까지 왔나</h3>
-    <p class="lead">도달 ${sc.reach}점 이상 · 노력 중 ${sc.support}~${sc.reach - 1}점 · 보충 필요 ${sc.support}점 미만. 학생마다 단계별 <b>가장 최근 결과</b>로 판단하고, 첫 시도 점수를 함께 봅니다.</p>
+    <p class="lead">도달 ${sc.reach}점 이상 · 노력 중 ${sc.support}~${sc.reach - 1}점 · 보충 필요 ${sc.support}점 미만. 학생마다 <b>단계별로 따로</b> ${BASIS_TEXT(sc)}으로 판단합니다. 여러 단계를 합친 평균은 내지 않습니다.</p>
     <div class="tiles">
       <div class="tile"><div class="k">응시 학생</div><div class="v">${sm.testedStudents}<small>/ ${sm.enrolled}명</small></div><div class="d">진단 ${sm.attempts}회 · ${d.levels.length}개 단계</div></div>
-      <div class="tile"><div class="k">학급 평균 (최근)</div><div class="v">${sm.latestAvg ?? '—'}<small>점</small></div><div class="d">첫 시도 ${sm.firstAvg ?? '—'}점 ${delta(sm.firstAvg, sm.latestAvg)}</div></div>
-      <div class="tile"><div class="k">도달률</div><div class="v">${sm.reachRate}<small>%</small></div><div class="d">학생×단계 기준</div></div>
+      <div class="tile"><div class="k">미도달 (학생×단계)</div><div class="v">${sm.notReached}<small>/ ${sm.pairs}건</small></div><div class="d">노력 중 + 보충 필요</div></div>
+      <div class="tile"><div class="k">학급 전체 재지도</div><div class="v">${sm.reteachLevels}<small>개 단계</small></div><div class="d">도달 학생이 절반 미만인 단계</div></div>
       <div class="tile"><div class="k">도움 요청</div><div class="v">${sm.helpTotal}<small>회</small></div><div class="d">🤔 모르겠어요 + 🙋 확인해 주세요</div></div>
     </div>
     <div class="summary-text">${lines.map((l) => `<p>${l}</p>`).join('')}</div>
 
-    <h4>단계별 결과 <small>막대 = 최근 평균, 세로선 = 첫 시도 평균</small></h4>
+    <h4>단계별 결과 <small>막대 = 이 단계 학급 평균(학생별 단계 평균의 평균), 세로선 = 이 단계 첫 시도 평균</small></h4>
     <div class="tablewrap"><table>
-      <thead><tr><th>단계</th><th class="n">응시</th><th>평균 점수</th><th class="n">변화</th><th class="n">도달률</th><th class="n">평균 시간</th><th class="n">평균 시도</th></tr></thead>
+      <thead><tr><th>단계</th><th class="n">응시</th><th>단계 평균</th><th class="n">첫 시도 → 마지막</th><th class="n">도달률</th><th class="n">평균 시간</th><th class="n">평균 시도</th></tr></thead>
       <tbody>${d.levels.map((L) => `<tr>
         <td class="lvname"><b>${esc(lvShort(L))}</b><small>${esc(lvDesc(L.level))}</small></td>
         <td class="n">${L.tested}/${L.enrolled}</td>
-        <td>${meter(L.firstAvg, L.latestAvg)}</td>
-        <td class="n">${delta(L.firstAvg, L.latestAvg)}</td>
+        <td>${meter(L.firstAvg, L.avg)}</td>
+        <td class="n">${L.firstAvg} → ${L.latestAvg} ${delta(L.firstAvg, L.latestAvg)}</td>
         <td class="n"><span class="badge ${bandOf(L.reachRate, { reach: 80, support: 50 })}">${L.reachRate}%</span></td>
         <td class="n">${fmtSec(L.avgSec)}</td>
         <td class="n">${L.avgTries}회</td></tr>`).join('')}</tbody>
@@ -541,10 +553,21 @@ function render() {
     <div class="legend"><span><i style="background:var(--reach)"></i>도달</span><span><i style="background:var(--effort)"></i>노력 중</span><span><i style="background:var(--support)"></i>보충 필요</span><span><i style="background:var(--none)"></i>미응시</span></div>
     <div class="tablewrap"><table>
       <tbody>${d.levels.map((L) => {
-        const segs = [['reach', L.dist.reach.length], ['effort', L.dist.effort.length], ['support', L.dist.support.length], ['none', L.notTested.length]];
+        const segs = [['reach', L.dist.reach], ['effort', L.dist.effort], ['support', L.dist.support], ['none', L.notTested]];
         const tot = L.enrolled || L.tested || 1;
+        // 마우스를 올리면: 노력 중·보충 필요는 학생과 그 단계 평균, 미응시는 학생 (도달은 인원만)
+        const tip = (kind, nums) => {
+          const head = `${kind === 'none' ? '미응시' : BAND[kind]} ${nums.length}명 (${Math.round(nums.length * 100 / tot)}%)`;
+          if (kind === 'reach') return head;
+          return [head + ':', ...nums.map((n) => {
+            if (kind === 'none') return who(d, n);
+            const s = d.students.find((x) => x.num === n);
+            const l = s && s.levels.find((x) => x.level === L.level);
+            return `${who(d, n)}${l ? ` — 평균 ${l.avg}점 (${l.scores.join('·')})` : ''}`;
+          })].join('\n');
+        };
         return `<tr><td class="lvname" style="width:32%"><b>${esc(lvShort(L))}</b><small>${esc(lvDesc(L.level))}</small></td>
-          <td><div class="stack">${segs.filter((s) => s[1]).map((s) => `<div class="${s[0]}" style="flex:${s[1]}" title="${s[0] === 'none' ? '미응시' : BAND[s[0]]} ${s[1]}명 (${Math.round(s[1] * 100 / tot)}%)">${s[1]}</div>`).join('')}</div></td></tr>`;
+          <td><div class="stack">${segs.filter((s) => s[1].length).map((s) => `<div class="${s[0]}" style="flex:${s[1].length}" title="${esc(tip(s[0], s[1])).replace(/\n/g, '&#10;')}">${s[1].length}</div>`).join('')}</div></td></tr>`;
       }).join('')}</tbody>
     </table></div>
 
@@ -576,7 +599,7 @@ function render() {
     <p class="lead">도달 학생이 절반 미만이면 학급 전체 재지도, 보충 필요 학생이 있으면 소그룹, 노력 중 학생만 있으면 개별 확인으로 판단합니다.</p>
     <div class="tablewrap"><table>
       <thead><tr><th>단계</th><th>지도 방안</th><th>대상 학생</th></tr></thead>
-      <tbody>${d.levels.slice().sort((a, b) => (a.latestAvg ?? 999) - (b.latestAvg ?? 999) || a.no - b.no).map((L) => {
+      <tbody>${d.levels.slice().sort((a, b) => (a.avg ?? 999) - (b.avg ?? 999) || a.no - b.no).map((L) => {
         let target;
         if (L.action.kind === 'reteach') target = '<span class="muted">학급 전체</span>' + (L.dist.support.length ? `<div style="margin-top:4px">특히 ${chips(d, L.dist.support, 'support')}</div>` : '');
         else if (L.action.kind === 'group') target = chips(d, L.dist.support, 'support') + (L.dist.effort.length ? `<div style="margin-top:4px">${chips(d, L.dist.effort, 'effort')}</div>` : '');
@@ -598,17 +621,19 @@ function render() {
   </section>
 
   <section class="part">
-    <h3><span class="no">Ⅳ</span> 학생별 진단표</h3>
-    <p class="lead">학생마다 진단한 단계의 평균과, 다시 지도할 단계를 정리했습니다.</p>
-    <div class="tablewrap"><table>
-      <thead><tr><th>학생</th><th class="n">진단</th><th>평균 (첫→최근)</th><th>보충 필요</th><th>노력 중</th><th>지도 방안</th></tr></thead>
+    <h3><span class="no">Ⅳ</span> 학생×단계 진단표</h3>
+    <p class="lead">칸마다 그 학생의 <b>그 단계 평균</b>(모든 시도의 평균)과 시도 횟수입니다. 색은 ${esc(BASIS_TEXT(sc))}으로 판정한 도달·노력 중·보충 필요입니다. 빨간 칸이 그 학생이 넘지 못한 차시입니다.</p>
+    <div class="legend"><span><i style="background:var(--reach)"></i>도달</span><span><i style="background:var(--effort)"></i>노력 중</span><span><i style="background:var(--support)"></i>보충 필요</span><span>— 미응시</span></div>
+    <div class="tablewrap"><table class="qgrid matrix">
+      <thead><tr><th>학생</th>${d.levels.map((L) => `<th class="c" title="${esc(L.level)}">${L.no}단계${L.code ? `<small>${esc(L.code)}</small>` : ''}</th>`).join('')}<th>지도 방안</th></tr></thead>
       <tbody>${d.students.map((s) => `<tr>
         <td style="white-space:nowrap"><b>${esc(who(d, s.num))}</b></td>
-        <td class="n">${s.tested}/${d.levels.length}</td>
-        <td style="white-space:nowrap">${s.tested ? `${s.firstAvg} → <b>${s.latestAvg}</b> ${delta(s.firstAvg, s.latestAvg)}` : '<span class="muted">—</span>'}</td>
-        <td>${s.needs.length ? `<span class="badge support">${s.needs.join('·')}단계</span>` : ''}</td>
-        <td>${s.efforts.length ? `<span class="badge effort">${s.efforts.join('·')}단계</span>` : ''}</td>
-        <td style="font-size:13px">${esc(s.advice)}</td></tr>`).join('')}</tbody>
+        ${d.levels.map((L) => {
+          const l = s.levels.find((x) => x.level === L.level);
+          if (!l) return '<td class="q na">—</td>';
+          return `<td class="q ${l.band}" title="${L.no}단계 · 시도 점수 ${l.scores.join(', ')} · 평균 ${l.avg}점 · ${BAND[l.band]}">${l.avg}<span class="tries">${l.tries}회</span></td>`;
+        }).join('')}
+        <td style="font-size:13px; min-width:220px">${esc(s.advice)}</td></tr>`).join('')}</tbody>
     </table></div>
     ${$('perStudent').checked ? studentPages(d) : ''}
   </section>
@@ -620,12 +645,12 @@ function studentPages(d) {
   return d.students.filter((s) => s.tested).map((s, i) => `
     <div class="student-page ${i === 0 ? 'page-break' : ''}">
       <h5>${esc(who(d, s.num))}</h5>
-      <div class="s">${esc(sc.grade)}학년 ${esc(sc.classNum)} · ${esc(sc.operation)} · 진단 ${s.tested}개 단계 · 평균 ${s.firstAvg} → ${s.latestAvg}점</div>
+      <div class="s">${esc(sc.grade)}학년 ${esc(sc.classNum)} · ${esc(sc.operation)} · 진단 ${s.tested}개 단계 · 도달 ${s.reach}개 단계 · 판정: ${esc(BASIS_TEXT(sc))}</div>
       <div class="tablewrap"><table>
-        <thead><tr><th>단계</th><th class="n">첫 시도</th><th class="n">최근</th><th class="n">시도</th><th>수준</th><th>최근에 틀린 문항</th></tr></thead>
+        <thead><tr><th>단계</th><th>시도 점수 (순서대로)</th><th class="n">단계 평균</th><th class="n">시도</th><th>수준</th><th>마지막에 틀린 문항</th></tr></thead>
         <tbody>${s.levels.map((l) => `<tr>
           <td class="lvname"><b>${l.no}단계${l.code ? ' (' + esc(l.code) + ')' : ''}</b><small>${esc(lvDesc(l.level))}</small></td>
-          <td class="n">${l.first}</td><td class="n"><b>${l.latest}</b> ${delta(l.first, l.latest)}</td><td class="n">${l.tries}회</td>
+          <td style="white-space:nowrap">${l.scores.join(' → ')} ${delta(l.first, l.latest)}</td><td class="n"><b>${l.avg}</b></td><td class="n">${l.tries}회</td>
           <td><span class="badge ${l.band}">${BAND[l.band]}</span></td>
           <td class="wrong">${l.wrong.length ? l.wrong.join(', ') + '번' : '<span class="muted">없음</span>'}</td></tr>`).join('')}</tbody>
       </table></div>
