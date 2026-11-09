@@ -302,6 +302,7 @@
         <button id="btn-div" class="nav-btn" onclick="switchScreen('div')">➗ 나눗셈</button>
         <button id="btn-mix5" class="nav-btn" onclick="switchScreen('mix5')">🧮 혼합계산</button>
         <button id="btn-range5" class="nav-btn" onclick="switchScreen('range5')">📏 수의 범위·어림</button>
+        <button id="btn-h100" class="nav-btn" onclick="switchScreen('h100')">💯 100칸 계산</button>
       </div></div>
       <div class="nav-group"><span class="nav-label">분수·소수</span><div class="nav-row">
         <button id="btn-frac3" class="nav-btn" onclick="switchScreen('frac3')">🍕 3학년 분수·소수</button>
@@ -498,6 +499,21 @@
       <iframe id="dec5-frame" title="5학년 소수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
     </div>
 
+    <!-- 💯 100칸 계산: 기초 연산 유창성 연습 — 문제 화면은 100 폴더(index.html 하나가 단계마다 문제를 만듦), 서버는 백칸.gs, 결과는 '100칸계산' 탭 -->
+    <div id="screen-h100" class="screen">
+      <div id="h100-curriculumControls" style="background: #e0f2fe; border: 2px solid #7dd3fc; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
+        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
+          <label style="color: #0369a1;"><b>세부 단계 : </b></label>
+          <select id="h100-subLevel" data-op="100칸 계산" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
+        </div>
+        <div style="font-size: 13px; color: #475569; margin-bottom: 8px;">가로·세로가 만나는 칸마다 계산해요. 걸린 시간과 정답 수가 기록되고, 빨라지고 정확해질수록 포인트를 받아요.</div>
+        <div id="h100-startSection" style="text-align: center;">
+          <button class="submit-btn" id="h100-startBtn" style="background-color: #0369a1; width: auto; padding: 8px 60px;" onclick="startFracQuiz('h100')">100칸 계산 시작</button>
+        </div>
+      </div>
+      <iframe id="h100-frame" title="100칸 계산" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
+    </div>
+
     <!-- 6학년 분수: 1학기 분수의 나눗셈(M611) → 2학기 분수의 나눗셈(M621) — 문제 화면은 frac 폴더, 검토용 화면: frac/m6f-review.html -->
     <div id="screen-frac6" class="screen">
       <div id="frac6-curriculumControls" style="background: #ffe4e6; border: 2px solid #fda4af; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
@@ -619,6 +635,9 @@
     // 1. 공통 데이터
     // ==========================================
     const curriculumData = {
+      // 💯 100칸 계산 (100 폴더) — 이름을 바꾸면 백칸.gs의 H100_STAGES와 100/index.html의 STAGES도 함께 바꿔야 함
+      "100칸 계산": ["1단계: 곱셈 25칸", "2단계: 곱셈 50칸", "3단계: 곱셈 100칸", "4단계: 나눗셈 25칸", "5단계: 나눗셈 50칸", "6단계: 나눗셈 100칸",
+        "7단계: 덧셈 25칸", "8단계: 덧셈 50칸", "9단계: 덧셈 100칸", "10단계: 뺄셈 25칸", "11단계: 뺄셈 50칸", "12단계: 뺄셈 100칸"],
       "곱셈": [
         "1단계(3143): (몇십몇) X (몇) 십의 자리 올림", "2단계(3144): (몇십몇) X (몇) 일의 자리 올림",
         "3단계(3145): (몇십몇) X (몇) 올림 두번", "4단계(3211): (세자리수) X (몇) 올림 없음",
@@ -796,6 +815,7 @@
                  "5221.html","5222.html","5223.html","5224.html","5225.html","5226.html"],
       "5학년 소수": ["5241.html","5242.html","5243.html","5244.html","5245.html","5246.html","5247.html"],
       "수의 범위·어림": ["5211.html","5212.html","5213.html","5214.html","5215.html","5216.html","5217.html"],
+      "100칸 계산": Array(12).fill("index.html"),   // 단계는 학생 정보와 함께 넘어가고, 100/index.html이 그 단계의 문제를 만듦
       "6학년 분수": ["6111.html","6112.html","6113.html","6114.html","6115.html",
                 "6211.html","6212.html","6213.html","6214.html","6215.html","6216.html"],
       "6학년 소수": ["6131.html","6132.html","6133.html","6134.html","6135.html","6136.html","6137.html",
@@ -804,7 +824,8 @@
     // 문제 화면이 들어 있는 폴더 (적지 않은 영역은 frac 폴더)
     const FRAC_DIRS = {
       "혼합계산": "51/",
-      "수의 범위·어림": "52/"
+      "수의 범위·어림": "52/",
+      "100칸 계산": "100/"
     };
 
 
@@ -841,7 +862,7 @@
     });
 
     function switchScreen(type) {
-      ['add', 'sub', 'mul', 'div', 'frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'frac6', 'dec6'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
+      ['add', 'sub', 'mul', 'div', 'frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'h100', 'frac6', 'dec6'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
       document.getElementById('screen-' + type).classList.add('active'); document.getElementById('btn-' + type).classList.add('active');
     }
 
@@ -5156,7 +5177,7 @@ setTimeout(() => {
     //  - 학생 정보는 sessionStorage로 넘기고(주소에 이름을 넣지 않음), 저장은 각 페이지의 frac-kit.js가 담당
     // ==========================================
     function initFracLevelSelects() {
-      ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'frac6', 'dec6'].forEach(function(key) {
+      ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'h100', 'frac6', 'dec6'].forEach(function(key) {
         const sel = document.getElementById(key + '-subLevel');
         if (!sel) return;
         sel.innerHTML = '';
@@ -5196,7 +5217,7 @@ setTimeout(() => {
     }
 
     function resetFracScreen() {
-      ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'frac6', 'dec6'].forEach(function(key) {
+      ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'h100', 'frac6', 'dec6'].forEach(function(key) {
         const frame = document.getElementById(key + '-frame');
         if (frame) { frame.style.display = 'none'; frame.src = 'about:blank'; }
         const ctrl = document.getElementById(key + '-curriculumControls');
@@ -5211,7 +5232,7 @@ setTimeout(() => {
     window.addEventListener('message', function(e) {
       if (e.origin !== location.origin || !e.data) return;
       if (e.data.type === 'frac-height') {
-        ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'frac6', 'dec6'].forEach(function(key) {
+        ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'h100', 'frac6', 'dec6'].forEach(function(key) {
           const frame = document.getElementById(key + '-frame');
           if (frame && frame.contentWindow === e.source) frame.style.height = Math.max(400, e.data.h) + 'px';
         });
