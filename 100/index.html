@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>100칸 계산</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<script src="../config.js"></script>
+<script src="../api.js"></script>
+<script src="../confirm-near.js"></script>
+<style>
+  /* 100칸 계산 — 첫 화면(index.html)의 '💯 100칸 계산' 탭이 iframe으로 띄움. 서버: 백칸.gs */
+  :root { --ink: #0f172a; --sub: #64748b; --line: #cbd5e1; --head: #e0f2fe; --head-ink: #075985; --ok: #dcfce7; --ok-ink: #166534; --bad: #fee2e2; --bad-ink: #b91c1c; --accent: #0369a1; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif; color: var(--ink); background: #fff; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 10px 12px 24px; }
+  .bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 14px; margin-bottom: 14px;
+    background: #f0f9ff; border: 2px solid #7dd3fc; border-radius: 12px; font-size: 15px; }
+  .bar.practice { background: #f1f5f9; border-color: #cbd5e1; }
+  .bar b.who { font-size: 16px; }
+  .bar .timer { margin-left: auto; font-weight: bold; font-size: 22px; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .btn { border: none; border-radius: 10px; padding: 10px 18px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; }
+  .btn.main { background: #0284c7; color: #fff; } .btn.go { background: #16a34a; color: #fff; } .btn.sub { background: #e2e8f0; color: #334155; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .info { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .info > div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; }
+  .info .k { font-size: 12px; color: var(--sub); } .info .v { font-size: 20px; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .info .v small { font-size: 13px; color: var(--sub); font-weight: normal; }
+  .start { text-align: center; padding: 26px 10px; border: 2px dashed #bae6fd; border-radius: 14px; margin-bottom: 14px; }
+  .start p { margin: 6px 0 16px; color: #334155; line-height: 1.7; }
+  .start .btn { font-size: 20px; padding: 14px 50px; }
+  select { font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); }
+
+  .gridbox { overflow-x: auto; }
+  table.g { border-collapse: collapse; margin: 0 auto; user-select: none; }
+  table.g th, table.g td { border: 2px solid #94a3b8; width: 52px; height: 52px; text-align: center; padding: 0; position: relative; }
+  table.g th { background: var(--head); color: var(--head-ink); font-size: 22px; }
+  table.g th.corner { background: #0284c7; color: #fff; font-size: 26px; }
+  table.g td input { width: 100%; height: 100%; border: none; text-align: center; font-size: 22px; font-weight: bold; font-family: inherit; color: var(--ink); background: transparent; outline: none; caret-color: #0284c7; }
+  table.g td.cur { background: #fef9c3; box-shadow: inset 0 0 0 3px #facc15; }
+  table.g td.ok { background: var(--ok); } table.g td.ok input { color: var(--ok-ink); }
+  table.g td.bad { background: var(--bad); } table.g td.bad input { color: var(--bad-ink); text-decoration: line-through; font-size: 16px; }
+  table.g td .fix { position: absolute; right: 3px; bottom: 1px; font-size: 13px; font-weight: bold; color: var(--ok-ink); }
+  table.g td .dv { position: absolute; left: 3px; top: 1px; font-size: 12px; color: #475569; font-weight: bold; }
+  table.g td.div input { padding-top: 10px; }
+  table.g td.hl-row, table.g th.hl { background: #e0f2fe; }
+
+  .pad { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 14px auto 6px; max-width: 520px; }
+  .pad button { flex: 0 0 calc(16.66% - 6px); min-width: 54px; height: 50px; font-size: 22px; font-weight: bold; border-radius: 10px; border: 1px solid var(--line); background: #fff; cursor: pointer; font-family: inherit; }
+  .pad button.wide { flex-basis: calc(33% - 6px); background: #e0f2fe; font-size: 17px; }
+  .actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .result { margin: 14px 0; padding: 14px 16px; border-radius: 12px; background: #f0fdf4; border: 2px solid #86efac; font-size: 16px; line-height: 1.7; }
+  .result.warn { background: #fff7ed; border-color: #fdba74; }
+  .result .big { font-size: 24px; font-weight: bold; }
+  .result .earn { display: inline-block; margin: 4px 6px 0 0; padding: 3px 10px; border-radius: 999px; background: #fef3c7; color: #92400e; font-weight: bold; font-size: 14px; }
+  .wrongs { margin-top: 6px; font-size: 14px; color: var(--bad-ink); }
+  .hidden { display: none !important; }
+  @media (max-width: 640px) {
+    table.g th, table.g td { width: 9vw; height: 9vw; min-width: 30px; min-height: 30px; }
+    table.g td input, table.g th { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar" id="bar">
+    <b class="who" id="who">연습 모드</b>
+    <span id="stageName"></span>
+    <span class="timer" id="timer">0:00</span>
+  </div>
+
+  <div class="info" id="info"></div>
+
+  <div class="start" id="startBox">
+    <div id="practicePick" class="hidden" style="margin-bottom:10px">
+      <select id="stageSel"></select>
+    </div>
+    <p id="startText"></p>
+    <button class="btn main" id="startBtn">▶ 시작</button>
+  </div>
+
+  <div class="gridbox"><table class="g" id="grid"></table></div>
+  <div class="pad hidden" id="pad"></div>
+  <div id="resultBox"></div>
+  <div class="actions">
+    <button class="btn go hidden" id="doneBtn">✅ 다 풀었어요</button>
+    <button class="btn main hidden" id="againBtn">🔄 새 숫자로 다시 하기</button>
+    <button class="btn main hidden" id="saveBtn">💾 다시 저장</button>
+    <button class="btn sub" id="exitBtn">↩ 단계 선택으로</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var STAGES = [
+    ['1단계: 곱셈 25칸', '곱셈', 25], ['2단계: 곱셈 50칸', '곱셈', 50], ['3단계: 곱셈 100칸', '곱셈', 100],
+    ['4단계: 나눗셈 25칸', '나눗셈', 25], ['5단계: 나눗셈 50칸', '나눗셈', 50], ['6단계: 나눗셈 100칸', '나눗셈', 100],
+    ['7단계: 덧셈 25칸', '덧셈', 25], ['8단계: 덧셈 50칸', '덧셈', 50], ['9단계: 덧셈 100칸', '덧셈', 100],
+    ['10단계: 뺄셈 25칸', '뺄셈', 25], ['11단계: 뺄셈 50칸', '뺄셈', 50], ['12단계: 뺄셈 100칸', '뺄셈', 100]
+  ];
+  var SIGN = { '곱셈': '×', '나눗셈': '÷', '덧셈': '+', '뺄셈': '−' };
+  var HOW = {
+    '곱셈': '왼쪽 수 × 위쪽 수를 칸에 써요.',
+    '나눗셈': '칸 왼쪽 위의 작은 수를 위쪽 수로 나눈 몫을 써요.',
+    '덧셈': '왼쪽 수 + 위쪽 수를 칸에 써요.',
+    '뺄셈': '왼쪽 수 − 위쪽 수를 칸에 써요.'
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function ask(msg) { return window.confirmNear ? window.confirmNear(msg) : Promise.resolve(confirm(msg)); }
+  function fmt(s) { return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function range(a, b) { var r = []; for (var i = a; i <= b; i++) r.push(i); return r; }
+  function pick(arr, n) { return shuffle(arr.slice()).slice(0, n); }
+
+  // ---------- 학생 정보 (첫 화면이 sessionStorage로 넘김, frac-kit.js와 같은 방식) ----------
+  var params = new URLSearchParams(location.search), session = null;
+  try {
+    var saved = JSON.parse(sessionStorage.getItem('frac_session') || 'null');
+    if (saved && params.get('s') && saved.nonce === params.get('s')) session = saved;
+  } catch (e) {}
+  var embedded = window.parent && window.parent !== window;
+  function post(m) { if (embedded) try { window.parent.postMessage(m, location.origin); } catch (e) {} }
+  function reportHeight() { post({ type: 'frac-height', h: document.documentElement.scrollHeight + 20 }); }
+  if (window.ResizeObserver) new ResizeObserver(reportHeight).observe(document.body);
+
+  var stage = null, cells = [], cur = 0, started = false, finished = false, t0 = 0, timerId = null, seconds = 0, lastPack = null, status = null;
+
+  function setStage(name) {
+    var s = STAGES.filter(function (x) { return x[0] === name; })[0] || STAGES[2];
+    stage = { name: s[0], op: s[1], cells: s[2], rows: s[2] === 100 ? 10 : 5, cols: s[2] === 25 ? 5 : 10 };
+    $('stageName').textContent = stage.name;
+    $('startText').innerHTML = '<b>' + stage.name + '</b> — ' + HOW[stage.op] + '<br>답을 쓰고 <b>Enter</b>를 누르면 다음 칸으로 가요 (두 자리 수는 저절로 넘어가요).<br>' +
+      '빨리 푸는 것보다 <b>정확하게</b> 푸는 것이 먼저예요.';
+    drawInfo();
+  }
+
+  function drawInfo() {
+    var m = status && status.mine, st = status && status.stage;
+    if (!session || !st) { $('info').innerHTML = ''; return; }
+    var box = function (k, v) { return '<div><div class="k">' + k + '</div><div class="v">' + v + '</div></div>'; };
+    var html = box('도달 기준', st.rate + '점 · ' + st.target + '초 안에');
+    if (m) {
+      html += box('지금까지', m.tries + '번 · 평균 ' + m.avgScore + '점');
+      html += box('내 최고 기록', m.bestTime ? m.bestTime + '초 <small>(' + st.rate + '점 이상)</small>' : '—');
+      html += box('초기 평균 시간', m.baseAvg ? m.baseAvg + '초' : '<small>' + m.baseNeed + '번 더 풀면 정해져요</small>');
+      if (m.nextFluency) html += box('다음 유창성 목표', m.nextFluency.sec + '초 <small>(' + m.nextFluency.pct + '% 빠르게)</small>');
+      html += box('도달', m.reached ? '✅ ' + m.reached : '아직');
+    } else html += box('지금까지', '처음이에요');
+    $('info').innerHTML = html;
+  }
+
+  // ---------- 문제 만들기 ----------
+  function build() {
+    var R = stage.rows, Cn = stage.cols, op = stage.op, top, left;
+    if (op === '나눗셈') {
+      top = Cn === 10 ? shuffle(range(2, 9).concat(pick(range(3, 9), 2))) : pick(range(2, 9), Cn);
+      left = range(1, R);            // 나눗셈은 줄마다 칸 안의 수가 따로 있어 왼쪽은 줄 번호
+    } else if (op === '뺄셈') {
+      top = Cn === 10 ? shuffle(range(0, 9)) : pick(range(1, 9), Cn);
+      left = R === 10 ? shuffle(range(10, 19)) : pick(range(11, 18), R);
+    } else {
+      top = Cn === 10 ? shuffle(range(0, 9)) : pick(range(1, 9), Cn);
+      left = R === 10 ? shuffle(range(0, 9)) : pick(range(op === '곱셈' ? 2 : 1, 9), R);
+    }
+    cells = [];
+    var html = '<tr><th class="corner">' + SIGN[op] + '</th>' + top.map(function (v, j) { return '<th data-c="' + j + '">' + v + '</th>'; }).join('') + '</tr>';
+    for (var i = 0; i < R; i++) {
+      html += '<tr><th data-r="' + i + '">' + (op === '나눗셈' ? '' : left[i]) + '</th>';
+      for (var j = 0; j < Cn; j++) {
+        var a = left[i], b = top[j], ans, label, dv = '';
+        if (op === '곱셈') { ans = a * b; label = a + '×' + b; }
+        else if (op === '덧셈') { ans = a + b; label = a + '+' + b; }
+        else if (op === '뺄셈') { ans = a - b; label = a + '−' + b; }
+        else { var q = 1 + Math.floor(Math.random() * 9); ans = q; dv = q * b; label = dv + '÷' + b; }
+        var k = cells.length;
+        cells.push({ ans: ans, label: label, r: i, c: j });
+        html += '<td data-k="' + k + '"' + (op === '나눗셈' ? ' class="div"' : '') + '>' + (dv !== '' ? '<span class="dv">' + dv + '</span>' : '') +
+          '<input inputmode="numeric" autocomplete="off" maxlength="2" aria-label="' + label + '"></td>';
+      }
+      html += '</tr>';
+    }
+    $('grid').innerHTML = html;
+    [].forEach.call($('grid').querySelectorAll('td input'), function (inp, k) {
+      inp.addEventListener('focus', function () { focusCell(k, true); });
+      inp.addEventListener('input', function () {
+        inp.value = inp.value.replace(/[^0-9]/g, '').slice(0, 2);
+        if (inp.value.length >= 2) next();
+      });
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); next(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); focusCell(Math.max(0, cur - 1)); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); focusCell(Math.min(cells.length - 1, cur + Cn)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); focusCell(Math.max(0, cur - Cn)); }
+        else if (e.key === 'Backspace' && !inp.value && cur > 0) { e.preventDefault(); focusCell(cur - 1); }
+      });
+    });
+  }
+
+  function input(k) { return $('grid').querySelector('td[data-k="' + k + '"] input'); }
+  function focusCell(k, fromFocus) {
+    if (finished) return;
+    var prev = $('grid').querySelector('td.cur'); if (prev) prev.classList.remove('cur');
+    [].forEach.call($('grid').querySelectorAll('.hl, .hl-row'), function (x) { x.classList.remove('hl', 'hl-row'); });
+    cur = k;
+    var td = $('grid').querySelector('td[data-k="' + k + '"]'); if (!td) return;
+    td.classList.add('cur');
+    var c = cells[k];
+    var th1 = $('grid').querySelector('th[data-c="' + c.c + '"]'), th2 = $('grid').querySelector('th[data-r="' + c.r + '"]');
+    if (th1) th1.classList.add('hl'); if (th2) th2.classList.add('hl');
+    if (!fromFocus) input(k).focus();
+  }
+  function next() {
+    for (var k = cur + 1; k < cells.length; k++) if (!input(k).value) return focusCell(k);
+    for (var k2 = 0; k2 < cells.length; k2++) if (!input(k2).value) return focusCell(k2);
+    $('doneBtn').focus();
+  }
+
+  // 화면 키패드 (태블릿·터치 크롬북)
+  function buildPad() {
+    var keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '⌫', '다음 ▶'];
+    $('pad').innerHTML = keys.map(function (k) { return '<button type="button" class="' + (k.length > 1 ? 'wide' : '') + '">' + k + '</button>'; }).join('');
+    [].forEach.call($('pad').querySelectorAll('button'), function (b) {
+      b.addEventListener('pointerdown', function (e) { e.preventDefault(); });   // 칸의 포커스를 빼앗지 않음
+      b.addEventListener('click', function () {
+        if (!started || finished) return;
+        var inp = input(cur), k = b.textContent;
+        if (k === '⌫') { if (inp.value) inp.value = inp.value.slice(0, -1); else if (cur > 0) focusCell(cur - 1); return; }
+        if (k.indexOf('다음') === 0) return next();
+        if (inp.value.length < 2) inp.value += k;
+        if (inp.value.length >= 2) next();
+      });
+    });
+  }
+
+  // ---------- 시작 · 끝 ----------
+  function start() {
+    if (started) return;
+    started = true; finished = false;
+    build();
+    $('startBox').classList.add('hidden');
+    $('pad').classList.remove('hidden');
+    $('doneBtn').classList.remove('hidden');
+    t0 = Date.now(); seconds = 0;
+    timerId = setInterval(function () { seconds = Math.floor((Date.now() - t0) / 1000); $('timer').textContent = fmt(seconds); }, 250);
+    focusCell(0);
+    reportHeight();
+  }
+
+  function finish() {
+    var empty = cells.filter(function (c, k) { return !input(k).value; }).length;
+    (empty ? ask('아직 ' + empty + '칸이 비어 있어요. 이대로 끝낼까요? (빈칸은 틀린 것으로 셉니다)') : Promise.resolve(true)).then(function (ok) {
+      if (!ok) { next(); return; }
+      clearInterval(timerId);
+      seconds = Math.max(1, Math.round((Date.now() - t0) / 1000));
+      $('timer').textContent = fmt(seconds);
+      finished = true;
+      var correct = 0, wrong = [];
+      cells.forEach(function (c, k) {
+        var inp = input(k), td = inp.parentNode, v = inp.value;
+        inp.readOnly = true; td.classList.remove('cur');
+        if (v !== '' && Number(v) === c.ans) { correct++; td.classList.add('ok'); }
+        else {
+          td.classList.add('bad');
+          td.insertAdjacentHTML('beforeend', '<span class="fix">' + c.ans + '</span>');
+          wrong.push(c.label + '=' + (v === '' ? '?' : v));
+        }
+      });
+      [].forEach.call($('grid').querySelectorAll('.hl, .hl-row'), function (x) { x.classList.remove('hl', 'hl-row'); });
+      $('pad').classList.add('hidden');
+      $('doneBtn').classList.add('hidden');
+      var score = Math.round(correct * 100 / cells.length);
+      var html = '<div class="big">' + cells.length + '칸 중 ' + correct + '칸 정답 · ' + score + '점 · ' + fmt(seconds) + '</div>';
+      if (wrong.length) html += '<div class="wrongs">틀린 셈: ' + wrong.join(', ') + '</div>';
+      $('resultBox').innerHTML = '<div class="result' + (score < 90 ? ' warn' : '') + '" id="res">' + html + '<div id="saveMsg"></div></div>';
+      $('againBtn').classList.remove('hidden');
+      lastPack = { grade: session && session.grade, classNum: session && session.classNum, studentNum: session && session.studentNum,
+        name: session && session.name, level: stage.name, correct: correct, seconds: seconds, wrong: wrong };
+      if (session) save(); else $('saveMsg').innerHTML = '<span style="color:#64748b">연습 모드라 저장하지 않았어요. 첫 화면에서 학생을 고르고 들어오면 기록과 포인트가 쌓여요.</span>';
+      reportHeight();
+    });
+  }
+
+  var saving = false;
+  function save() {
+    if (saving || !lastPack) return;
+    saving = true;
+    $('saveBtn').classList.add('hidden');
+    $('saveMsg').innerHTML = '저장 중입니다… ⏳';
+    callApi('submitHundred', [lastPack]).then(function (res) {
+      saving = false;
+      if (!res || res.status !== 'success') throw new Error((res && res.message) || '저장하지 못했습니다.');
+      var html = '저장되었습니다 ✔';
+      if (res.earned && res.earned.length) {
+        var sum = res.earned.reduce(function (s, e) { return s + e.pts; }, 0);
+        html += '<div style="margin-top:6px"><b>⭐ +' + sum + ' 포인트!</b> ' + res.earned.map(function (e) {
+          var why = e.level.indexOf(' · ') > -1 ? e.level.split(' · ').slice(1).join(' · ') : '';
+          return '<span class="earn">' + e.kind.replace('100칸 ', '') + ' +' + e.pts + (why ? ' (' + why + ')' : '') + '</span>';
+        }).join('') + '</div>';
+      }
+      $('saveMsg').innerHTML = html;
+      if (res.mine && status) { status.mine = res.mine; drawInfo(); }
+      lastPack = null;
+      reportHeight();
+    }).catch(function (err) {
+      saving = false;
+      $('saveMsg').innerHTML = '<span style="color:#b91c1c">저장하지 못했습니다: ' + err.message + '</span>';
+      $('saveBtn').classList.remove('hidden');
+    });
+  }
+
+  function again() {
+    (lastPack && session ? ask('아직 저장되지 않았어요. 저장하지 않고 다시 할까요?') : Promise.resolve(true)).then(function (ok) {
+      if (!ok) return;
+      started = false; finished = false; lastPack = null;
+      $('grid').innerHTML = ''; $('resultBox').innerHTML = ''; $('timer').textContent = '0:00';
+      $('againBtn').classList.add('hidden'); $('saveBtn').classList.add('hidden');
+      $('startBox').classList.remove('hidden');
+      window.scrollTo(0, 0); reportHeight();
+    });
+  }
+
+  function exit() {
+    var busy = (started && !finished) || (lastPack && session);
+    (busy ? ask('풀던 기록이 저장되지 않습니다. 단계 선택으로 돌아갈까요?') : Promise.resolve(true)).then(function (ok) {
+      if (!ok) return;
+      if (embedded) post({ type: 'frac-exit' }); else location.href = '../';
+    });
+  }
+
+  // ---------- 처음 ----------
+  $('startBtn').onclick = start;
+  $('doneBtn').onclick = finish;
+  $('againBtn').onclick = again;
+  $('saveBtn').onclick = save;
+  $('exitBtn').onclick = exit;
+  buildPad();
+
+  if (session) {
+    $('who').textContent = session.grade + '학년 ' + session.classNum + ' ' + session.studentNum + '번 ' + session.name;
+    setStage(session.level);
+    callApi('getHundredStatus', [session.grade, session.classNum, session.studentNum, stage.name]).then(function (res) {
+      if (res && res.status === 'success') { status = res; drawInfo(); reportHeight(); }
+    }).catch(function () {});
+  } else {
+    $('bar').classList.add('practice');
+    $('practicePick').classList.remove('hidden');
+    $('stageSel').innerHTML = STAGES.map(function (s) { return '<option>' + s[0] + '</option>'; }).join('');
+    $('stageSel').value = STAGES[2][0];
+    $('stageSel').onchange = function () { setStage(this.value); };
+    setStage(STAGES[2][0]);
+  }
+  reportHeight();
+})();
+</script>
+</body>
+</html>

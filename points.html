@@ -269,7 +269,8 @@ async function cancelGift(d, log) {
 }
 
 /* ---------- 학생 한 명 그리기 ---------- */
-const KIND_ICON = { '단계 도달': '🎯', '완주': '🔁', '만점': '💯', '성장': '📈', '도달 5단계마다': '🎁' };
+const KIND_ICON = { '단계 도달': '🎯', '완주': '🔁', '만점': '💯', '성장': '📈', '도달 5단계마다': '🎁',
+  '100칸 도달': '🏁', '100칸 향상': '⬆️', '100칸 유창성': '⚡' };
 function lvName(l) { const i = String(l.level).indexOf(':'); return i === -1 ? '' : String(l.level).slice(i + 1).trim(); }
 
 function renderStudent(d, teacher) {
@@ -327,17 +328,27 @@ function renderStudent(d, teacher) {
       : '<p class="muted">아직 진단 기록이 없어요. 진단을 풀면 포인트가 쌓여요.</p>'}
   </div>
 
+  ${(d.hundred || []).length ? `<div class="card">
+    <h3>💯 100칸 계산 <small>도달 = 기준 점수 이상을 목표 시간 안에 · 어려운 단계일수록 포인트 배율이 커요</small></h3>
+    ${d.hundred.map((h) => `<div class="lvrow">
+      <div class="nm"><b>${esc(h.name.split(':')[0])}</b><small>${esc((h.name.split(':')[1] || '').trim())} · ×${h.weight}</small></div>
+      <div>${h.reached ? '<span class="chip ok">✓ 도달</span>' : `<span class="chip try">목표 ${h.rate}점 · ${h.target}초</span>`}</div>
+      <div class="sc">${h.tries}번 · 평균 ${h.avgScore}점 · 최고 기록 ${h.bestTime ? h.bestTime + '초' : '—'}
+        · 초기 평균 ${h.baseAvg ? h.baseAvg + '초' : (h.baseNeed + '번 더')}${h.nextFluency ? ` · 다음 목표 ${h.nextFluency.sec}초` : ''}</div>
+      <div class="pt">+${h.pts}</div></div>`).join('')}
+  </div>` : ''}
+
   <div class="two">
     <div class="card">
       <h3>🕑 최근 받은 포인트</h3>
       ${d.events.length ? `<ul class="plain">${d.events.slice(0, 15).map((e) => `<li><span>${KIND_ICON[e.kind] || '⭐'} ${esc(e.kind)}
-        <span class="muted">${e.no ? e.no + '단계' : esc(e.level)}${e.op ? ' · ' + esc(e.op) : ''}</span> <span class="when">${esc(e.day)}</span></span><span class="p">+${e.pts}</span></li>`).join('')}</ul>`
+        <span class="muted">${e.op === '100칸 계산' ? esc(e.level.replace(/^\d+단계: /, '')) : (e.no ? e.no + '단계' : esc(e.level))}${e.op && e.op !== '100칸 계산' ? ' · ' + esc(e.op) : ''}</span> <span class="when">${esc(e.day)}</span></span><span class="p">+${e.pts}</span></li>`).join('')}</ul>`
         : '<p class="muted">아직 받은 포인트가 없어요.</p>'}
     </div>
     <div class="card">
       <h3>⭐ 포인트 받는 법</h3>
       <ul class="plain">${d.rules.filter((r) => r.pts > 0).map((r) => `<li><span>${KIND_ICON[r.name] || '⭐'} <b>${esc(r.name)}</b><br><span class="muted" style="font-size:12px">${esc(r.desc)}</span></span><span class="p">+${r.pts}</span></li>`).join('')}</ul>
-      <div class="note">같은 단계를 여러 번 풀어도 포인트는 단계마다 한 번씩만 받아요. 빨리 푸는 것보다 정확하게 푸는 것이 중요해요.</div>
+      <div class="note">진단 단계는 여러 번 풀어도 포인트를 단계마다 한 번씩만 받아요. 100칸 계산은 내 평균보다 잘하거나, 처음보다 빨라질 때마다 받아요. 늘 정확하게 푸는 것이 먼저예요.</div>
       ${d.gifts.length ? `<h3 style="margin-top:18px">🎁 선물</h3>${d.gifts.map((g) => `<div class="gift ${can(g) ? 'can' : ''}"><span>${esc(g.name)}${g.desc ? `<br><span class="muted" style="font-size:12px">${esc(g.desc)}</span>` : ''}</span><span class="p">${g.pts}${can(g) ? ' ✓' : ''}</span></div>`).join('')}
         <div class="note">선물은 선생님께 말씀드리면 받을 수 있어요.</div>` : ''}
     </div>
