@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>연산 포인트</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<script src="config.js"></script>
+<script src="api.js"></script>
+<style>
+  /* 연산진단 포인트 — 학생: 내 포인트·뱃지·단계별 기록 / 선생님: 반 목록·선물 주기 (서버: 포인트.gs) */
+  :root {
+    --bg: #eef8fd; --panel: #fff; --line: #d9ecf6; --ink: #12324a; --sub: #5b7489; --muted: #93a9ba;
+    --accent: #0b8fd8; --accent-2: #14b8a6; --accent-soft: #e3f4fd; --mint-soft: #e6f8f5;
+    --gold: #f5b301; --gold-soft: #fff6d6;
+    --reach: #0ca30c; --reach-soft: #e3f6e3; --effort-soft: #fff4d6; --support: #d03b3b;
+    --shadow: 0 10px 30px rgba(11, 110, 160, .08), 0 2px 6px rgba(11, 110, 160, .05);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--ink); font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.5;
+    background: linear-gradient(180deg, #dff3fc 0, #eef9fb 260px, #f6fbfd 100%) fixed; }
+  .hidden { display: none !important; }
+  header.bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 14px 24px;
+    background: rgba(255, 255, 255, .85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(11, 143, 216, .14); }
+  header.bar h1 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 20px; letter-spacing: -.3px; }
+  header.bar h1 .logo { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 17px;
+    background: linear-gradient(135deg, #fcd34d, #f59e0b); box-shadow: 0 4px 12px rgba(245, 158, 11, .3); }
+  header.bar h1 a { color: var(--accent); font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); text-decoration: none; }
+  .who { margin-left: auto; display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--sub); }
+  select, button { font: inherit; font-size: 15px; padding: 8px 12px; border: 1px solid #cfe5f2; border-radius: 10px; background: #fff; color: var(--ink); }
+  button { cursor: pointer; }
+  button:hover:not(:disabled) { background: #f3faff; }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: linear-gradient(135deg, #0ea5e9, #14b8a6); border: none; color: #fff; font-weight: 700; box-shadow: 0 6px 16px rgba(14, 165, 233, .28); }
+  main { max-width: 1040px; margin: 0 auto; padding: 22px 18px 70px; }
+  .notice { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 34px 26px; text-align: center; color: var(--sub); line-height: 1.8; box-shadow: var(--shadow); }
+  .notice b { color: var(--ink); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px 22px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .card > h3 { margin: 0 0 12px; font-size: 18px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .card > h3 small { font-size: 13px; color: var(--sub); font-weight: 500; }
+
+  /* 내 포인트 */
+  .hero { display: grid; grid-template-columns: minmax(220px, 1.2fr) 2fr; gap: 18px; align-items: center; }
+  .hero .who2 { color: var(--sub); font-weight: 600; }
+  .hero .big { font-size: 64px; font-weight: 900; line-height: 1; color: var(--ink); letter-spacing: -2px; }
+  .hero .big small { font-size: 20px; font-weight: 700; color: var(--sub); margin-left: 4px; letter-spacing: 0; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .tile { border-radius: 14px; padding: 12px 14px; background: linear-gradient(160deg, #f0f9ff, #effbf8); }
+  .tile .k { font-size: 13px; color: #3c7fa6; font-weight: 600; }
+  .tile .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .next { margin-top: 14px; font-size: 14px; color: var(--sub); }
+  .next .track { height: 12px; border-radius: 6px; background: #e4f1f8; overflow: hidden; margin-top: 6px; }
+  .next .fill { height: 100%; background: linear-gradient(90deg, #fcd34d, #f59e0b); border-radius: 6px; }
+
+  .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+  .badge { border: 1px solid var(--line); border-radius: 14px; padding: 10px; text-align: center; background: #fbfeff; }
+  .badge .i { font-size: 30px; line-height: 1.2; }
+  .badge .n { font-weight: 700; font-size: 14px; }
+  .badge .d { font-size: 12px; color: var(--sub); }
+  .badge.off { opacity: .45; filter: grayscale(1); }
+  .badge.on { background: var(--gold-soft); border-color: #f3d58a; }
+
+  .op { margin-top: 14px; }
+  .op:first-child { margin-top: 0; }
+  .op > b { display: block; font-size: 15px; margin-bottom: 6px; color: #2f6f96; }
+  .lvrow { display: grid; grid-template-columns: 130px 120px 1fr 70px; gap: 10px; align-items: center; padding: 7px 4px; border-bottom: 1px solid #e6f2f9; font-size: 14px; }
+  .lvrow .nm b { white-space: nowrap; } .lvrow .nm small { display: block; color: var(--muted); font-size: 12px; }
+  .lvrow .sc { color: var(--sub); font-variant-numeric: tabular-nums; }
+  .lvrow .pt { text-align: right; font-weight: 800; color: #b07800; white-space: nowrap; }
+  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .chip.ok { background: var(--reach-soft); color: #006300; }
+  .chip.more { background: var(--accent-soft); color: #075e95; }
+  .chip.try { background: var(--effort-soft); color: #7a5300; }
+
+  ul.plain { list-style: none; margin: 0; padding: 0; }
+  ul.plain li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 2px; border-bottom: 1px solid #e6f2f9; font-size: 14px; }
+  ul.plain li .p { font-weight: 800; color: #b07800; white-space: nowrap; }
+  ul.plain li .p.minus { color: var(--support); }
+  ul.plain li .when { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .gift { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid #e6f2f9; font-size: 14px; }
+  .gift .p { font-weight: 800; white-space: nowrap; }
+  .gift.can .p { color: #006300; }
+  .muted { color: var(--sub); }
+  .note { font-size: 12px; color: var(--sub); margin-top: 8px; }
+
+  /* 선생님 */
+  .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 9px 10px; border-bottom: 1px solid #e6f2f9; text-align: left; }
+  th { background: #f1f9fe; color: #2f6f96; font-weight: 600; font-size: 13px; white-space: nowrap; cursor: pointer; user-select: none; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr { cursor: pointer; } tbody tr:hover td { background: #f8fcff; } tbody tr.sel td { background: var(--mint-soft); }
+  td .left { font-weight: 800; }
+  .give { display: flex; flex-wrap: wrap; gap: 8px; }
+  .give button { font-size: 14px; }
+  .give button small { color: var(--sub); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #12324a; color: #fff; padding: 10px 18px; border-radius: 12px; font-size: 15px; z-index: 20; box-shadow: var(--shadow); }
+
+  @media (max-width: 720px) {
+    .hero, .two { grid-template-columns: 1fr; }
+    .hero .big { font-size: 52px; }
+    .lvrow { grid-template-columns: 1fr auto; }
+    .lvrow .sc { grid-column: 1 / -1; order: 3; }
+    header.bar { padding: 12px 16px; }
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <h1><span class="logo">⭐</span>연산 포인트 <a href="./">← 진단시스템</a></h1>
+  <div class="who">
+    <span id="who"></span>
+    <button id="loginBtn" class="primary hidden">🔑 구글 로그인</button>
+    <button id="logoutBtn" class="hidden">로그아웃</button>
+  </div>
+</header>
+
+<main>
+  <div id="msg" class="notice">불러오는 중입니다…</div>
+
+  <!-- 선생님: 반 목록 -->
+  <section id="teacher" class="hidden">
+    <div class="card">
+      <h3>학생별 포인트 <small>줄을 누르면 아래에 자세히 보이고, 선물을 줄 수 있어요</small></h3>
+      <div class="tools">
+        <select id="cls"></select>
+        <button id="reloadBtn">↻ 새로 고침</button>
+        <span class="muted" id="clsSum"></span>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr>
+          <th data-k="num">번호</th><th data-k="name">이름</th><th class="n" data-k="left">남은</th><th class="n" data-k="earned">모은</th>
+          <th class="n" data-k="spent">쓴</th><th class="n" data-k="month">이달</th><th class="n" data-k="reach">도달 단계</th><th class="n" data-k="badges">뱃지</th>
+        </tr></thead>
+        <tbody id="clsBody"></tbody>
+      </table></div>
+      <div class="note">포인트는 진단 기록(종합평가결과)으로 그때그때 계산합니다. 규칙은 평가데이터 스프레드시트의 '수학포인트규칙' 탭, 선물은 '수학선물목록' 탭에서 고칩니다.</div>
+    </div>
+  </section>
+
+  <!-- 학생 한 명 (학생 본인 화면, 선생님이 고른 학생) -->
+  <section id="student" class="hidden"></section>
+</main>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('points_' + k); return v == null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('points_' + k, v); } catch (e) {} }
+};
+function msg(html) { $('msg').innerHTML = html; $('msg').classList.remove('hidden'); }
+function toast(text) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = text; document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+let auth = null, am = null, cls = null, sortKey = store.get('sort', 'num'), sortDir = 1, picked = null;
+
+/* ---------- 로그인 ---------- */
+async function boot() {
+  const cfg = window.APP_CONFIG && window.APP_CONFIG.FIREBASE;
+  if (!cfg || !cfg.apiKey) { msg('<b>config.js의 FIREBASE 설정이 비어 있습니다.</b>'); return; }
+  const base = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  const [appm, authm] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js')]);
+  am = authm;
+  auth = am.getAuth(appm.initializeApp(cfg, 'points'));
+  am.onAuthStateChanged(auth, (u) => {
+    const user = (u && !u.isAnonymous) ? u : null;
+    $('who').textContent = user ? user.email : '';
+    $('loginBtn').classList.toggle('hidden', !!user);
+    $('logoutBtn').classList.toggle('hidden', !user);
+    $('teacher').classList.add('hidden'); $('student').classList.add('hidden');
+    if (user) start();
+    else msg('<b>학교 구글 계정으로 로그인해 주세요.</b><br>학생은 내 포인트·뱃지·단계별 기록을, 선생님은 맡은 반의 포인트를 볼 수 있습니다.');
+  });
+  $('loginBtn').onclick = () => {
+    const p = new am.GoogleAuthProvider();
+    p.setCustomParameters({ prompt: 'select_account' });
+    am.signInWithPopup(auth, p).catch((e) => { if (e && e.code !== 'auth/popup-closed-by-user') msg('<b>로그인하지 못했습니다.</b><br>' + esc(e.message)); });
+  };
+  $('logoutBtn').onclick = () => am.signOut(auth);
+}
+async function call(action, ...args) {
+  const u = auth && auth.currentUser;
+  if (!u || u.isAnonymous) throw new Error('로그인이 필요합니다.');
+  const res = await window.callApi(action, [{ idToken: await u.getIdToken() }, ...args]);
+  if (res && res.status === 'error') throw new Error(res.message);
+  return res;
+}
+
+async function start() {
+  msg('포인트를 계산하는 중입니다…');
+  let me;
+  try { me = await call('getMyMathPoints'); } catch (e) { msg('<b>' + esc(e.message) + '</b>'); return; }
+  if (me.role === 'teacher') return startTeacher();
+  $('msg').classList.add('hidden');
+  renderStudent(me, false);
+}
+
+/* ---------- 선생님 ---------- */
+async function startTeacher() {
+  let sc;
+  try { sc = await call('getReportScope'); } catch (e) { msg('<b>' + esc(e.message) + '</b>'); return; }
+  if (!sc.classes.length) { msg('<b>볼 수 있는 학급이 없습니다.</b><br>교사학급 탭의 학년·반을 확인해 주세요.'); return; }
+  $('cls').innerHTML = sc.classes.map((c) => `<option value="${esc(c.grade + '|' + c.classNum)}">${esc(c.grade)}학년 ${esc(c.classNum)} (${c.count}명)</option>`).join('');
+  const saved = store.get('cls', '');
+  if ([...$('cls').options].some((o) => o.value === saved)) $('cls').value = saved;
+  $('msg').classList.add('hidden');
+  $('teacher').classList.remove('hidden');
+  $('cls').onchange = () => { picked = null; loadClass(); };
+  $('reloadBtn').onclick = () => loadClass();
+  document.querySelectorAll('#teacher th[data-k]').forEach((th) => th.onclick = () => {
+    const k = th.dataset.k; sortDir = sortKey === k ? -sortDir : (k === 'num' || k === 'name' ? 1 : -1); sortKey = k; store.set('sort', k); drawClass();
+  });
+  loadClass();
+}
+
+async function loadClass() {
+  const [g, c] = $('cls').value.split('|');
+  store.set('cls', $('cls').value);
+  $('clsBody').innerHTML = '<tr><td colspan="8" class="muted">계산하는 중…</td></tr>';
+  try { cls = await call('getClassMathPoints', g, c); }
+  catch (e) { $('clsBody').innerHTML = `<tr><td colspan="8">${esc(e.message)}</td></tr>`; return; }
+  drawClass();
+  if (picked) openStudent(picked);
+  else $('student').classList.add('hidden');
+}
+
+function drawClass() {
+  if (!cls) return;
+  const rows = cls.students.slice().sort((a, b) => {
+    const x = a[sortKey], y = b[sortKey];
+    const d = (sortKey === 'name') ? String(x).localeCompare(String(y), 'ko') : (parseFloat(x) || 0) - (parseFloat(y) || 0);
+    return d * sortDir || (parseInt(a.num, 10) - parseInt(b.num, 10));
+  });
+  const tot = cls.students.reduce((s, x) => s + x.earned, 0);
+  $('clsSum').textContent = `반 전체 모은 포인트 ${tot} · 선물 ${cls.gifts.length}종`;
+  $('clsBody').innerHTML = rows.map((s) => `<tr data-num="${esc(s.num)}" class="${picked === s.num ? 'sel' : ''}">
+    <td>${esc(s.num)}</td><td><b>${esc(s.name)}</b></td><td class="n"><span class="left">${s.left}</span></td><td class="n">${s.earned}</td>
+    <td class="n">${s.spent}</td><td class="n">${s.month}</td><td class="n">${s.reach}</td><td class="n">${s.badges}/${cls.badgeTotal}</td></tr>`).join('');
+  $('clsBody').querySelectorAll('tr[data-num]').forEach((tr) => tr.onclick = () => openStudent(tr.dataset.num));
+}
+
+async function openStudent(num) {
+  picked = num; drawClass();
+  const box = $('student');
+  box.classList.remove('hidden');
+  box.innerHTML = '<div class="notice">불러오는 중…</div>';
+  const [g, c] = $('cls').value.split('|');
+  try { renderStudent(await call('getStudentMathPoints', g, c, num), true); }
+  catch (e) { box.innerHTML = `<div class="notice">${esc(e.message)}</div>`; return; }
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function giveGift(d, gift) {
+  if (!confirm(`${d.num}번 ${d.name} 학생에게\n'${gift.name}'을(를) 주고 ${gift.pts}포인트를 뺄까요?`)) return;
+  try {
+    const r = await call('giveMathGift', { grade: d.grade, classNum: d.classNum, num: d.num, gift: gift.name });
+    toast(r.message); loadClass();
+  } catch (e) { alert(e.message); }
+}
+async function cancelGift(d, log) {
+  if (!confirm(`${log.day} '${log.gift}' 선물 주기를 취소하고 ${log.pts}포인트를 돌려줄까요?`)) return;
+  try { const r = await call('cancelMathGift', { grade: d.grade, classNum: d.classNum, id: log.id }); toast(r.message); loadClass(); }
+  catch (e) { alert(e.message); }
+}
+
+/* ---------- 학생 한 명 그리기 ---------- */
+const KIND_ICON = { '단계 도달': '🎯', '완주': '🔁', '만점': '💯', '성장': '📈', '도달 5단계마다': '🎁' };
+function lvName(l) { const i = String(l.level).indexOf(':'); return i === -1 ? '' : String(l.level).slice(i + 1).trim(); }
+
+function renderStudent(d, teacher) {
+  const box = $('student');
+  box.classList.remove('hidden');
+  const n = d.next;
+  const nextHtml = n
+    ? `<div class="next">다음 선물 <b>${esc(n.name)}</b>까지 <b>${n.need}포인트</b> 남았어요
+        <div class="track"><div class="fill" style="width:${Math.max(0, Math.min(100, Math.round(d.left * 100 / n.pts)))}%"></div></div></div>`
+    : (d.gifts.length ? '<div class="next">🎉 지금 포인트로 모든 선물을 받을 수 있어요! 선생님께 말씀드려요.</div>' : '');
+
+  const ops = [];
+  d.levels.forEach((l) => { let o = ops.find((x) => x.op === l.op); if (!o) ops.push(o = { op: l.op, levels: [] }); o.levels.push(l); });
+  const stat = (l) => l.reached ? '<span class="chip ok">✓ 도달</span>'
+    : l.needMore ? `<span class="chip more">${l.needMore}번 더 풀기</span>` : '<span class="chip try">다시 도전</span>';
+
+  const can = (g) => d.left >= g.pts;
+  box.innerHTML = `
+  <div class="card">
+    <div class="hero">
+      <div>
+        <div class="who2">${esc(d.grade)}학년 ${esc(d.classNum)} ${esc(d.num)}번 ${esc(d.name)}</div>
+        <div class="big">${d.left}<small>포인트</small></div>
+      </div>
+      <div>
+        <div class="tiles">
+          <div class="tile"><div class="k">모은 포인트</div><div class="v">${d.earned}</div></div>
+          <div class="tile"><div class="k">선물로 쓴</div><div class="v">${d.spent}</div></div>
+          <div class="tile"><div class="k">이번 달</div><div class="v">${d.month}</div></div>
+        </div>
+        ${nextHtml}
+      </div>
+    </div>
+  </div>
+
+  ${teacher ? `<div class="card"><h3>🎁 선물 주기 <small>남은 포인트가 충분한 선물만 누를 수 있어요</small></h3>
+    <div class="give">${d.gifts.map((g, i) => `<button data-gift="${i}" ${can(g) ? '' : 'disabled'}>${esc(g.name)} <small>${g.pts}</small></button>`).join('') || '<span class="muted">수학선물목록 탭에 선물이 없습니다.</span>'}</div>
+    ${d.giftLog.length ? `<h3 style="margin-top:16px">받은 선물</h3><ul class="plain">${d.giftLog.map((x, i) => `<li><span>${x.cancelled ? '<s>' : ''}${esc(x.gift)}${x.cancelled ? '</s> (취소됨)' : ''} <span class="when">${esc(x.day)}</span></span>
+      <span>${x.cancelled ? '' : `<span class="p minus">−${x.pts}</span> <button data-cancel="${i}" style="font-size:12px;padding:3px 8px">취소</button>`}</span></li>`).join('')}</ul>` : ''}
+  </div>` : ''}
+
+  <div class="card">
+    <h3>🏅 뱃지 <small>${d.badges.filter((b) => b.got).length} / ${d.badges.length}개 · 선물을 받아도 사라지지 않아요</small></h3>
+    <div class="badges">${d.badges.map((b) => `<div class="badge ${b.got ? 'on' : 'off'}" title="${esc(b.desc)}">
+      <div class="i">${b.icon}</div><div class="n">${esc(b.name)}</div><div class="d">${b.got ? '받았어요' : `${Math.min(b.have, b.need)} / ${b.need}`}</div></div>`).join('')}</div>
+  </div>
+
+  <div class="card">
+    <h3>📚 단계별 내 기록 <small>단계마다 ${d.minTries}번 풀고, ${d.basis === '최근' ? '마지막 점수가' : '그 단계 평균이'} ${d.reach}점 이상이면 도달</small></h3>
+    ${ops.length ? ops.map((o) => `<div class="op"><b>${esc(o.op)}</b>${o.levels.map((l) => `<div class="lvrow">
+        <div class="nm"><b>${l.no}단계${l.code ? ' (' + esc(l.code) + ')' : ''}</b><small>${esc(lvName(l))}</small></div>
+        <div>${stat(l)}</div>
+        <div class="sc">${l.tries}번 · 점수 ${l.scores.join(' → ')} · 평균 ${l.avg}점</div>
+        <div class="pt">+${l.pts}</div></div>`).join('')}</div>`).join('')
+      : '<p class="muted">아직 진단 기록이 없어요. 진단을 풀면 포인트가 쌓여요.</p>'}
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>🕑 최근 받은 포인트</h3>
+      ${d.events.length ? `<ul class="plain">${d.events.slice(0, 15).map((e) => `<li><span>${KIND_ICON[e.kind] || '⭐'} ${esc(e.kind)}
+        <span class="muted">${e.no ? e.no + '단계' : esc(e.level)}${e.op ? ' · ' + esc(e.op) : ''}</span> <span class="when">${esc(e.day)}</span></span><span class="p">+${e.pts}</span></li>`).join('')}</ul>`
+        : '<p class="muted">아직 받은 포인트가 없어요.</p>'}
+    </div>
+    <div class="card">
+      <h3>⭐ 포인트 받는 법</h3>
+      <ul class="plain">${d.rules.filter((r) => r.pts > 0).map((r) => `<li><span>${KIND_ICON[r.name] || '⭐'} <b>${esc(r.name)}</b><br><span class="muted" style="font-size:12px">${esc(r.desc)}</span></span><span class="p">+${r.pts}</span></li>`).join('')}</ul>
+      <div class="note">같은 단계를 여러 번 풀어도 포인트는 단계마다 한 번씩만 받아요. 빨리 푸는 것보다 정확하게 푸는 것이 중요해요.</div>
+      ${d.gifts.length ? `<h3 style="margin-top:18px">🎁 선물</h3>${d.gifts.map((g) => `<div class="gift ${can(g) ? 'can' : ''}"><span>${esc(g.name)}${g.desc ? `<br><span class="muted" style="font-size:12px">${esc(g.desc)}</span>` : ''}</span><span class="p">${g.pts}${can(g) ? ' ✓' : ''}</span></div>`).join('')}
+        <div class="note">선물은 선생님께 말씀드리면 받을 수 있어요.</div>` : ''}
+    </div>
+  </div>`;
+
+  if (teacher) {
+    box.querySelectorAll('[data-gift]').forEach((b) => b.onclick = () => giveGift(d, d.gifts[+b.dataset.gift]));
+    box.querySelectorAll('[data-cancel]').forEach((b) => b.onclick = () => cancelGift(d, d.giftLog[+b.dataset.cancel]));
+  }
+}
+
+boot().catch((e) => msg('<b>화면을 준비하지 못했습니다.</b><br>' + esc(e.message)));
+</script>
+</body>
+</html>
