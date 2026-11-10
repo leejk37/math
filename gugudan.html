@@ -146,6 +146,7 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
   <fieldset>
     <legend>빠르기 기준</legend>
     <div class="seg" id="thr">
+      <button type="button" data-v="1">1초</button>
       <button type="button" data-v="2">2초</button>
       <button type="button" data-v="3">3초</button>
       <button type="button" data-v="4">4초</button>
@@ -172,6 +173,7 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
     <div class="heardRow" style="margin-top:14px"><span id="micHeard"></span></div>
   </div>
   <p class="mic" id="micA" data-s="wait" aria-live="polite"><span class="dot"></span><span id="micAText">마이크 준비 중… 허용 창이 뜨면 “허용”을 눌러 주세요.</span></p>
+  <p class="muted" style="text-align:center">답이 한 글자일 때는 “이이는 사”처럼 문제와 함께 말하면 더 잘 알아들어요.</p>
   <p class="note" id="micErr" hidden></p>
   <button type="button" class="go" id="micGo" disabled>검사 시작</button>
   <button type="button" class="plain" id="micPad">터치로 답하기</button>
@@ -226,7 +228,15 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
 /*PURE*/
 var KD={'일':1,'이':2,'삼':3,'사':4,'오':5,'육':6,'칠':7,'팔':8,'구':9};
 var KN=['','일','이','삼','사','오','육','칠','팔','구'];
-var HOMO={'e':'이','o':'오','발':'팔','쌈':'삼','싸':'사','씹':'십','유':'육','치':'칠','파':'팔'};
+var HOMO={'e':'이','o':'오','oh':'오','의':'이','에':'이',
+  '싸':'사','쌰':'사','샤':'사','살':'사',
+  '어':'오',
+  '유':'육','욱':'육','윽':'육','융':'육',
+  '치':'칠','질':'칠','찔':'칠','칙':'칠',
+  '발':'팔','빨':'팔','파':'팔','펄':'팔','팍':'팔',
+  '쿠':'구','꾸':'구','국':'구',
+  '쌈':'삼','산':'삼','샘':'삼','섬':'삼','삶':'삼',
+  '씹':'십','심':'십'};
 function parseNum(s){
   if(!s) return null;
   if(/^\d{1,3}$/.test(s)) return +s;
