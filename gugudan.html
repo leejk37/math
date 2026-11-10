@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>말로 푸는 구구단</title>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2EB; --card:#FFFFFF; --ink:#16261F; --muted:#586A61; --line:#C9D6CC;
+  --board:#1E4A3C; --chalk:#F5F2DF; --chalk-dim:#B9CDBF; --yellow:#F3D36B; --frame:#BF9862;
+  --ok:#1B7F54; --slow:#A8700A; --bad:#C63D28; --none:#7F8B85;
+  --ok-bg:#DDF1E6; --slow-bg:#FBEBC6; --bad-bg:#FADCD5; --none-bg:#E3E8E4;
+  --display:"Jua","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#0F1A16; --card:#17251F; --ink:#E6EEE8; --muted:#9BAFA4; --line:#2D4138;
+    --board:#215243; --frame:#7C6340;
+    --ok:#56C992; --slow:#E9B645; --bad:#F27A65; --none:#8C9A93;
+    --ok-bg:#173A2B; --slow-bg:#3F3212; --bad-bg:#45201A; --none-bg:#25322C;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0F1A16; --card:#17251F; --ink:#E6EEE8; --muted:#9BAFA4; --line:#2D4138;
+  --board:#215243; --frame:#7C6340;
+  --ok:#56C992; --slow:#E9B645; --bad:#F27A65; --none:#8C9A93;
+  --ok-bg:#173A2B; --slow-bg:#3F3212; --bad-bg:#45201A; --none-bg:#25322C;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{margin:0;min-height:100%;background:var(--paper);color:var(--ink);font:16px/1.6 var(--body)}
+[hidden]{display:none!important}
+main{max-width:480px;margin:0 auto;padding:16px 16px 40px}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;line-height:1.25}
+h2{font-size:1.5rem;margin-bottom:4px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 8px}
+.muted{color:var(--muted);font-size:.9rem}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+
+.board{background:var(--board);color:var(--chalk);border:6px solid var(--frame);border-radius:14px;padding:22px 18px;text-align:center}
+.board h1{font-size:2.1rem}
+.board p{color:var(--chalk-dim);margin:6px 0 0}
+
+fieldset{border:0;padding:0;margin:22px 0 0;min-width:0}
+legend,.label{font-family:var(--display);font-size:1.05rem;padding:0;margin-bottom:8px;display:block}
+.chips{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
+.chips button,.seg button{border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:10px 0;min-height:44px}
+.chips button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--board);border-color:var(--board);color:var(--chalk)}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+input[type=text]{width:100%;border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:10px 12px;min-height:44px}
+.go{display:block;width:100%;margin-top:24px;border:0;border-radius:12px;background:var(--yellow);color:#2A2205;font-family:var(--display);font-size:1.2rem;padding:14px;min-height:52px}
+.go:disabled{opacity:.5;cursor:not-allowed}
+.plain{display:block;width:100%;margin-top:10px;border:1.5px solid var(--line);background:transparent;border-radius:12px;padding:11px;min-height:46px}
+.note{border-left:4px solid var(--slow);background:var(--slow-bg);padding:10px 12px;border-radius:0 8px 8px 0;margin-top:12px;font-size:.92rem}
+
+/* 검사 화면 */
+#prog{text-align:left;color:var(--chalk-dim);margin:0;font-size:.95rem}
+#q{font-family:var(--display);font-size:clamp(4.2rem,25vw,7rem);line-height:1.15;margin:10px 0 0;min-height:1.2em}
+#q.wait{color:var(--chalk-dim)}
+.heardRow{min-height:2.6rem;display:flex;align-items:center;justify-content:center;gap:10px;font-size:1.15rem}
+#mark{font-family:var(--display);font-size:1.9rem;line-height:1;color:var(--yellow)}
+.mic{display:flex;align-items:center;justify-content:center;gap:8px;margin:16px 0 4px;min-height:1.8rem}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--none);flex:none}
+.mic[data-s="on"] .dot{background:var(--bad);animation:pulse 1.1s ease-in-out infinite}
+.mic[data-s="retry"] .dot{background:var(--slow)}
+@keyframes pulse{50%{transform:scale(1.5);opacity:.55}}
+@media (prefers-reduced-motion:reduce){.mic .dot{animation:none!important}}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.pad button{border:1.5px solid var(--line);background:var(--card);border-radius:12px;min-height:54px;font-family:var(--display);font-size:1.4rem}
+.pad .enter{background:var(--yellow);border-color:var(--yellow);color:#2A2205;font-size:1.1rem}
+.pad .del{font-size:1rem}
+
+/* 결과 */
+dl.report{margin:14px 0 0;border-top:2px solid var(--ink)}
+dl.report div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 2px;border-bottom:1px solid var(--line)}
+dl.report dt{color:var(--muted)}
+dl.report dd{margin:0;font-family:var(--display);font-size:1.3rem;text-align:right}
+dl.report dd small{font-family:var(--body);font-size:.85rem;color:var(--muted);margin-left:4px}
+.scroll{overflow-x:auto}
+table{border-collapse:separate;border-spacing:3px;width:100%;table-layout:fixed}
+th{font-weight:400;color:var(--muted);font-size:.8rem;padding:0}
+th[scope=row]{width:34px;text-align:left;font-family:var(--display);color:var(--ink);font-size:.95rem}
+td{padding:0}
+td button{display:block;width:100%;aspect-ratio:1;border:0;border-radius:7px;font-size:1.05rem;line-height:1;padding:0;background:transparent}
+td button.fast{background:var(--ok-bg);color:var(--ok)}
+td button.slow{background:var(--slow-bg);color:var(--slow)}
+td button.bad{background:var(--bad-bg);color:var(--bad)}
+td button.none{background:var(--none-bg);color:var(--none)}
+td button.off{border:1px dashed var(--line);cursor:default}
+td button[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:1px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.85rem;color:var(--muted);margin-top:8px;padding:0;list-style:none}
+.legend b{font-weight:400;margin-right:3px}
+.k-fast{color:var(--ok)}.k-slow{color:var(--slow)}.k-bad{color:var(--bad)}.k-none{color:var(--none)}
+#detail{border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:12px 14px;margin-top:10px}
+#detail strong{font-family:var(--display);font-weight:400;font-size:1.35rem;display:block}
+#detail .plain{margin-top:8px}
+table.dans{border-spacing:0}
+table.dans th,table.dans td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right;font-size:.95rem}
+table.dans th{font-size:.82rem}
+table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:var(--display);color:var(--ink)}
+.facts{display:flex;flex-wrap:wrap;gap:6px;padding:0;margin:0;list-style:none}
+.facts li{border-radius:8px;padding:3px 9px;font-family:var(--display)}
+.facts.bad li{background:var(--bad-bg);color:var(--bad)}
+.facts.slow li{background:var(--slow-bg);color:var(--slow)}
+</style>
+</head>
+<body>
+<main>
+
+<section id="s-setup">
+  <div class="board">
+    <h1>말로 푸는 구구단</h1>
+    <p>소리 내어 답하면 정확도와 빠르기를 함께 잽니다.</p>
+  </div>
+
+  <fieldset>
+    <label class="label" for="name">학생 이름 (선택)</label>
+    <input type="text" id="name" maxlength="20" autocomplete="off">
+  </fieldset>
+
+  <fieldset>
+    <legend>검사할 단</legend>
+    <div class="chips" id="dans"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>문항 수</legend>
+    <div class="seg" id="count">
+      <button type="button" data-v="20">20문항</button>
+      <button type="button" data-v="40">40문항</button>
+      <button type="button" data-v="all">전체</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>빠르기 기준</legend>
+    <div class="seg" id="thr">
+      <button type="button" data-v="2">2초</button>
+      <button type="button" data-v="3">3초</button>
+      <button type="button" data-v="4">4초</button>
+    </div>
+    <p class="muted" style="margin-top:6px">이 시간 안에 맞히면 “빠르고 정확”으로 봅니다. 한 문항은 10초까지 기다립니다.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>답하는 방법</legend>
+    <div class="seg" id="mode">
+      <button type="button" data-v="voice">말하기</button>
+      <button type="button" data-v="pad">터치</button>
+    </div>
+    <p class="note" id="noSR" hidden>이 브라우저는 음성 인식을 지원하지 않아요. Chrome이나 Safari에서 열면 말로 답할 수 있습니다.</p>
+  </fieldset>
+
+  <button type="button" class="go" id="begin"></button>
+</section>
+
+<section id="s-mic" hidden>
+  <div class="board">
+    <h1>마이크 확인</h1>
+    <p>아무 숫자나 말해 보세요. 예: “십이”</p>
+    <div class="heardRow" style="margin-top:14px"><span id="micHeard"></span></div>
+  </div>
+  <p class="mic" id="micA" data-s="wait" aria-live="polite"><span class="dot"></span><span id="micAText">마이크 준비 중… 허용 창이 뜨면 “허용”을 눌러 주세요.</span></p>
+  <p class="note" id="micErr" hidden></p>
+  <button type="button" class="go" id="micGo" disabled>검사 시작</button>
+  <button type="button" class="plain" id="micPad">터치로 답하기</button>
+  <button type="button" class="plain" id="micBack">설정으로 돌아가기</button>
+</section>
+
+<section id="s-test" hidden>
+  <div class="board">
+    <p id="prog"></p>
+    <div id="q" class="wait">…</div>
+    <div class="heardRow"><span id="heard"></span><span id="mark" aria-live="polite"></span></div>
+  </div>
+  <p class="mic" id="micB" data-s="wait" aria-live="polite"><span class="dot"></span><span id="micBText"></span></p>
+  <p class="note" id="testNote" hidden></p>
+  <div class="pad" id="pad" hidden></div>
+  <div class="row" style="margin-top:14px">
+    <button type="button" class="plain" id="skip" style="margin-top:0">모르겠어요</button>
+    <button type="button" class="plain" id="quit" style="margin-top:0">그만하기</button>
+  </div>
+</section>
+
+<section id="s-result" hidden>
+  <h2 id="rTitle"></h2>
+  <p id="rStory"></p>
+  <dl class="report" id="report"></dl>
+
+  <h3>문항별 채점표</h3>
+  <p class="muted">칸을 누르면 들린 답과 걸린 시간을 볼 수 있고, 잘못 인식된 채점은 고칠 수 있습니다.</p>
+  <div class="scroll"><table id="grid"></table></div>
+  <ul class="legend">
+    <li><b class="k-fast">○</b>빠르고 정확</li>
+    <li><b class="k-slow">△</b>느리지만 정확</li>
+    <li><b class="k-bad">✕</b>오답</li>
+    <li><b class="k-none">–</b>답하지 못함</li>
+  </ul>
+  <div id="detail" hidden></div>
+
+  <h3>단별 결과</h3>
+  <table class="dans" id="dansTable"></table>
+
+  <div id="practice"></div>
+
+  <button type="button" class="go" id="again">같은 설정으로 다시 검사</button>
+  <button type="button" class="plain" id="retryWeak" hidden>틀리거나 느린 문항만 다시 검사</button>
+  <button type="button" class="plain" id="home">설정으로 돌아가기</button>
+</section>
+
+</main>
+<script>
+(function(){
+'use strict';
+/*PURE*/
+var KD={'일':1,'이':2,'삼':3,'사':4,'오':5,'육':6,'칠':7,'팔':8,'구':9};
+var KN=['','일','이','삼','사','오','육','칠','팔','구'];
+var HOMO={'e':'이','o':'오','발':'팔','쌈':'삼','싸':'사','씹':'십','유':'육','치':'칠','파':'팔'};
+function parseNum(s){
+  if(!s) return null;
+  if(/^\d{1,3}$/.test(s)) return +s;
+  var d=function(c){return c==null?null:(KD[c]||+c);};
+  var m=s.match(/^([1-9일이삼사오육칠팔구])?십([1-9일이삼사오육칠팔구])?$/);
+  if(m) return (m[1]?d(m[1]):1)*10+(m[2]?d(m[2]):0);
+  if(/^[일이삼사오육칠팔구]$/.test(s)) return KD[s];
+  m=s.match(/^([1-9])0([일이삼사오육칠팔구])$/);
+  if(m) return +m[1]*10+KD[m[2]];
+  return null;
+}
+function clean(text){
+  return String(text).toLowerCase().replace(/[.,!?~·=×x*]/g,' ').trim().split(/\s+/).map(function(t){
+    t=t.replace(/(입니다|이에요|예요|요|은|는)$/,'').replace(/륙/g,'육');
+    return HOMO[t]||t;
+  }).filter(function(t){return /^[0-9일이삼사오육칠팔구십]+$/.test(t);}).join('');
+}
+function analyze(text,a,b,ans){
+  var s=clean(text), c=[];
+  if(!s) return {match:false,said:null};
+  var full=parseNum(s);
+  var pre=new RegExp('^(?:'+KN[a]+'|'+a+')(?:'+KN[b]+'|'+b+')'), m=s.match(pre), rest=null;
+  if(m&&s.length>m[0].length) rest=parseNum(s.slice(m[0].length));
+  if(full!=null) c.push(full);
+  if(rest!=null) c.push(rest);
+  return {match:c.indexOf(ans)>=0, said:rest!=null?rest:full};
+}
+/*END*/
+
+var $=function(s){return document.querySelector(s);};
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var LIMIT=10000;
+var cfg={dans:[2,3,4,5,6,7,8,9],count:'all',thr:3,mode:SR?'voice':'pad',name:''};
+var items=[],idx=0,cur=null,t0=0,shown=false,limitTimer=null,pendTimer=null,pendAt=0,firstSaidAt=0,run=0,padVal='',sel=null;
+
+function show(name){
+  ['setup','mic','test','result'].forEach(function(n){$('#s-'+n).hidden=n!==name;});
+  window.scrollTo(0,0);
+}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function sec(ms){return (ms/1000).toFixed(1)+'초';}
+function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+
+/* ---------- 음성 인식 ---------- */
+var ear={rec:null,me:null,active:false,want:false,h:null,startAt:0,quick:0};
+function earStart(h){ear.h=h;ear.want=true;ear.quick=0;earEnsure();}
+function earStop(){ear.want=false;ear.h=null;if(ear.me)ear.me.dead=true;if(ear.rec){try{ear.rec.abort();}catch(e){}}}
+function earFatal(code){var h=ear.h;earStop();if(h&&h.fatal)h.fatal(code);}
+function earEnsure(){
+  if(!ear.want||ear.active||!SR) return;
+  var rec=new SR(),me={dead:false};
+  rec.lang='ko-KR';rec.interimResults=true;rec.maxAlternatives=3;rec.continuous=false;
+  var live=function(){return !me.dead&&ear.want&&ear.h;};
+  rec.onstart=function(){ear.startAt=performance.now();if(live()&&ear.h.ready)ear.h.ready();};
+  rec.onspeechstart=function(){if(live()&&ear.h.speech)ear.h.speech();};
+  rec.onresult=function(ev){
+    if(!live()) return;
+    ear.quick=0;
+    var top='',last=ev.results[ev.results.length-1],alts=[],j;
+    for(var i=0;i<ev.results.length;i++) top+=' '+ev.results[i][0].transcript;
+    alts.push(top.trim());
+    for(j=1;j<last.length;j++) alts.push(last[j].transcript);
+    ear.h.heard(alts,!!last.isFinal);
+  };
+  rec.onerror=function(ev){
+    if(me.dead) return;
+    var e=ev.error;
+    if(e==='not-allowed'||e==='service-not-allowed'||e==='audio-capture'||e==='language-not-supported'||e==='network') earFatal(e);
+  };
+  rec.onend=function(){
+    if(ear.rec!==rec) return;
+    ear.active=false;ear.rec=null;ear.me=null;
+    if(!ear.want) return;
+    if(!me.dead){
+      ear.quick=(performance.now()-ear.startAt<400)?ear.quick+1:0;
+      if(ear.quick>=6){earFatal('unstable');return;}
+    }
+    setTimeout(earEnsure,60);
+  };
+  ear.rec=rec;ear.me=me;ear.active=true;ear.startAt=performance.now();
+  try{rec.start();}catch(err){ear.active=false;ear.rec=null;ear.me=null;setTimeout(earEnsure,250);}
+}
+function fatalText(code){
+  if(code==='audio-capture') return '마이크를 찾지 못했어요. 기기에 마이크가 연결되어 있는지 확인해 주세요.';
+  if(code==='network') return '음성 인식 서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.';
+  if(code==='language-not-supported') return '이 브라우저는 한국어 음성 인식을 지원하지 않아요.';
+  if(code==='unstable') return '음성 인식이 계속 끊겨요. 다른 브라우저에서 열어 보세요.';
+  return '마이크를 쓸 수 없어요. 이 화면에서 마이크가 막혀 있거나 허용되지 않았습니다. 브라우저에서 마이크를 허용하거나, 이 페이지를 파일로 받아 Chrome·Safari에서 열어 주세요.';
+}
+
+/* ---------- 설정 ---------- */
+function seg(id,key,after){
+  var box=$('#'+id);
+  var paint=function(){[].forEach.call(box.children,function(b){b.setAttribute('aria-pressed',String(b.dataset.v===String(cfg[key])));});};
+  box.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b||b.disabled) return;
+    cfg[key]=/^\d+$/.test(b.dataset.v)?+b.dataset.v:b.dataset.v;paint();if(after)after();
+  });
+  paint();
+}
+function paintBegin(){
+  var b=$('#begin');
+  b.textContent=cfg.mode==='voice'?'마이크 확인하기':'검사 시작';
+  b.disabled=!cfg.dans.length;
+}
+function initSetup(){
+  var box=$('#dans');
+  for(var a=2;a<=9;a++){var b=el('button','',a+'단');b.type='button';b.dataset.v=a;b.setAttribute('aria-pressed','true');box.appendChild(b);}
+  box.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b) return;
+    var v=+b.dataset.v,i=cfg.dans.indexOf(v);
+    if(i>=0)cfg.dans.splice(i,1);else cfg.dans.push(v);
+    b.setAttribute('aria-pressed',String(i<0));paintBegin();
+  });
+  seg('count','count');seg('thr','thr');seg('mode','mode',paintBegin);
+  if(!SR){$('#mode').children[0].disabled=true;$('#noSR').hidden=false;}
+  paintBegin();
+  $('#begin').addEventListener('click',function(){
+    cfg.name=$('#name').value.trim();
+    if(cfg.mode==='voice')micCheck();else startTest(buildList());
+  });
+}
+function buildList(){
+  var dans=shuffle(cfg.dans.slice());
+  var per=dans.map(function(a){var r=[];for(var b=1;b<=9;b++)r.push([a,b]);return shuffle(r);});
+  var all=[];
+  if(cfg.count==='all'||cfg.count>=dans.length*9) per.forEach(function(p){all=all.concat(p);});
+  else for(var i=0;all.length<cfg.count;i++){var p=per[i%per.length];if(p.length)all.push(p.pop());}
+  return shuffle(all);
+}
+
+/* ---------- 마이크 확인 ---------- */
+function micCheck(){
+  show('mic');
+  $('#micHeard').textContent='';$('#micErr').hidden=true;$('#micGo').disabled=true;
+  $('#micA').dataset.s='wait';$('#micAText').textContent='마이크 준비 중… 허용 창이 뜨면 “허용”을 눌러 주세요.';
+  earStart({
+    ready:function(){$('#micA').dataset.s='on';$('#micAText').textContent='듣고 있어요.';$('#micGo').disabled=false;},
+    heard:function(alts){
+      var n=parseNum(clean(alts[0]));
+      $('#micHeard').textContent=n!=null?'들린 숫자: '+n:'들린 말: '+alts[0];
+    },
+    fatal:function(code){
+      $('#micA').dataset.s='off';$('#micAText').textContent='마이크가 꺼져 있어요.';
+      $('#micErr').textContent=fatalText(code);$('#micErr').hidden=false;$('#micGo').disabled=true;
+    }
+  });
+}
+
+/* ---------- 검사 ---------- */
+function startTest(list){
+  run++;
+  items=list.map(function(p){return {a:p[0],b:p[1],ans:p[0]*p[1],status:null,rt:null,onset:null,said:null,heard:'',retries:0,fixed:false};});
+  idx=0;sel=null;$('#testNote').hidden=true;
+  show('test');ask();
+}
+function setMic(s){
+  var t={wait:'마이크 준비 중…',on:'듣고 있어요. 답을 말해 보세요.',retry:'잘 못 들었어요. 한 번 더 말해 주세요.',off:''};
+  $('#micB').dataset.s=s;$('#micBText').textContent=t[s];
+}
+function ask(){
+  cur=items[idx];shown=false;pendAt=0;firstSaidAt=0;clearTimeout(pendTimer);pendTimer=null;padVal='';
+  $('#prog').textContent=(idx+1)+' / '+items.length;
+  $('#q').textContent='…';$('#q').className='wait';
+  $('#heard').textContent='';$('#mark').textContent='';
+  var voice=cfg.mode==='voice';
+  $('#pad').hidden=voice;$('#micB').hidden=!voice;
+  if(voice){
+    setMic('wait');
+    earStart({ready:reveal,
+      speech:function(){if(shown&&cur&&cur.onset==null)cur.onset=Math.round(performance.now()-t0);},
+      heard:onHeard,
+      fatal:function(code){
+        cfg.mode='pad';
+        $('#testNote').textContent=fatalText(code)+' 남은 문항은 터치로 답합니다.';$('#testNote').hidden=false;
+        clearTimeout(limitTimer);ask();
+      }});
+  } else reveal();
+}
+function reveal(){
+  if(cfg.mode==='voice')setMic('on');
+  if(shown||!cur) return;
+  shown=true;
+  $('#q').textContent=cur.a+' × '+cur.b;$('#q').className='';
+  t0=performance.now();
+  clearTimeout(limitTimer);
+  limitTimer=setTimeout(function(){finish('none',LIMIT,null,'');},LIMIT);
+}
+function onHeard(alts,fin){
+  if(!shown||!cur||cur.status) return;
+  var now=performance.now(),match=false,said=null;
+  $('#heard').textContent=alts[0];
+  alts.forEach(function(t){var r=analyze(t,cur.a,cur.b,cur.ans);if(r.match)match=true;if(said==null&&r.said!=null)said=r.said;});
+  if(said!=null&&!firstSaidAt)firstSaidAt=now;
+  if(match){
+    if(!pendAt)pendAt=now;
+    var done=function(){finish('ok',pendAt-t0,cur.ans,alts[0]);};
+    if(fin)done();else if(!pendTimer)pendTimer=setTimeout(done,450);
+  } else {
+    clearTimeout(pendTimer);pendTimer=null;pendAt=0;
+    if(fin){
+      if(said!=null)finish('wrong',(firstSaidAt||now)-t0,said,alts[0]);
+      else{cur.retries++;firstSaidAt=0;setMic('retry');}
+    }
+  }
+}
+function finish(status,rt,said,heard){
+  if(!cur||cur.status) return;
+  clearTimeout(limitTimer);clearTimeout(pendTimer);pendTimer=null;
+  earStop();
+  cur.status=status;cur.rt=Math.max(0,Math.round(rt));cur.said=said;cur.heard=heard||'';
+  $('#heard').textContent=said!=null?String(said):'';
+  $('#mark').textContent=status==='ok'?'○':status==='wrong'?'✕':'–';
+  if(cfg.mode==='voice')setMic('off');
+  var r=run;
+  setTimeout(function(){if(r!==run) return;idx++;if(idx>=items.length)showResult();else ask();},status==='none'?450:650);
+}
+function initTest(){
+  var pad=$('#pad');
+  ['1','2','3','4','5','6','7','8','9','지우기','0','답하기'].forEach(function(k){
+    var b=el('button',k==='답하기'?'enter':k==='지우기'?'del':'',k);b.type='button';b.dataset.k=k;pad.appendChild(b);
+  });
+  pad.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b||!shown||!cur||cur.status) return;
+    var k=b.dataset.k;
+    if(k==='지우기')padVal=padVal.slice(0,-1);
+    else if(k==='답하기'){if(!padVal) return;var v=+padVal;finish(v===cur.ans?'ok':'wrong',performance.now()-t0,v,padVal);return;}
+    else if(padVal.length<3)padVal+=k;
+    $('#heard').textContent=padVal;
+  });
+  $('#skip').addEventListener('click',function(){if(shown&&cur&&!cur.status)finish('none',performance.now()-t0,null,'');});
+  $('#quit').addEventListener('click',function(){
+    run++;earStop();clearTimeout(limitTimer);clearTimeout(pendTimer);cur=null;
+    items=items.filter(function(i){return i.status;});
+    if(items.length)showResult();else show('setup');
+  });
+  $('#micGo').addEventListener('click',function(){earStop();startTest(buildList());});
+  $('#micPad').addEventListener('click',function(){earStop();cfg.mode='pad';$('#mode').children[0].setAttribute('aria-pressed','false');$('#mode').children[1].setAttribute('aria-pressed','true');paintBegin();startTest(buildList());});
+  $('#micBack').addEventListener('click',function(){earStop();show('setup');});
+}
+
+/* ---------- 결과 ---------- */
+function kind(i){
+  if(!i) return 'off';
+  if(i.status==='ok') return i.rt<=cfg.thr*1000?'fast':'slow';
+  return i.status==='wrong'?'bad':'none';
+}
+var MARK={fast:'○',slow:'△',bad:'✕',none:'–',off:''};
+var KIND={fast:'빠르고 정확',slow:'느리지만 정확',bad:'오답',none:'답하지 못함'};
+function median(a){if(!a.length) return 0;a=a.slice().sort(function(x,y){return x-y;});var m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+function showResult(){cur=null;earStop();show('result');renderResult();}
+function renderResult(){
+  var n=items.length,ok=items.filter(function(i){return i.status==='ok';});
+  var fast=items.filter(function(i){return kind(i)==='fast';});
+  var total=items.reduce(function(s,i){return s+i.rt;},0);
+  var cpm=total?ok.length/(total/60000):0;
+  $('#rTitle').textContent=(cfg.name?cfg.name+'의 ':'')+'구구단 결과';
+
+  var rows=[
+    ['정확도',Math.round(ok.length/n*100)+'%',n+'문항 중 '+ok.length+'개 정답'],
+    ['1분당 정답 수',cpm.toFixed(1)+'개',''],
+    ['정답 반응시간 (중앙값)',ok.length?sec(median(ok.map(function(i){return i.rt;}))):'–',''],
+    [cfg.thr+'초 안에 맞힌 문항',Math.round(fast.length/n*100)+'%',fast.length+'개']
+  ];
+  var dl=$('#report');dl.textContent='';
+  rows.forEach(function(r){
+    var d=el('div'),dd=el('dd','',r[1]);
+    d.appendChild(el('dt','',r[0]));if(r[2])dd.appendChild(el('small','',r[2]));d.appendChild(dd);dl.appendChild(d);
+  });
+
+  var dans=[];items.forEach(function(i){if(dans.indexOf(i.a)<0)dans.push(i.a);});dans.sort();
+  var by={};items.forEach(function(i){by[i.a+'x'+i.b]=i;});
+
+  var g=$('#grid');g.textContent='';
+  var hr=el('tr');hr.appendChild(el('th','','×'));
+  for(var b=1;b<=9;b++){var th=el('th','',String(b));th.scope='col';hr.appendChild(th);}
+  g.appendChild(hr);
+  dans.forEach(function(a){
+    var tr=el('tr'),rh=el('th','',a+'단');rh.scope='row';tr.appendChild(rh);
+    for(var b=1;b<=9;b++){
+      var it=by[a+'x'+b],k=kind(it),td=el('td'),bt=el('button',k,MARK[k]);
+      bt.type='button';
+      if(it){bt.dataset.key=a+'x'+b;bt.setAttribute('aria-label',a+' 곱하기 '+b+', '+KIND[k]);bt.setAttribute('aria-pressed',String(sel===a+'x'+b));}
+      else{bt.disabled=true;bt.setAttribute('aria-label',a+' 곱하기 '+b+', 출제 안 됨');}
+      td.appendChild(bt);tr.appendChild(td);
+    }
+    g.appendChild(tr);
+  });
+  renderDetail(by[sel]);
+
+  var dt=$('#dansTable');dt.textContent='';
+  var h=el('tr');['단','정답','빠르고 정확','평균 시간'].forEach(function(t){h.appendChild(el('th','',t));});dt.appendChild(h);
+  var weak=[],slowD=[];
+  dans.forEach(function(a){
+    var its=items.filter(function(i){return i.a===a;}),o=its.filter(function(i){return i.status==='ok';});
+    var f=its.filter(function(i){return kind(i)==='fast';}).length;
+    var avg=o.length?sec(o.reduce(function(s,i){return s+i.rt;},0)/o.length):'–';
+    var tr=el('tr');[a+'단',o.length+'/'+its.length,f+'/'+its.length,avg].forEach(function(t){tr.appendChild(el('td','',t));});dt.appendChild(tr);
+    if(o.length/its.length<0.8)weak.push(a+'단');else if(f/its.length<0.7)slowD.push(a+'단');
+  });
+  var story=[];
+  if(weak.length)story.push(weak.join(', ')+'은 틀린 문항이 많아 다시 외워야 합니다.');
+  if(slowD.length)story.push(slowD.join(', ')+'은 정확하지만 답이 느려, 빠르게 말하는 연습이 필요합니다.');
+  if(!story.length)story.push('검사한 단을 모두 빠르고 정확하게 답했습니다.');
+  $('#rStory').textContent=story.join(' ');
+
+  var pr=$('#practice');pr.textContent='';
+  var badL=items.filter(function(i){var k=kind(i);return k==='bad'||k==='none';});
+  var slowL=items.filter(function(i){return kind(i)==='slow';});
+  var list=function(title,arr,cls){
+    if(!arr.length) return;
+    pr.appendChild(el('h3','',title));
+    var ul=el('ul','facts '+cls);
+    arr.slice().sort(function(x,y){return x.a-y.a||x.b-y.b;}).forEach(function(i){ul.appendChild(el('li','',i.a+'×'+i.b));});
+    pr.appendChild(ul);
+  };
+  list('다시 익힐 문항',badL,'bad');
+  list('더 빠르게 연습할 문항',slowL,'slow');
+  $('#retryWeak').hidden=!(badL.length+slowL.length);
+}
+function renderDetail(it){
+  var d=$('#detail');d.textContent='';
+  if(!it){d.hidden=true;return;}
+  d.hidden=false;
+  var k=kind(it);
+  d.appendChild(el('strong','',it.a+' × '+it.b+' = '+it.ans));
+  d.appendChild(el('p','',KIND[k]+(it.fixed?' (직접 고침)':'')));
+  d.appendChild(el('p','muted',it.said!=null?'들린 답: '+it.said+(it.heard&&it.heard!==String(it.said)?' (“'+it.heard+'”)':''):'들린 답 없음'));
+  d.appendChild(el('p','muted','걸린 시간: '+sec(it.rt)+(it.onset!=null?', 말 시작까지 '+sec(it.onset):'')));
+  if(it.retries)d.appendChild(el('p','muted','다시 말한 횟수: '+it.retries+'번'));
+  var b=el('button','plain',it.status==='ok'?'오답으로 고치기':'정답으로 고치기');b.type='button';
+  b.addEventListener('click',function(){it.status=it.status==='ok'?'wrong':'ok';it.fixed=true;renderResult();});
+  d.appendChild(b);
+}
+function initResult(){
+  $('#grid').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-key]');if(!b) return;
+    sel=sel===b.dataset.key?null:b.dataset.key;renderResult();
+  });
+  $('#again').addEventListener('click',function(){startTest(buildList());});
+  $('#retryWeak').addEventListener('click',function(){
+    var l=items.filter(function(i){return kind(i)!=='fast';}).map(function(i){return [i.a,i.b];});
+    startTest(shuffle(l));
+  });
+  $('#home').addEventListener('click',function(){show('setup');});
+}
+
+initSetup();initTest();initResult();
+})();
+</script>
+</body>
+</html>
