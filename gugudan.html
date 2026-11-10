@@ -249,6 +249,7 @@ function analyze(text,a,b,ans){
   if(!s) return {match:false,said:null};
   var full=parseNum(s);
   var pre=new RegExp('^(?:'+KN[a]+'|'+a+')(?:'+KN[b]+'|'+b+')'), m=s.match(pre), rest=null;
+  if(m&&s.length===m[0].length&&full!==ans) return {match:false,said:null};
   if(m&&s.length>m[0].length) rest=parseNum(s.slice(m[0].length));
   if(full!=null) c.push(full);
   if(rest!=null) c.push(rest);
@@ -271,43 +272,44 @@ function sec(ms){return (ms/1000).toFixed(1)+'초';}
 function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
 
 /* ---------- 음성 인식 ---------- */
-var ear={rec:null,me:null,active:false,want:false,h:null,startAt:0,quick:0};
-function earStart(h){ear.h=h;ear.want=true;ear.quick=0;earEnsure();}
-function earStop(){ear.want=false;ear.h=null;if(ear.me)ear.me.dead=true;if(ear.rec){try{ear.rec.abort();}catch(e){}}}
+/* 마이크는 한 번 켜서 검사가 끝날 때까지 유지하고, 문항마다 듣는 대상만 바꾼다 */
+var ear={rec:null,running:false,want:false,h:null,base:0,count:0,startAt:0,quick:0,gen:0};
+function earListen(h){ear.h=h;ear.base=ear.count;ear.want=true;if(ear.running){if(h.ready)h.ready();}else earEnsure();}
+function earMute(){ear.h=null;ear.base=ear.count;}
+function earStop(){ear.want=false;ear.h=null;ear.gen++;var r=ear.rec;ear.rec=null;ear.running=false;if(r){try{r.abort();}catch(e){}}}
 function earFatal(code){var h=ear.h;earStop();if(h&&h.fatal)h.fatal(code);}
 function earEnsure(){
-  if(!ear.want||ear.active||!SR) return;
-  var rec=new SR(),me={dead:false};
-  rec.lang='ko-KR';rec.interimResults=true;rec.maxAlternatives=3;rec.continuous=false;
-  var live=function(){return !me.dead&&ear.want&&ear.h;};
-  rec.onstart=function(){ear.startAt=performance.now();if(live()&&ear.h.ready)ear.h.ready();};
-  rec.onspeechstart=function(){if(live()&&ear.h.speech)ear.h.speech();};
+  if(!ear.want||ear.rec||!SR) return;
+  var rec=new SR(),gen=ear.gen;
+  rec.lang='ko-KR';rec.interimResults=true;rec.maxAlternatives=3;rec.continuous=true;
+  ear.rec=rec;ear.base=0;ear.count=0;ear.startAt=performance.now();
+  rec.onstart=function(){if(gen!==ear.gen) return;ear.running=true;if(ear.h&&ear.h.ready)ear.h.ready();};
   rec.onresult=function(ev){
-    if(!live()) return;
-    ear.quick=0;
-    var top='',last=ev.results[ev.results.length-1],alts=[],j;
-    for(var i=0;i<ev.results.length;i++) top+=' '+ev.results[i][0].transcript;
+    if(gen!==ear.gen) return;
+    ear.count=ev.results.length;ear.quick=0;
+    var h=ear.h;if(!h) return;
+    var top='',alts=[],last=null;
+    for(var i=ear.base;i<ev.results.length;i++){top+=' '+ev.results[i][0].transcript;last=ev.results[i];}
+    if(!last) return;
     alts.push(top.trim());
-    for(j=1;j<last.length;j++) alts.push(last[j].transcript);
-    ear.h.heard(alts,!!last.isFinal);
+    for(var j=1;j<last.length;j++) alts.push(last[j].transcript);
+    h.heard(alts,!!last.isFinal);
+    if(last.isFinal&&ear.h===h) ear.base=ev.results.length;
   };
   rec.onerror=function(ev){
-    if(me.dead) return;
+    if(gen!==ear.gen) return;
     var e=ev.error;
     if(e==='not-allowed'||e==='service-not-allowed'||e==='audio-capture'||e==='language-not-supported'||e==='network') earFatal(e);
   };
   rec.onend=function(){
-    if(ear.rec!==rec) return;
-    ear.active=false;ear.rec=null;ear.me=null;
+    if(gen!==ear.gen||ear.rec!==rec) return;
+    ear.rec=null;ear.running=false;
     if(!ear.want) return;
-    if(!me.dead){
-      ear.quick=(performance.now()-ear.startAt<400)?ear.quick+1:0;
-      if(ear.quick>=6){earFatal('unstable');return;}
-    }
-    setTimeout(earEnsure,60);
+    ear.quick=(performance.now()-ear.startAt<1500)?ear.quick+1:0;
+    if(ear.quick>=5){earFatal('unstable');return;}
+    setTimeout(earEnsure,100);
   };
-  ear.rec=rec;ear.me=me;ear.active=true;ear.startAt=performance.now();
-  try{rec.start();}catch(err){ear.active=false;ear.rec=null;ear.me=null;setTimeout(earEnsure,250);}
+  try{rec.start();}catch(err){ear.rec=null;setTimeout(earEnsure,300);}
 }
 function fatalText(code){
   if(code==='audio-capture') return '마이크를 찾지 못했어요. 기기에 마이크가 연결되어 있는지 확인해 주세요.';
@@ -363,7 +365,7 @@ function micCheck(){
   show('mic');
   $('#micHeard').textContent='';$('#micErr').hidden=true;$('#micGo').disabled=true;
   $('#micA').dataset.s='wait';$('#micAText').textContent='마이크 준비 중… 허용 창이 뜨면 “허용”을 눌러 주세요.';
-  earStart({
+  earListen({
     ready:function(){$('#micA').dataset.s='on';$('#micAText').textContent='듣고 있어요.';$('#micGo').disabled=false;},
     heard:function(alts){
       var n=parseNum(clean(alts[0]));
@@ -388,7 +390,7 @@ function setMic(s){
   $('#micB').dataset.s=s;$('#micBText').textContent=t[s];
 }
 function ask(){
-  cur=items[idx];shown=false;pendAt=0;firstSaidAt=0;clearTimeout(pendTimer);pendTimer=null;padVal='';
+  cur=items[idx];shown=false;pendAt=0;firstSaidAt=0;clearTimeout(pendTimer);pendTimer=null;clearTimeout(wrongTimer);wrongTimer=null;padVal='';
   $('#prog').textContent=(idx+1)+' / '+items.length;
   $('#q').textContent='…';$('#q').className='wait';
   $('#heard').textContent='';$('#mark').textContent='';
@@ -396,8 +398,7 @@ function ask(){
   $('#pad').hidden=voice;$('#micB').hidden=!voice;
   if(voice){
     setMic('wait');
-    earStart({ready:reveal,
-      speech:function(){if(shown&&cur&&cur.onset==null)cur.onset=Math.round(performance.now()-t0);},
+    earListen({ready:reveal,
       heard:onHeard,
       fatal:function(code){
         cfg.mode='pad';
@@ -415,34 +416,39 @@ function reveal(){
   clearTimeout(limitTimer);
   limitTimer=setTimeout(function(){finish('none',LIMIT,null,'');},LIMIT);
 }
+var wrongTimer=null;
 function onHeard(alts,fin){
   if(!shown||!cur||cur.status) return;
   var now=performance.now(),match=false,said=null;
+  if(cur.onset==null)cur.onset=Math.round(now-t0);
   $('#heard').textContent=alts[0];
   alts.forEach(function(t){var r=analyze(t,cur.a,cur.b,cur.ans);if(r.match)match=true;if(said==null&&r.said!=null)said=r.said;});
   if(said!=null&&!firstSaidAt)firstSaidAt=now;
+  clearTimeout(wrongTimer);wrongTimer=null;
   if(match){
+    /* 중간 인식 결과에서 정답이 들리면 최종 확정을 기다리지 않고 바로 채점 */
     if(!pendAt)pendAt=now;
     var done=function(){finish('ok',pendAt-t0,cur.ans,alts[0]);};
-    if(fin)done();else if(!pendTimer)pendTimer=setTimeout(done,450);
+    if(fin)done();else if(!pendTimer)pendTimer=setTimeout(done,120);
   } else {
     clearTimeout(pendTimer);pendTimer=null;pendAt=0;
-    if(fin){
-      if(said!=null)finish('wrong',(firstSaidAt||now)-t0,said,alts[0]);
-      else{cur.retries++;firstSaidAt=0;setMic('retry');}
-    }
+    if(said!=null){
+      /* 오답은 0.7초 동안 들린 말이 바뀌지 않으면 채점 */
+      var w=function(){finish('wrong',(firstSaidAt||now)-t0,said,alts[0]);};
+      if(fin)w();else wrongTimer=setTimeout(w,700);
+    } else if(fin){cur.retries++;firstSaidAt=0;setMic('retry');}
   }
 }
 function finish(status,rt,said,heard){
   if(!cur||cur.status) return;
-  clearTimeout(limitTimer);clearTimeout(pendTimer);pendTimer=null;
-  earStop();
+  clearTimeout(limitTimer);clearTimeout(pendTimer);pendTimer=null;clearTimeout(wrongTimer);wrongTimer=null;
+  earMute();
   cur.status=status;cur.rt=Math.max(0,Math.round(rt));cur.said=said;cur.heard=heard||'';
   $('#heard').textContent=said!=null?String(said):'';
   $('#mark').textContent=status==='ok'?'○':status==='wrong'?'✕':'–';
   if(cfg.mode==='voice')setMic('off');
   var r=run;
-  setTimeout(function(){if(r!==run) return;idx++;if(idx>=items.length)showResult();else ask();},status==='none'?450:650);
+  setTimeout(function(){if(r!==run) return;idx++;if(idx>=items.length)showResult();else ask();},status==='ok'?300:status==='wrong'?700:450);
 }
 function initTest(){
   var pad=$('#pad');
@@ -463,7 +469,7 @@ function initTest(){
     items=items.filter(function(i){return i.status;});
     if(items.length)showResult();else show('setup');
   });
-  $('#micGo').addEventListener('click',function(){earStop();startTest(buildList());});
+  $('#micGo').addEventListener('click',function(){startTest(buildList());});
   $('#micPad').addEventListener('click',function(){earStop();cfg.mode='pad';$('#mode').children[0].setAttribute('aria-pressed','false');$('#mode').children[1].setAttribute('aria-pressed','true');paintBegin();startTest(buildList());});
   $('#micBack').addEventListener('click',function(){earStop();show('setup');});
 }
@@ -555,7 +561,7 @@ function renderDetail(it){
   d.appendChild(el('strong','',it.a+' × '+it.b+' = '+it.ans));
   d.appendChild(el('p','',KIND[k]+(it.fixed?' (직접 고침)':'')));
   d.appendChild(el('p','muted',it.said!=null?'들린 답: '+it.said+(it.heard&&it.heard!==String(it.said)?' (“'+it.heard+'”)':''):'들린 답 없음'));
-  d.appendChild(el('p','muted','걸린 시간: '+sec(it.rt)+(it.onset!=null?', 말 시작까지 '+sec(it.onset):'')));
+  d.appendChild(el('p','muted','걸린 시간: '+sec(it.rt)+(it.onset!=null?', 첫 소리 인식까지 '+sec(it.onset):'')));
   if(it.retries)d.appendChild(el('p','muted','다시 말한 횟수: '+it.retries+'번'));
   var b=el('button','plain',it.status==='ok'?'오답으로 고치기':'정답으로 고치기');b.type='button';
   b.addEventListener('click',function(){it.status=it.status==='ok'?'wrong':'ok';it.fixed=true;renderResult();});
