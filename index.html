@@ -23,6 +23,14 @@
     .chart-container { width: 100%; height: 380px; margin-bottom: 25px; border-radius: 8px; overflow: hidden; display: none; border: 1px solid #e2e8f0; background: #fff; }
     
     .info-group { display: flex; gap: 8px; align-items: center; }
+    /* 단계 선택 한 줄 배치: 세부 단계 + 시작 버튼 (진행 시간은 풀이 중에만 표시) */
+    .ctrl-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ctrl-row > select { flex: 1 1 260px; }
+    .ctrl-item { display: flex; align-items: center; gap: 6px; }
+    .start-inline { display: inline-flex; }
+    .start-btn { width: auto; margin-top: 0; padding: 8px 26px; white-space: nowrap; }
+    .timer-group { display: none; margin-left: auto; }
+    .timer-group.show { display: flex; }
     select, input { padding: 8px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; }
     .action-btn, .submit-btn { background-color: #ea580c; color: white; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
     .action-btn:hover, .submit-btn:hover { background-color: #c2410c; }
@@ -348,21 +356,14 @@
 
     <div id="screen-add" class="screen">
       <div id="add-curriculumControls" style="background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 6px;">
-          
-          <div style="display:flex; gap: 15px; align-items: center; flex-grow: 1;">
-            <label style="color: #16a34a;"><b>세부 단계 : </b></label>
-            <select id="add-subLevel" style="font-size: 15px; flex-grow: 1; max-width: 400px;"></select>
-          </div>
-
-          <div class="info-group">
+        <div class="ctrl-row">
+          <label style="color: #16a34a; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="add-subLevel" style="font-size: 15px; flex-grow: 1; max-width: 460px; min-width: 0;"></select>
+          <span id="add-startSection" class="start-inline"><button class="submit-btn start-btn" id="add-startBtn" style="background-color: #16a34a;" onclick="startAddQuiz()">덧셈 시작</button></span>
+          <div class="info-group timer-group" id="add-timerGroup">
             <label style="color: #ea580c;"><b>진행 시간 : </b></label>
             <span class="timer-display" id="add-timerDisplay">00:00</span>
           </div>
-        </div>
-
-        <div id="add-startSection" style="text-align: center;">
-          <button class="submit-btn" id="add-startBtn" style="background-color: #16a34a; width: auto; padding: 8px 60px;" onclick="startAddQuiz()">덧셈 진단 시작</button>
         </div>
       </div>
 
@@ -384,21 +385,14 @@
    
     <div id="screen-sub" class="screen">
       <div id="sub-curriculumControls" style="background: #fffbeb; border: 2px solid #fde68a; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 6px;">
-
-          <div style="display:flex; gap: 15px; align-items: center; flex-grow: 1;">
-            <label style="color: #b45309;"><b>세부 단계 : </b></label>
-            <select id="sub-subLevel" style="font-size: 15px; flex-grow: 1; max-width: 400px;"></select>
-          </div>
-
-          <div class="info-group">
+        <div class="ctrl-row">
+          <label style="color: #b45309; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="sub-subLevel" style="font-size: 15px; flex-grow: 1; max-width: 460px; min-width: 0;"></select>
+          <span id="sub-startSection" class="start-inline"><button class="submit-btn start-btn" id="sub-startBtn" style="background-color: #b45309;" onclick="startSubQuiz()">뺄셈 시작</button></span>
+          <div class="info-group timer-group" id="sub-timerGroup">
             <label style="color: #ea580c;"><b>진행 시간 : </b></label>
             <span class="timer-display" id="sub-timerDisplay">00:00</span>
           </div>
-        </div>
-
-        <div id="sub-startSection" style="text-align: center;">
-          <button class="submit-btn" id="sub-startBtn" style="background-color: #b45309; width: auto; padding: 8px 60px;" onclick="startSubQuiz()">뺄셈 진단 시작</button>
         </div>
       </div>
 
@@ -420,32 +414,21 @@
 
     <div id="screen-div" class="screen">  
     <div id="div-curriculumControls" style="background: #fdf4ff; border: 2px solid #fbcfe8; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 6px;">
-      
-      <div style="display:flex; gap: 15px; align-items: center; flex-grow: 1;">
-        <label style="color: #be185d;"><b>세부 단계 : </b></label>
-        <select id="div-subLevel" style="font-size: 15px; flex-grow: 1; max-width: 400px;"></select>
-      </div>
-
-      <div>
-        <label style="color: #be185d;"><b>입력 방향 : </b></label>
+        <div class="ctrl-row">
+          <label style="color: #be185d; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="div-subLevel" style="font-size: 15px; flex-grow: 1; max-width: 460px; min-width: 0;"></select>
+          <div class="ctrl-item"><label style="color: #be185d;"><b>입력 방향 : </b></label>
         <select id="div-inputDir">
           <option value="ltr" selected>앞에서부터(몫부터)</option>
           <option value="rtl">뒤에서부터(나머지부터)</option>
-        </select>
+        </select></div>
+          <span id="div-startSection" class="start-inline"><button class="submit-btn start-btn" id="div-startBtn" style="background-color: #be185d;" onclick="startDivQuiz()">나눗셈 시작</button></span>
+          <div class="info-group timer-group" id="div-timerGroup">
+            <label style="color: #ea580c;"><b>진행 시간 : </b></label>
+            <span class="timer-display" id="div-timerDisplay">00:00</span>
+          </div>
+        </div>
       </div>
-
-      <div class="info-group">
-        <label style="color: #ea580c;"><b>진행 시간 : </b></label>
-        <span class="timer-display" id="div-timerDisplay">00:00</span>
-      </div>
-    </div>
-
-    <div id="div-startSection" style="text-align: center;">
-      <button class="submit-btn" id="div-startBtn" style="background-color: #be185d; width: auto; padding: 8px 60px;" onclick="startDivQuiz()">나눗셈 진단 시작</button>
-    </div>
-    
-  </div>
 
   <div class="grid" id="div-quizGrid" style="display: none;"></div>
   <div style="display: flex; gap: 8px; margin-top: 20px;">
@@ -462,12 +445,10 @@
 
     <div id="screen-frac3" class="screen">
       <div id="frac3-curriculumControls" style="background: #fef9c3; border: 2px solid #fde047; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
-          <label style="color: #a16207;"><b>세부 단계 : </b></label>
-          <select id="frac3-subLevel" data-op="3학년 분수·소수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
-        </div>
-        <div id="frac3-startSection" style="text-align: center;">
-          <button class="submit-btn" id="frac3-startBtn" style="background-color: #a16207; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac3')">3학년 분수·소수 진단 시작</button>
+        <div class="ctrl-row">
+          <label style="color: #a16207; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="frac3-subLevel" data-op="3학년 분수·소수" style="font-size: 15px; flex-grow: 1; max-width: 520px; min-width: 0;"></select>
+          <span id="frac3-startSection" class="start-inline"><button class="submit-btn start-btn" id="frac3-startBtn" style="background-color: #a16207;" onclick="startFracQuiz('frac3')">3학년 분수·소수 시작</button></span>
         </div>
       </div>
       <iframe id="frac3-frame" title="3학년 분수·소수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
@@ -475,12 +456,10 @@
 
     <div id="screen-frac4" class="screen">
       <div id="frac4-curriculumControls" style="background: #fce7f3; border: 2px solid #f9a8d4; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
-          <label style="color: #be185d;"><b>세부 단계 : </b></label>
-          <select id="frac4-subLevel" data-op="4학년 분수·소수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
-        </div>
-        <div id="frac4-startSection" style="text-align: center;">
-          <button class="submit-btn" id="frac4-startBtn" style="background-color: #be185d; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac4')">4학년 분수·소수 진단 시작</button>
+        <div class="ctrl-row">
+          <label style="color: #be185d; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="frac4-subLevel" data-op="4학년 분수·소수" style="font-size: 15px; flex-grow: 1; max-width: 520px; min-width: 0;"></select>
+          <span id="frac4-startSection" class="start-inline"><button class="submit-btn start-btn" id="frac4-startBtn" style="background-color: #be185d;" onclick="startFracQuiz('frac4')">4학년 분수·소수 시작</button></span>
         </div>
       </div>
       <iframe id="frac4-frame" title="4학년 분수·소수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
@@ -489,12 +468,10 @@
     <!-- 5학년 1학기 1단원 자연수의 혼합 계산(M511) — 문제 화면은 51 폴더, 검토용 화면: 51/m511-review.html -->
     <div id="screen-mix5" class="screen">
       <div id="mix5-curriculumControls" style="background: #ede9fe; border: 2px solid #c4b5fd; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
-          <label style="color: #6d28d9;"><b>세부 단계 : </b></label>
-          <select id="mix5-subLevel" data-op="혼합계산" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
-        </div>
-        <div id="mix5-startSection" style="text-align: center;">
-          <button class="submit-btn" id="mix5-startBtn" style="background-color: #6d28d9; width: auto; padding: 8px 60px;" onclick="startFracQuiz('mix5')">혼합계산 진단 시작</button>
+        <div class="ctrl-row">
+          <label style="color: #6d28d9; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="mix5-subLevel" data-op="혼합계산" style="font-size: 15px; flex-grow: 1; max-width: 520px; min-width: 0;"></select>
+          <span id="mix5-startSection" class="start-inline"><button class="submit-btn start-btn" id="mix5-startBtn" style="background-color: #6d28d9;" onclick="startFracQuiz('mix5')">혼합계산 시작</button></span>
         </div>
       </div>
       <iframe id="mix5-frame" title="혼합계산 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
@@ -503,12 +480,10 @@
     <!-- 5학년 분수: 1학기 약수와 배수(M512) → 약분과 통분(M514) → 분수의 덧셈과 뺄셈(M515), 2학기 분수의 곱셈(M522) — 문제 화면은 frac 폴더, 검토용 화면: frac/m5f-review.html -->
     <div id="screen-frac5" class="screen">
       <div id="frac5-curriculumControls" style="background: #dcfce7; border: 2px solid #86efac; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
-          <label style="color: #15803d;"><b>세부 단계 : </b></label>
-          <select id="frac5-subLevel" data-op="5학년 분수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
-        </div>
-        <div id="frac5-startSection" style="text-align: center;">
-          <button class="submit-btn" id="frac5-startBtn" style="background-color: #15803d; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac5')">5학년 분수 진단 시작</button>
+        <div class="ctrl-row">
+          <label style="color: #15803d; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="frac5-subLevel" data-op="5학년 분수" style="font-size: 15px; flex-grow: 1; max-width: 520px; min-width: 0;"></select>
+          <span id="frac5-startSection" class="start-inline"><button class="submit-btn start-btn" id="frac5-startBtn" style="background-color: #15803d;" onclick="startFracQuiz('frac5')">5학년 분수 시작</button></span>
         </div>
       </div>
       <iframe id="frac5-frame" title="5학년 분수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
@@ -517,12 +492,10 @@
     <!-- 5학년 소수: 2학기 4단원 소수의 곱셈(M524) — 문제 화면은 frac 폴더, 검토용 화면: frac/m524-review.html -->
     <div id="screen-dec5" class="screen">
       <div id="dec5-curriculumControls" style="background: #ccfbf1; border: 2px solid #5eead4; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
-          <label style="color: #0f766e;"><b>세부 단계 : </b></label>
-          <select id="dec5-subLevel" data-op="5학년 소수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
-        </div>
-        <div id="dec5-startSection" style="text-align: center;">
-          <button class="submit-btn" id="dec5-startBtn" style="background-color: #0f766e; width: auto; padding: 8px 60px;" onclick="startFracQuiz('dec5')">5학년 소수 진단 시작</button>
+        <div class="ctrl-row">
+          <label style="color: #0f766e; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="dec5-subLevel" data-op="5학년 소수" style="font-size: 15px; flex-grow: 1; max-width: 520px; min-width: 0;"></select>
+          <span id="dec5-startSection" class="start-inline"><button class="submit-btn start-btn" id="dec5-startBtn" style="background-color: #0f766e;" onclick="startFracQuiz('dec5')">5학년 소수 시작</button></span>
         </div>
       </div>
       <iframe id="dec5-frame" title="5학년 소수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
@@ -541,9 +514,9 @@
 
     <!-- 🗣️ 말로 푸는 구구단: 소리 내어 답하며 정확도·빠르기를 재는 연습 — 화면은 gugudan.html 하나(시트 저장 없음, 결과는 화면에서 바로 확인) -->
     <div id="screen-gugu" class="screen">
-      <div id="gugu-curriculumControls" style="background: #e7f0ea; border: 2px solid #86b39b; border-radius: 8px; padding: 12px 20px; margin-bottom: 12px; text-align: center;">
-        <div style="font-size: 14px; color: #1e4a3c; margin-bottom: 10px;"><b>구구단을 말로 답해요</b> · 2~9단 가운데 고른 단을 소리 내어 답하면 정확도와 빠르기를 함께 재요<br><small style="color:#586a61;">마이크 허용 창이 뜨면 “허용”을 눌러 주세요. 교실이 시끄러우면 터치·키보드로도 답할 수 있어요.</small></div>
-        <button class="submit-btn" id="gugu-startBtn" style="background-color: #1e4a3c; width: auto; padding: 8px 60px;" onclick="startGugudan()">구구단 시작</button>
+      <div id="gugu-curriculumControls" style="background: #e7f0ea; border: 1px solid #b7d1c2; border-radius: 8px; padding: 10px 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
+        <div style="font-size: 14px; color: #1e4a3c;"><b>구구단 말하기</b> · 소리 내어 답하고 정확도·빠르기 확인</div>
+        <button class="submit-btn" id="gugu-startBtn" style="background-color: #1e4a3c; width: auto; padding: 8px 36px; margin: 0;" onclick="startGugudan()">시작</button>
       </div>
       <iframe id="gugu-frame" title="말로 푸는 구구단" allow="microphone" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
     </div>
@@ -551,12 +524,10 @@
     <!-- 6학년 분수: 1학기 분수의 나눗셈(M611) → 2학기 분수의 나눗셈(M621) — 문제 화면은 frac 폴더, 검토용 화면: frac/m6f-review.html -->
     <div id="screen-frac6" class="screen">
       <div id="frac6-curriculumControls" style="background: #ffe4e6; border: 2px solid #fda4af; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
-          <label style="color: #be123c;"><b>세부 단계 : </b></label>
-          <select id="frac6-subLevel" data-op="6학년 분수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
-        </div>
-        <div id="frac6-startSection" style="text-align: center;">
-          <button class="submit-btn" id="frac6-startBtn" style="background-color: #be123c; width: auto; padding: 8px 60px;" onclick="startFracQuiz('frac6')">6학년 분수 진단 시작</button>
+        <div class="ctrl-row">
+          <label style="color: #be123c; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="frac6-subLevel" data-op="6학년 분수" style="font-size: 15px; flex-grow: 1; max-width: 520px; min-width: 0;"></select>
+          <span id="frac6-startSection" class="start-inline"><button class="submit-btn start-btn" id="frac6-startBtn" style="background-color: #be123c;" onclick="startFracQuiz('frac6')">6학년 분수 시작</button></span>
         </div>
       </div>
       <iframe id="frac6-frame" title="6학년 분수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
@@ -565,12 +536,10 @@
     <!-- 6학년 소수: 1학기 3단원 소수의 나눗셈(M613) → 2학기 2단원 소수의 나눗셈(M622) — 문제 화면은 frac 폴더, 검토용 화면: frac/m6d-review.html -->
     <div id="screen-dec6" class="screen">
       <div id="dec6-curriculumControls" style="background: #e0e7ff; border: 2px solid #a5b4fc; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
-          <label style="color: #4338ca;"><b>세부 단계 : </b></label>
-          <select id="dec6-subLevel" data-op="6학년 소수" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
-        </div>
-        <div id="dec6-startSection" style="text-align: center;">
-          <button class="submit-btn" id="dec6-startBtn" style="background-color: #4338ca; width: auto; padding: 8px 60px;" onclick="startFracQuiz('dec6')">6학년 소수 진단 시작</button>
+        <div class="ctrl-row">
+          <label style="color: #4338ca; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="dec6-subLevel" data-op="6학년 소수" style="font-size: 15px; flex-grow: 1; max-width: 520px; min-width: 0;"></select>
+          <span id="dec6-startSection" class="start-inline"><button class="submit-btn start-btn" id="dec6-startBtn" style="background-color: #4338ca;" onclick="startFracQuiz('dec6')">6학년 소수 시작</button></span>
         </div>
       </div>
       <iframe id="dec6-frame" title="6학년 소수 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
@@ -579,12 +548,10 @@
     <!-- 5학년 2학기 1단원 수의 범위와 어림하기(M521) — 문제 화면은 52 폴더, 검토용 화면: 52/m521-review.html -->
     <div id="screen-range5" class="screen">
       <div id="range5-curriculumControls" style="background: #fff7ed; border: 2px solid #fdba74; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display:flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
-          <label style="color: #c2410c;"><b>세부 단계 : </b></label>
-          <select id="range5-subLevel" data-op="수의 범위·어림" style="font-size: 15px; flex-grow: 1; max-width: 520px;"></select>
-        </div>
-        <div id="range5-startSection" style="text-align: center;">
-          <button class="submit-btn" id="range5-startBtn" style="background-color: #c2410c; width: auto; padding: 8px 60px;" onclick="startFracQuiz('range5')">수의 범위·어림 진단 시작</button>
+        <div class="ctrl-row">
+          <label style="color: #c2410c; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="range5-subLevel" data-op="수의 범위·어림" style="font-size: 15px; flex-grow: 1; max-width: 520px; min-width: 0;"></select>
+          <span id="range5-startSection" class="start-inline"><button class="submit-btn start-btn" id="range5-startBtn" style="background-color: #c2410c;" onclick="startFracQuiz('range5')">수의 범위·어림 시작</button></span>
         </div>
       </div>
       <iframe id="range5-frame" title="수의 범위·어림 문제" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
@@ -592,26 +559,19 @@
 
     <div id="screen-mul" class="screen active">
       <div id="mul-curriculumControls" style="background: #e0f2fe; border: 2px solid #bae6fd; border-radius: 8px; padding: 10px 20px; margin-bottom: 12px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 6px;">
-          <div style="display:flex; gap: 15px; align-items: center; flex-grow: 1;">
-            <label style="color: #0369a1;"><b>세부 단계 : </b></label>
-            <select id="mul-subLevel" onchange="updateMulSubLevelColor()" style="font-size: 15px; flex-grow: 1; max-width: 400px;"></select>
-          </div>
-          <div>
-            <label style="color: #0369a1;"><b>입력 방향 : </b></label>
+        <div class="ctrl-row">
+          <label style="color: #0369a1; white-space: nowrap;"><b>세부 단계 : </b></label>
+          <select id="mul-subLevel" onchange="updateMulSubLevelColor()" style="font-size: 15px; flex-grow: 1; max-width: 460px; min-width: 0;"></select>
+          <div class="ctrl-item"><label style="color: #0369a1;"><b>입력 방향 : </b></label>
             <select id="mul-inputDir">
               <option value="rtl" selected>뒤에서부터</option>
               <option value="ltr">앞에서부터</option>
-            </select>
-          </div>
-          <div class="info-group">
+            </select></div>
+          <span id="mul-startSection" class="start-inline"><button class="submit-btn start-btn" id="mul-startBtn" style="background-color: #ea580c;" onclick="startMulQuiz()">곱셈 시작</button></span>
+          <div class="info-group timer-group" id="mul-timerGroup">
             <label style="color: #ea580c;"><b>진행 시간 : </b></label>
             <span class="timer-display" id="mul-timerDisplay">00:00</span>
           </div>
-        </div>
-
-        <div id="mul-startSection" style="text-align: center;">
-          <button class="submit-btn" id="mul-startBtn" style="background-color: #ea580c; width: auto; padding: 8px 60px;" onclick="startMulQuiz()">곱셈 진단 시작</button>
         </div>
       </div>
 
@@ -668,6 +628,18 @@
     // ==========================================
     // 1. 공통 데이터
     // ==========================================
+    // 🖍️ 형광 표시할 단계 코드 — 단계 고르기 칸(덧셈·뺄셈·4학년 분수·소수)에서 노란 형광 배경으로 보임
+    const HIGHLIGHT_CODES = ['1153', '3113', '3116', '4215', '4216', '4234', '4238'];
+    const HIGHLIGHT_BG = '#fff176';
+    function isHighlightLevel(text) { return HIGHLIGHT_CODES.some(function(c) { return String(text).indexOf('(' + c + ')') >= 0; }); }
+    function markHighlightLevels(sel) {
+      if (!sel) return;
+      Array.prototype.forEach.call(sel.options, function(o) { o.style.backgroundColor = isHighlightLevel(o.text) ? HIGHLIGHT_BG : ''; });
+      const paint = function() { const o = sel.options[sel.selectedIndex]; sel.style.backgroundColor = (o && isHighlightLevel(o.text)) ? HIGHLIGHT_BG : ''; };
+      if (!sel.dataset.hlBound) { sel.addEventListener('change', paint); sel.dataset.hlBound = '1'; }
+      paint();
+    }
+
     const curriculumData = {
       // 💯 100칸 계산 (100 폴더) — 이름을 바꾸면 백칸.gs의 H100_STAGES와 100/index.html의 STAGES도 함께 바꿔야 함
       "100칸 계산": ["1단계: 곱셈 25칸", "2단계: 곱셈 50칸", "3단계: 곱셈 100칸", "4단계: 나눗셈 25칸", "5단계: 나눗셈 50칸", "6단계: 나눗셈 100칸",
@@ -2671,6 +2643,7 @@ setTimeout(() => {
       curriculumData['덧셈'].forEach(levelText => {
         subSelect.add(new Option(levelText, levelText));
       });
+      markHighlightLevels(subSelect);
     }
 
     // 💡 [라우터] 시작 버튼: 선택한 레벨에 맞는 문제 생성 함수 연결
@@ -3763,6 +3736,7 @@ setTimeout(() => {
       curriculumData['뺄셈'].forEach(levelText => {
         subSelect.add(new Option(levelText, levelText));
       });
+      markHighlightLevels(subSelect);
     }
 
     function startSubQuiz() {
@@ -5187,6 +5161,18 @@ setTimeout(() => {
       return { score: correctCount * 20, results: results };
     }
 
+    // ⏱ 진행 시간은 풀이 화면에서만 보이기: 시작 버튼 자리가 숨겨지면 시간 표시, 다시 나타나면 숨김
+    (function linkTimerToSolving() {
+      ['add', 'sub', 'mul', 'div'].forEach(function(key) {
+        const start = document.getElementById(key + '-startSection');
+        const timer = document.getElementById(key + '-timerGroup');
+        if (!start || !timer) return;
+        const sync = function() { timer.classList.toggle('show', start.style.display === 'none'); };
+        new MutationObserver(sync).observe(start, { attributes: true, attributeFilter: ['style'] });
+        sync();
+      });
+    })();
+
     // 💡 영역(덧셈/뺄셈/곱셈/나눗셈)에서 단계를 선택하면 바로 "진단 시작" 버튼으로 포커스 이동
     (function attachSubLevelSelectFocus() {
       const pairs = [
@@ -5216,6 +5202,7 @@ setTimeout(() => {
         if (!sel) return;
         sel.innerHTML = '';
         (curriculumData[sel.dataset.op] || []).forEach(function(text) { sel.add(new Option(text, text)); });
+        markHighlightLevels(sel);
         sel.addEventListener('change', function() { document.getElementById(key + '-startBtn').focus(); });
       });
     }
