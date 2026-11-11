@@ -270,9 +270,28 @@
       $('againBtn').classList.remove('hidden');
       lastPack = { grade: session && session.grade, classNum: session && session.classNum, studentNum: session && session.studentNum,
         name: session && session.name, level: stage.name, correct: correct, seconds: seconds, wrong: wrong };
+      if (session) sendLive(score);
       if (session) save(); else $('saveMsg').innerHTML = '<span style="color:#64748b">연습 모드라 저장하지 않았어요. 첫 화면에서 학생을 고르고 들어오면 기록과 포인트가 쌓여요.</span>';
       reportHeight();
     });
+  }
+
+  // 실시간 현황판(live.html)으로 보내기 — 칸이 25~100개라 O·X(20개까지)는 보내지 않고,
+  // 단계 이름 뒤에 정답 칸 수와 틀린 셈을 적어 보냄 (예: "3단계: 곱셈 100칸 · 98/100 · 틀린 셈 7×8=54, 6×9=?")
+  function sendLive(score) {
+    if (typeof window.reportLive !== 'function' || !lastPack) return;
+    var lv = stage.name + ' · ' + lastPack.correct + '/' + cells.length;
+    if (lastPack.wrong.length) {
+      var w = ' · 틀린 셈 ';
+      for (var i = 0; i < lastPack.wrong.length; i++) {
+        var add = (i ? ', ' : '') + lastPack.wrong[i];
+        if ((lv + w + add).length > 117) { w += '…'; break; }
+        w += add;
+      }
+      lv += w;
+    }
+    window.reportLive({ grade: lastPack.grade, classNum: lastPack.classNum, studentNum: lastPack.studentNum,
+      operation: '100칸 계산', level: lv, score: score, timeSeconds: lastPack.seconds, results: [] });
   }
 
   var saving = false;

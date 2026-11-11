@@ -368,6 +368,10 @@ function guTimes(r) {
 }
 // r을 넘기면 구구단은 곱하는 수와 걸린 시간을 함께 보여 줌 (기준 시간을 넘긴 정답은 주황)
 function marks(str, r) {
+  if (r && r.op === '100칸 계산') {  // 칸이 많아 O·X 대신 "정답 칸/전체 · 틀린 셈"을 글로 보여 줌
+    const p = String(r.level || '').split(' · ');
+    return `<span class="who-wrong" style="margin:0"><b>${esc(p[1] || '')}</b>${p.length > 2 ? ' · ' + esc(p.slice(2).join(' · ')) : ''}</span>`;
+  }
   const g = guTimes(r), s = String(str || '');
   if (!g) return s.split('').map((m, i) => `<span class="m ${m}" title="Q${i + 1}">${i + 1}</span>`).join('');
   return s.split('').map((m, i) => {
@@ -462,7 +466,18 @@ function renderItems(nums, nameOf) {
         </div></div>`);
       }
     }
-    const qn = g.op === '구구단' ? 0 : Math.max(...recs.map(([, r]) => String(r.results || '').length), 0);
+    if (g.op === '100칸 계산') {
+      // 100칸은 문항별 O·X 대신 학생마다 정답 칸 수·걸린 시간·틀린 셈을 한 줄씩 보여 줌
+      recs.sort((a, b) => a[0] - b[0]).forEach(([n, r]) => {
+        const parts = String(r.level || '').split(' · ');
+        const wrongTxt = parts.slice(2).join(' · ');
+        rows.push(`<div class="qrow"><span class="q">${esc(n)}번</span><div>
+          <div><b>${esc(parts[1] || '')}</b> · ${r.score}점 · ⏱ ${mmss(r.sec)}${nameOf(n) ? ' · ' + esc(nameOf(n)) : ''}</div>
+          ${wrongTxt ? `<div class="who-wrong">${esc(wrongTxt)}</div>` : ''}
+        </div></div>`);
+      });
+    }
+    const qn = (g.op === '구구단' || g.op === '100칸 계산') ? 0 : Math.max(...recs.map(([, r]) => String(r.results || '').length), 0);
     for (let q = 0; q < qn; q++) {
       const wrong = recs.filter(([, r]) => String(r.results || '')[q] === 'X').map(([n]) => n).sort((a, b) => a - b);
       const w = Math.round((wrong.length / recs.length) * 100);
@@ -474,7 +489,7 @@ function renderItems(nums, nameOf) {
     }
     const avg = Math.round(recs.reduce((s, [, r]) => s + r.score, 0) / recs.length);
     return `<div class="item"><div class="t">${esc(g.op)} · ${esc(shortLevel(g.level))}</div>
-      <div class="s">${g.op === '구구단' ? '' : esc(g.level) + '<br>'}${recs.length}명 · 평균 ${avg}점</div>${rows.join('')}</div>`;
+      <div class="s">${g.op === '구구단' ? '' : esc(g.op === '100칸 계산' ? String(g.level).split(' · ')[0] : g.level) + '<br>'}${recs.length}명 · 평균 ${avg}점</div>${rows.join('')}</div>`;
   };
   const list = Object.values(groups);
   if (!list.length) { $('items').style.display = ''; $('items').innerHTML = '<div class="notice">아직 제출이 없습니다.</div>'; return; }
