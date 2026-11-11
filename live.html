@@ -57,8 +57,25 @@
   .m { width: 20px; height: 20px; border-radius: 5px; font-size: 11px; font-weight: 700; color: #fff;
     display: inline-flex; align-items: center; justify-content: center; }
   /* 100칸 계산 순위 (같은 계산끼리, 100점 기록 중 가장 빠른 시간 순) */
-  .card .score { display: flex; align-items: center; gap: 8px; }
-  .rank { font-size: 14px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #e0e7ff; color: #3730a3; line-height: 1.4; }
+  .card .score { display: flex; align-items: center; gap: 10px; }
+  /* 순위는 점수보다 크게, 점수 앞에 */
+  .rank { font-size: 34px; font-weight: 900; white-space: nowrap; padding: 0 10px; border-radius: 14px; background: #e0e7ff; color: #3730a3; line-height: 1.25; order: -1; }
+  .rank small { font-size: .5em; font-weight: 800; margin-left: 1px; }
+  .card .lv.h100 { color: var(--ink); font-weight: 800; font-size: 15px; }
+  /* 전체화면: 카드 가로 5 × 세로 4 (줄 높이는 화면 높이에 맞춰 스크립트가 정함) */
+  body.fs .summary, body.fs .pastbar { display: none !important; }
+  body.fs main { padding-top: 10px; padding-bottom: 10px; max-width: none; }
+  body.fs .card > * { flex-shrink: 0; }
+  body.fs .grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  body.fs .card { min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding: 12px 16px; }
+  body.fs .card .num, body.fs .card .name { font-size: 24px; }
+  body.fs .card .lv { font-size: 17px; margin-top: 2px; }
+  body.fs .card .lv.h100 { font-size: 22px; }
+  body.fs .card .score { font-size: 44px; margin-top: auto; line-height: 1.05; }
+  body.fs .rank { font-size: 60px; line-height: 1.1; }
+  body.fs .card .marks { margin-top: 4px; }
+  body.fs .card .who-wrong { font-size: 15px; }
+  body.fs .card .meta { font-size: 16px; margin-top: auto; }
   .rank.r1 { background: #fde68a; color: #854d0e; } .rank.r2 { background: #e5e7eb; color: #374151; } .rank.r3 { background: #fed7aa; color: #9a3412; }
   .rankline { font-size: 13px; padding: 6px 0 4px; border-top: 1px dashed var(--line); }
   .m.O { background: var(--o); } .m.X { background: var(--x); } .m.S { background: #d99a12; }
@@ -162,6 +179,7 @@
     <label class="toggle"><input type="checkbox" id="showNames" checked> 이름 보기</label>
     <span class="dot" id="conn" title="연결 상태"></span>
     <span id="who"></span>
+    <button id="fsBtn" title="큰 화면용: 학생 카드를 가로 5 × 세로 4로 크게 보여 줍니다">⛶ 전체화면</button>
     <button id="loginBtn" class="primary">선생님 로그인</button>
     <button id="logoutBtn" class="hidden">로그아웃</button>
   </div>
@@ -417,7 +435,9 @@ function render() {
     submitted++; sum += r.score; last = Math.max(last, r.at);
     return `<div class="card${changed ? ' flash' : ''}${asks.length ? ' asking' : ''}" data-num="${esc(n)}" style="border-left-color:${colorOf(r.score)}">
       <div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
-      <div class="lv" title="${esc(r.op + ' ' + r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</div>
+      ${r.op === '100칸 계산'
+        ? `<div class="lv h100" title="${esc(r.op + ' ' + r.level)}">${esc(shortLevel(r.level))}</div>`
+        : `<div class="lv" title="${esc(r.op + ' ' + r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</div>`}
       <div class="score" style="color:${colorOf(r.score)}">${r.score}${rankBadge(ranks, r, n)}</div>
       <div class="marks">${marks(r.results, r)}</div>
       <div class="meta"><span>${list.length}회째</span><span title="걸린 시간">⏱ ${mmss(r.sec)}</span><span>${ago(r.at)}</span></div>${hb}</div>`;
@@ -431,6 +451,7 @@ function render() {
   $('stAvg').textContent = submitted ? Math.round(sum / submitted) : '-';
   $('stLast').textContent = last ? ago(last) : '-';
 
+  fitFs();
   renderItems(nums, nameOf);
   sortFeed(all, nameOf);
   const shown = feedAll ? all : all.slice(0, 20);
@@ -448,7 +469,7 @@ function render() {
 
 /* 단계별 문항 오답: 학생마다 그 단계의 가장 최근 기록만 */
 // 100칸 계산 순위: 계산(예: 뺄셈 25칸)마다 학생별 가장 최근 기록만 봄
-//  - 최근 기록이 100점이 아니면 순위 밖, 100점이면 그 기록의 걸린 시간이 빠른 순 (같은 시간은 같은 순위)
+//  - 점수가 높은 순, 점수가 같으면 걸린 시간이 빠른 순 (점수·시간이 모두 같으면 같은 순위)
 function hundredRanks(nums) {
   const latest = {}; // 계산 -> { 번호: 가장 최근 기록 }
   nums.forEach((n) => attemptsOf(n).forEach((r) => {   // attemptsOf는 시간 순이라 마지막 기록이 남음
@@ -456,22 +477,20 @@ function hundredRanks(nums) {
     const k = shortLevel(r.level);
     (latest[k] || (latest[k] = {}))[n] = r;
   }));
-  const best = {}; // 계산 -> { 번호: 최근 100점 기록의 초 }
-  Object.entries(latest).forEach(([k, m]) => Object.entries(m).forEach(([n, r]) => {
-    if (Number(r.score) === 100) (best[k] || (best[k] = {}))[n] = Number(r.sec) || 0;
-  }));
   const out = {};
-  Object.entries(best).forEach(([k, b]) => {
-    const list = Object.entries(b).sort((x, y) => x[1] - y[1] || x[0] - y[0]);
-    out[k] = { list: list.map(([n, sec], i) => ({ n, sec, rank: i && sec === list[i - 1][1] ? null : i + 1 })), by: {} };
-    out[k].list.forEach((x, i) => { if (x.rank == null) x.rank = out[k].list[i - 1].rank; out[k].by[x.n] = x.rank; });
+  Object.entries(latest).forEach(([k, m]) => {
+    const list = Object.entries(m).map(([n, r]) => ({ n, score: Number(r.score) || 0, sec: Number(r.sec) || 0 }))
+      .sort((x, y) => y.score - x.score || x.sec - y.sec || x.n - y.n);
+    list.forEach((x, i) => { const p = list[i - 1]; x.rank = (p && p.score === x.score && p.sec === x.sec) ? p.rank : i + 1; });
+    out[k] = { list, by: {} };
+    list.forEach((x) => { out[k].by[x.n] = x.rank; });
   });
   return out;
 }
 function rankBadge(ranks, r, n) {
   if (!r || r.op !== '100칸 계산') return '';
   const k = ranks[shortLevel(r.level)], rk = k && k.by[n];
-  return rk ? `<span class="rank${rk <= 3 ? ' r' + rk : ''}" title="${esc(shortLevel(r.level))} 최근 기록이 100점인 학생 중 빠른 순">${rk}위</span>` : '';
+  return rk ? `<span class="rank${rk <= 3 ? ' r' + rk : ''}" title="${esc(shortLevel(r.level))} 순위: 점수 높은 순, 같은 점수면 빠른 순">${rk}<small>위</small></span>` : '';
 }
 
 function renderItems(nums, nameOf) {
@@ -507,7 +526,7 @@ function renderItems(nums, nameOf) {
     if (g.op === '100칸 계산') {
       // 100칸은 문항별 O·X 대신 학생마다 정답 칸 수·걸린 시간·틀린 셈을 한 줄씩 보여 줌
       const rk = ranks[shortLevel(g.level)];
-      if (rk) rows.push(`<div class="rankline">🏆 <b>100점 빠른 순</b> · ${rk.list.map((x) => `${x.rank}위 ${esc(x.n)}번${nameOf(x.n) ? ' ' + esc(nameOf(x.n)) : ''} ${mmss(x.sec)}`).join(' · ')}</div>`);
+      if (rk) rows.push(`<div class="rankline">🏆 <b>순위</b> <small>(점수 높은 순, 같은 점수면 빠른 순)</small> · ${rk.list.map((x) => `${x.rank}위 ${esc(x.n)}번${nameOf(x.n) ? ' ' + esc(nameOf(x.n)) : ''}${x.score === 100 ? '' : ' ' + x.score + '점'} ${mmss(x.sec)}`).join(' · ')}</div>`);
       recs.sort((a, b) => a[0] - b[0]).forEach(([n, r]) => {
         const parts = String(r.level || '').split(' · ');
         const wrongTxt = parts.slice(2).join(' · ');
@@ -707,6 +726,30 @@ async function cleanOld() {
     alert('지웠습니다.');
   } catch (e) { alert('지우지 못했습니다: ' + e.message); }
 }
+
+/* ---------- 전체화면: 카드 가로 5 × 세로 4 ---------- */
+function fitFs() {
+  const g = $('grid');
+  if (!document.body.classList.contains('fs')) { g.style.gridAutoRows = ''; return; }
+  const top = g.getBoundingClientRect().top + window.scrollY;
+  const h = Math.max(120, Math.floor((window.innerHeight - top - 12 - 3 * 10) / 4));
+  g.style.gridAutoRows = h + 'px';
+}
+$('fsBtn').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {
+    document.body.classList.toggle('fs'); window.scrollTo(0, 0); fitFs();   // 전체화면을 막는 환경이면 화면 배치만 바꿈
+  });
+  else { document.body.classList.toggle('fs'); window.scrollTo(0, 0); fitFs(); }
+});
+document.addEventListener('fullscreenchange', () => {
+  const on = !!document.fullscreenElement;
+  document.body.classList.toggle('fs', on);
+  $('fsBtn').textContent = on ? '⛶ 전체화면 끄기' : '⛶ 전체화면';
+  window.scrollTo(0, 0);
+  setTimeout(fitFs, 50);
+});
+window.addEventListener('resize', fitFs);
 </script>
 </body>
 </html>
