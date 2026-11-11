@@ -35,7 +35,7 @@ function geo(o){const P=o.pts,W=o.w||320,H0=o.h||220,pad=o.pad||34;const xs=Obje
  const mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys);const sc=Math.min((W-2*pad)/((mxx-mnx)||1),(H0-2*pad)/((mxy-mny)||1));
  const H=Math.round((mxy-mny)*sc+2*pad);const X=p=>pad+(p[0]-mnx)*sc+((W-2*pad)-(mxx-mnx)*sc)/2,Y=p=>H-pad-(p[1]-mny)*sc;const S=k=>[X(P[k]),Y(P[k])];
  const cx=xs.reduce((a,b)=>a+b,0)/xs.length,cy=ys.reduce((a,b)=>a+b,0)/ys.length,C=[X([cx,cy]),Y([cx,cy])];let s='';
- (o.polys||[]).forEach(pl=>{s+=`<polygon points="${pl.map(k=>S(k).join(',')).join(' ')}" fill="${pl.fill||'#eef2ff'}" stroke="none"/>`;});
+ (o.polys||[]).forEach(pl=>{s+=`<polygon points="${pl.map(k=>S(k).join(',')).join(' ')}" fill="${pl.color||'#e0e7ff'}" fill-opacity="0.9" stroke="none"/>`;});
  (o.segs||[]).forEach(g=>{const [a,b]=[S(g[0]),S(g[1])];s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#334155" stroke-width="2"${g[2]==='dash'?' stroke-dasharray="5 4"':''}/>`;});
  const u=(a,b)=>{const d=[b[0]-a[0],b[1]-a[1]],l=Math.hypot(d[0],d[1])||1;return [d[0]/l,d[1]/l];};
  (o.rt||[]).forEach(([at,a,b])=>{const p=S(at),ua=u(p,S(a)),ub=u(p,S(b)),k=11;const q1=[p[0]+ua[0]*k,p[1]+ua[1]*k],q2=[q1[0]+ub[0]*k,q1[1]+ub[1]*k],q3=[p[0]+ub[0]*k,p[1]+ub[1]*k];s+=`<polyline points="${q1.join(',')} ${q2.join(',')} ${q3.join(',')}" fill="none" stroke="#334155" stroke-width="1.5"/>`;});
