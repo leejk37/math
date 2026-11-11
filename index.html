@@ -5280,7 +5280,7 @@ setTimeout(() => {
     // ==========================================
     // 📝 단원평가(KMA형 30문항) — 학년 → 학기 → 6개 단원
     //  - 단원 이름은 기존 진단 코드(M421 등)와 같은 교과서 단원 순서
-    //  - UNIT_FILES에 있는 단원만 열리고, 나머지는 '준비 중'
+    //  - UNIT_READY에 있는 단원만 열리고, 나머지는 '준비 중'
     // ==========================================
     const UNIT_DATA = {
       3: { 1: ['덧셈과 뺄셈', '평면도형', '나눗셈', '곱셈', '길이와 시간', '분수와 소수'],
@@ -5292,7 +5292,7 @@ setTimeout(() => {
       6: { 1: ['분수의 나눗셈', '각기둥과 각뿔', '소수의 나눗셈', '비와 비율', '여러 가지 그래프', '직육면체의 부피와 겉넓이'],
            2: ['분수의 나눗셈', '소수의 나눗셈', '공간과 입체', '비례식과 비례배분', '원의 넓이', '원기둥, 원뿔, 구'] }
     };
-    const UNIT_FILES = { '421': 'unit/421.html' };   // 학년·학기·단원 → 문제 화면
+    const UNIT_READY = ['421', '423'];   // 문항이 준비된 단원(학년·학기·단원 번호) — 문제 화면은 unit/kma.html?c=번호, 문항은 unit/gen/번호.js
     const unitSem = {};
 
     function renderUnitScreen(g) {
@@ -5305,7 +5305,7 @@ setTimeout(() => {
           return '<button class="' + (s === sem ? 'on' : '') + '" onclick="unitSem[' + g + ']=' + s + ';renderUnitScreen(' + g + ')">' + g + '-' + s + ' (' + s + '학기)</button>';
         }).join('') + '</div><div class="unit-grid">' +
         UNIT_DATA[g][sem].map(function(name, i) {
-          const code = '' + g + sem + (i + 1), ready = !!UNIT_FILES[code];
+          const code = '' + g + sem + (i + 1), ready = UNIT_READY.indexOf(code) >= 0;
           return '<button class="unit-card" ' + (ready ? 'onclick="startUnitTest(\'' + code + '\')"' : 'disabled') + '><b>' + (i + 1) + '.</b>' + name +
                  '<small>' + (ready ? '심화 단원평가 30문항 ▶' : '준비 중') + '</small></button>';
         }).join('') + '</div>';
@@ -5322,7 +5322,7 @@ setTimeout(() => {
       document.getElementById('unit' + g + '-curriculumControls').style.display = 'none';
       const frame = document.getElementById('unit' + g + '-frame');
       frame.style.display = 'block';
-      frame.src = UNIT_FILES[code] + '?u=' + encodeURIComponent(who);
+      frame.src = 'unit/kma.html?c=' + code + '&u=' + encodeURIComponent(who);
       setTimeout(function() { frame.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
     }
 

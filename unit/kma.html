@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KMA형 단원 평가</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+:root{--ink:#1f2937;--sub:#6b7280;--line:#e5e7eb;--brand:#1e3a8a;--accent:#2563eb;--ok:#059669;--no:#dc2626;--bg:#f5f6f8}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Noto Sans KR',sans-serif;color:var(--ink);background:var(--bg);line-height:1.9}
+header{background:var(--brand);color:#fff;padding:18px 20px 14px;position:sticky;top:0;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.hwrap{max-width:860px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:20px;font-weight:900;letter-spacing:-.5px}
+h1 small{display:block;font-size:13px;font-weight:500;opacity:.8;letter-spacing:0}
+.ctrl{display:flex;gap:6px;align-items:center;font-size:14px}
+.ctrl input{width:76px;padding:5px 8px;border-radius:6px;border:0;font:inherit;text-align:center}
+.btn{border:0;border-radius:8px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer}
+.btn.w{background:#fff;color:var(--brand)}.btn.g{background:rgba(255,255,255,.18);color:#fff}
+.prog{width:100%;height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%;background:#facc15;width:0;transition:width .3s}
+main{max-width:860px;margin:0 auto;padding:18px 14px 120px}
+.sec{margin:26px 4px 10px;display:inline-block;border:1.5px dashed var(--brand);color:var(--brand);border-radius:6px;padding:2px 12px;font-size:14px;font-weight:700;background:#eef2ff}
+.card{background:#fff;border-radius:12px;padding:18px 20px;margin:10px 0;box-shadow:0 1px 3px rgba(0,0,0,.06);display:grid;grid-template-columns:48px 1fr;gap:6px 10px;border:2px solid transparent}
+.card.ok{border-color:var(--ok)}.card.no{border-color:var(--no)}
+.no-l{font-size:24px;font-weight:900;color:#9ca3af;line-height:1.4}
+.card.ok .no-l{color:var(--ok)}.card.no .no-l{color:var(--no)}
+.q{font-size:17px}
+.box{border:1.5px solid #cbd5e1;border-radius:10px;padding:10px 16px;margin:10px auto 4px;width:fit-content;max-width:100%;text-align:center;font-size:18px}
+.box.left{text-align:left;font-size:16px}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.82em;line-height:1.15;margin:0 2px}
+.fr .nu{border-bottom:1.5px solid currentColor;padding:0 3px}
+.fr .de{padding:0 3px}
+.mx{white-space:nowrap}
+.ansrow{grid-column:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.ansrow input{width:96px;font:inherit;font-size:20px;font-weight:700;text-align:center;padding:4px 6px;border:2px solid #cbd5e1;border-radius:8px}
+.ansrow input::placeholder{font-size:14px;font-weight:400;color:#cbd5e1}
+.card{scroll-margin-top:130px}
+.ansrow input:focus{outline:none;border-color:var(--accent)}
+.ansrow label{font-size:14px;color:var(--sub)}
+.choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ch{border:2px solid #cbd5e1;background:#fff;border-radius:10px;padding:4px 12px;font:inherit;font-size:17px;cursor:pointer;min-width:150px;text-align:left}
+.ch.on{border-color:var(--accent);background:#eff6ff}
+.mark{font-weight:700;font-size:15px}
+.mark.ok{color:var(--ok)}.mark.no{color:var(--no)}
+details{grid-column:2;margin-top:4px;font-size:15px}
+summary{cursor:pointer;color:var(--accent);font-weight:500}
+.exp{background:#f8fafc;border-left:4px solid var(--accent);padding:8px 12px;border-radius:6px;margin-top:6px}
+.flow{margin:10px auto;width:fit-content;text-align:center}
+.frow{display:flex;justify-content:center;gap:40px}
+.pair{display:flex;gap:8px;padding:6px 10px;border-bottom:2px solid #94a3b8}
+.pg{width:72px;height:68px;display:flex;align-items:center;justify-content:center;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 96'%3E%3Cpolygon points='50,3 97,37 79,93 21,93 3,37' fill='%23f8fafc' stroke='%23475569' stroke-width='3'/%3E%3C/svg%3E") center/100% 100% no-repeat;font-size:16px;padding-top:12px}
+.flab{font-size:13px;color:var(--sub);margin:4px 0}
+.fig{display:block;width:100%;max-width:420px;margin:10px auto 0}
+.figlab{text-align:center;font-size:16px}
+.cards{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.card .cards .card,.cards .card{display:inline-flex}
+.cards span{width:44px;height:56px;border:2px solid #475569;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;background:#f8fafc}
+.ul{display:inline-flex;flex-direction:column;align-items:center;line-height:1.2}.ul i{font-style:normal;font-size:13px;color:#2563eb;border-top:1.5px solid #2563eb;min-width:12px;text-align:center}
+.digs{font-size:22px;letter-spacing:2px}
+table.vt{margin:10px auto;border-collapse:collapse;font-size:20px}table.vt td{width:30px;height:34px;text-align:center;padding:0}table.vt tr.sum td{border-top:2px solid #334155}
+.bxl,.bx{display:inline-flex;vertical-align:middle;width:26px;height:28px;border:1.5px solid #334155;align-items:center;justify-content:center;font-size:15px;background:#fff}
+.tag{display:inline-block;background:#475569;color:#fff;font-size:13px;border-radius:4px;padding:0 6px;line-height:1.6}
+table.crs{margin:10px auto;border-collapse:collapse}table.crs td{width:64px;height:40px;border:1.5px solid #334155;text-align:center;font-size:16px}table.crs td.e{border:none}
+table.stair{margin:10px auto 2px;border-collapse:collapse;font-size:15px}table.stair td{border:1px solid #94a3b8;min-width:62px;height:30px;text-align:center;padding:0 4px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 14px;display:flex;justify-content:center;gap:10px;z-index:5}
+.bar .btn{padding:11px 26px;font-size:16px}
+.btn.p{background:var(--accent);color:#fff}.btn.s{background:#e5e7eb;color:var(--ink)}
+#result{display:none;background:#fff;border-radius:14px;padding:18px 22px;margin:8px 0 6px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+#result h2{margin:0 0 6px;font-size:22px}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:8px}
+.rg{background:#f8fafc;border-radius:8px;padding:8px 12px;font-size:14px}
+.rg b{font-size:18px}
+.wrong{margin-top:8px;font-size:14px;color:var(--sub)}
+.wrong a{color:var(--no);font-weight:700;margin-right:6px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:9}
+.modal div{background:#fff;border-radius:12px;padding:20px 24px;max-width:340px;text-align:center}
+.modal p{margin:0 0 14px}
+@media(max-width:560px){.card{grid-template-columns:1fr}.no-l{font-size:20px}.ansrow,details{grid-column:1}.frow{gap:12px}.pg{width:58px;height:56px;font-size:14px}.ch{min-width:0;width:100%}}
+</style>
+</head>
+<body>
+<header><div class="hwrap">
+ <h1>KMA형 단원 평가 <small id="utitle">불러오는 중…</small></h1>
+ <div class="ctrl"><span title="문제 묶음의 번호. 같은 번호면 같은 문제가 나옵니다">세트 번호</span> <input id="seed" inputmode="numeric" maxlength="5"><button class="btn w" id="load">불러오기</button><button class="btn g" id="newset">새 세트</button></div>
+ <div class="prog"><i id="pbar"></i></div>
+</div></header>
+<main>
+ <div id="notice" style="display:none;background:#fef9c3;border-radius:10px;padding:10px 16px;margin:6px 0;font-size:15px"></div>
+ <div id="result"></div>
+ <div id="list"></div>
+</main>
+<div class="bar"><span id="cnt" style="align-self:center;font-size:14px;color:var(--sub)"></span><button class="btn s" id="exit" style="display:none">메인으로</button><button class="btn s" id="reset">답 지우기</button><button class="btn s" id="save" style="background:#fef3c7">임시저장</button><button class="btn p" id="grade">채점하기</button></div>
+<div class="modal" id="modal"><div><p id="mtext"></p><button class="btn s" id="mno">취소</button> <button class="btn p" id="myes">확인</button></div></div>
+<script src="kma-core.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let seed,set,answers,graded=false,savedAt=null,U,SECTIONS;
+const UQ=new URLSearchParams(location.search);const CODE=(UQ.get('c')||'421').replace(/[^0-9a-z]/g,'');const WHO=(UQ.get('u')||'').replace(/[^0-9A-Za-z가-힣_-]/g,'');const EMBED=window.parent!==window;
+const KEY=k=>'kma'+CODE+':'+(WHO?WHO+':':'')+k;
+const fmt=t=>{const d=new Date(t);return `${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
+function saveNow(){savedAt=Date.now();store.set(KEY(seed),{a:answers,t:savedAt});}
+const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+function confirmBox(text,yes){$('mtext').textContent=text;$('modal').style.display='flex';$('myes').onclick=()=>{$('modal').style.display='none';yes();};$('mno').onclick=()=>{$('modal').style.display='none';};}
+function load(s){seed=s;$('seed').value=s;set=generateSet(CODE,s);const raw=store.get(KEY(s));const saved=Array.isArray(raw)?{a:raw}:raw;answers=(saved&&saved.a&&saved.a.length===30)?saved.a:Array(30).fill('');savedAt=saved&&saved.t||null;const n0=answers.filter(a=>a!=='').length;const nt=$('notice');if(n0){nt.style.display='block';nt.textContent=`세트 ${s}에 지난번에 쓴 답 ${n0}개를 불러왔어요${savedAt?` (마지막 저장: ${fmt(savedAt)})`:''}. 이어서 풀면 됩니다.`;}else nt.style.display='none';graded=false;store.set(KEY('last'),s);render();$('result').style.display='none';window.scrollTo(0,0);}
+function render(){const L=$('list');L.innerHTML='';
+ set.forEach((p,i)=>{const sec=SECTIONS.find(s=>s.from===p.no);if(sec){const t=document.createElement('div');t.className='sec';t.textContent=sec.name;L.appendChild(t);}
+  const c=document.createElement('div');c.className='card';c.id='c'+p.no;
+  let inp;
+  if(p.choices){inp=`<div class="choices">${p.choices.map((o,k)=>`<button class="ch" data-v="${k+1}">${'①②③④⑤'[k]} ${o}</button>`).join('')}</div>`;}
+  else inp=`<label>답</label><input inputmode="numeric" maxlength="3" data-i="${i}" placeholder="숫자">`;
+  c.innerHTML=`<div class="no-l">${String(p.no).padStart(2,'0')}</div><div class="q">${p.q}${p.choices?inp:''}</div><div class="ansrow">${p.choices?'':inp}<span class="mark"></span></div><details hidden><summary>해설 보기</summary><div class="exp">${p.exp}</div></details>`;
+  L.appendChild(c);
+  if(p.choices){c.querySelectorAll('.ch').forEach(b=>{if(answers[i]===b.dataset.v)b.classList.add('on');b.onclick=()=>{if(graded)return;c.querySelectorAll('.ch').forEach(x=>x.classList.remove('on'));b.classList.add('on');answers[i]=b.dataset.v;changed();};});}
+  else{const el=c.querySelector('input');el.value=answers[i];el.oninput=()=>{el.value=el.value.replace(/[^0-9]/g,'').slice(0,3);answers[i]=el.value;changed();};
+   el.onkeydown=e=>{if(e.key==='Enter'){const n=document.querySelector(`input[data-i="${i+1}"]`)||document.querySelector(`input[data-i="${i+2}"]`);if(n)n.focus();}};}
+ });changed(true);}
+function changed(noSave){const n=answers.filter(a=>a!=='').length;$('cnt').textContent=`답한 문항 ${n}/30`;$('pbar').style.width=(n/30*100)+'%';if(!noSave)saveNow();}
+function grade(){graded=true;let ok=0;const wrong=[];
+ set.forEach((p,i)=>{const c=$('c'+p.no),m=c.querySelector('.mark'),right=answers[i]!==''&&Number(answers[i])===p.ans;
+  c.classList.remove('ok','no');c.classList.add(right?'ok':'no');if(right)ok++;else wrong.push(p.no);
+  m.className='mark '+(right?'ok':'no');m.textContent=right?'⭕ 정답':`❌ 정답: ${p.choices?'①②③④⑤'[p.ans-1]:p.ans}`;
+  c.querySelector('details').hidden=false;const inp=c.querySelector('input');if(inp)inp.disabled=true;});
+ const secs=SECTIONS.map(s=>{const n=s.to-s.from+1;const k=set.slice(s.from-1,s.to).filter((p,j)=>{const a=answers[s.from-1+j];return a!==''&&Number(a)===p.ans;}).length;return `<div class="rg">${s.name}<br><b>${k}</b> / ${n}</div>`;}).join('');
+ const r=$('result');r.style.display='block';
+ r.innerHTML=`<h2>${ok} / 30 문항 정답</h2><div style="color:var(--sub);font-size:14px">세트 번호 ${seed}</div><div class="rgrid">${secs}</div>${wrong.length?`<div class="wrong">틀린 문항(눌러서 이동): ${wrong.map(n=>`<a href="#c${n}" data-n="${n}">${n}번</a>`).join('')}</div>`:'<div class="wrong" style="color:var(--ok)">모두 맞혔어요! 🎉</div>'}`;
+ r.querySelectorAll('a').forEach(a=>a.onclick=e=>{e.preventDefault();$('c'+a.dataset.n).scrollIntoView({behavior:'smooth',block:'center'});});
+ $('grade').textContent='다시 풀기';window.scrollTo({top:0,behavior:'smooth'});}
+$('grade').onclick=()=>{if(graded){answers=Array(30).fill('');saveNow();graded=false;$('grade').textContent='채점하기';$('result').style.display='none';render();window.scrollTo(0,0);return;}
+ const n=answers.filter(a=>a!=='').length;if(n<30)confirmBox(`아직 ${30-n}문항을 풀지 않았어요. 그래도 채점할까요?`,grade);else grade();};
+$('reset').onclick=()=>confirmBox('이 세트에 쓴 답을 모두 지울까요?',()=>{answers=Array(30).fill('');saveNow();graded=false;$('grade').textContent='채점하기';$('result').style.display='none';render();});
+$('save').onclick=()=>{saveNow();const b=$('save');b.textContent=`저장됨 ${fmt(savedAt).split(' ').pop()}`;setTimeout(()=>b.textContent='임시저장',2500);};
+if(EMBED){$('exit').style.display='';$('exit').onclick=()=>confirmBox('메인 화면으로 돌아갈까요? 쓴 답은 이 기기에 임시저장됩니다.',()=>{saveNow();parent.postMessage({type:'frac-exit'},location.origin);});}
+$('load').onclick=()=>{const v=parseInt($('seed').value,10);if(v>0)load(v);};
+$('seed').onkeydown=e=>{if(e.key==='Enter')$('load').click();};
+$('newset').onclick=()=>confirmBox('새로운 문제 세트를 만들까요?',()=>load(1000+Math.floor(Math.random()*9000)));
+const gs=document.createElement('script');gs.src='gen/'+CODE+'.js?v=1';
+gs.onload=()=>{U=KMA_UNITS[CODE];if(!U){$('utitle').textContent='이 단원은 아직 준비 중입니다.';return;}SECTIONS=U.sections;$('utitle').textContent=U.title+' · 30문항';document.title='KMA형 단원 평가 · '+U.title;load(store.get(KEY('last'))||1000+Math.floor(Math.random()*9000));};
+gs.onerror=()=>{$('utitle').textContent='이 단원은 아직 준비 중입니다.';};document.head.appendChild(gs);
+</script>
+</body>
+</html>
