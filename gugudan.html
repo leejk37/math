@@ -66,6 +66,30 @@ input[type=text]{width:100%;border:1.5px solid var(--line);background:var(--card
 .plain{display:block;width:100%;margin-top:10px;border:1.5px solid var(--line);background:transparent;border-radius:12px;padding:11px;min-height:46px}
 .note{border-left:4px solid var(--slow);background:var(--slow-bg);padding:10px 12px;border-radius:0 8px 8px 0;margin-top:12px;font-size:.92rem}
 
+/* 설정 화면: 왼쪽 항목 이름, 오른쪽 선택 */
+.setupTitle{font-size:1.35rem;margin:4px 0 12px}
+.form{background:var(--card);border:1px solid var(--line);border-radius:10px}
+.field{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:10px;padding:10px 14px}
+.field+.field{border-top:1px solid var(--line)}
+.field .k{font-size:.88rem;color:var(--muted)}
+#s-setup input[type=text]{width:8.5em;min-height:38px;padding:6px 10px;border:1px solid var(--line);border-radius:8px}
+#s-setup .chips{display:flex;flex-wrap:wrap;gap:4px;grid-template-columns:none}
+#s-setup .chips button{min-width:34px;min-height:36px;padding:0 8px;border:1px solid var(--line);border-radius:8px;font-size:.95rem}
+#s-setup .chips button[aria-pressed="true"]{background:var(--ok-bg);border-color:var(--board);color:var(--board);font-weight:700}
+:root[data-theme="dark"] #s-setup .chips button[aria-pressed="true"]{color:var(--ok);border-color:var(--ok)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #s-setup .chips button[aria-pressed="true"]{color:var(--ok);border-color:var(--ok)}}
+#s-setup .seg{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;justify-self:start}
+#s-setup .seg button{border:0;border-radius:0;min-height:36px;padding:0 14px;font-size:.95rem}
+#s-setup .seg button+button{border-left:1px solid var(--line)}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:.95rem;cursor:pointer;justify-self:start}
+.switch input{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:11px;background:var(--line);position:relative;margin:0;cursor:pointer;flex:none}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.switch input:checked{background:var(--board)}
+.switch input:checked::after{left:19px}
+.switch input:disabled{opacity:.45;cursor:not-allowed}
+#s-setup .note{margin:0 14px 12px}
+#s-setup .go{margin-top:16px;border-radius:10px;min-height:48px;font-size:1.1rem}
+
 /* 검사 화면 */
 #prog{text-align:left;color:var(--chalk-dim);margin:0;font-size:.95rem}
 .progRow{display:flex;justify-content:space-between;align-items:baseline}
@@ -126,51 +150,40 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
 <main>
 
 <section id="s-setup">
-  <div class="board">
-    <h1>말로 푸는 구구단</h1>
-    <p>소리 내어 답하면 정확도와 빠르기를 함께 잽니다.</p>
+  <h1 class="setupTitle">말로 푸는 구구단</h1>
+
+  <div class="form">
+    <div class="field">
+      <label class="k" for="name">이름</label>
+      <input type="text" id="name" maxlength="10" autocomplete="off" placeholder="선택">
+    </div>
+    <div class="field">
+      <span class="k">단</span>
+      <div class="chips" id="dans"></div>
+    </div>
+    <div class="field">
+      <span class="k">문항</span>
+      <div class="seg" id="count">
+        <button type="button" data-v="20">20</button>
+        <button type="button" data-v="40">40</button>
+        <button type="button" data-v="all" id="countAll">72</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="k">빠르기</span>
+      <div class="seg" id="thr">
+        <button type="button" data-v="1">1초</button>
+        <button type="button" data-v="2">2초</button>
+        <button type="button" data-v="3">3초</button>
+        <button type="button" data-v="4">4초</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="k">음성</span>
+      <label class="switch"><input type="checkbox" id="voice"> 말로 답하기</label>
+    </div>
+    <p class="note" id="noSR" hidden>이 브라우저는 음성 인식을 지원하지 않아요. Chrome·Safari에서 열어 주세요.</p>
   </div>
-
-  <fieldset>
-    <label class="label" for="name">학생 이름 (선택)</label>
-    <input type="text" id="name" maxlength="20" autocomplete="off">
-  </fieldset>
-
-  <fieldset>
-    <legend>검사할 단</legend>
-    <div class="chips" id="dans"></div>
-    <p class="muted" style="margin-top:6px">구구단은 2단부터 9단까지 모든 단을 검사합니다.</p>
-  </fieldset>
-
-  <fieldset>
-    <legend>문항 수</legend>
-    <div class="seg" id="count">
-      <button type="button" data-v="20">20문항</button>
-      <button type="button" data-v="40">40문항</button>
-      <button type="button" data-v="all">전체</button>
-    </div>
-  </fieldset>
-
-  <fieldset>
-    <legend>빠르기 기준</legend>
-    <div class="seg" id="thr">
-      <button type="button" data-v="1">1초</button>
-      <button type="button" data-v="2">2초</button>
-      <button type="button" data-v="3">3초</button>
-      <button type="button" data-v="4">4초</button>
-    </div>
-    <p class="muted" style="margin-top:6px">이 시간 안에 맞히면 “빠르고 정확”으로 봅니다. 한 문항은 10초까지 기다립니다.</p>
-  </fieldset>
-
-  <fieldset>
-    <legend>답하는 방법</legend>
-    <div class="seg" id="mode">
-      <button type="button" data-v="voice">말하기·터치·키보드</button>
-      <button type="button" data-v="pad">터치·키보드만</button>
-    </div>
-    <p class="muted" style="margin-top:6px">말로 답하는 동안에도 숫자 버튼을 누르거나 키보드로 치고 Enter를 눌러 답할 수 있습니다. 교실이 시끄러우면 “터치·키보드만”을 고르세요.</p>
-    <p class="note" id="noSR" hidden>이 브라우저는 음성 인식을 지원하지 않아요. Chrome이나 Safari에서 열면 말로 답할 수 있습니다.</p>
-  </fieldset>
 
   <button type="button" class="go" id="begin"></button>
   <button type="button" class="plain" id="exitMenu" hidden>진단 메뉴로 돌아가기</button>
@@ -368,16 +381,49 @@ function seg(id,key,after){
 }
 function paintBegin(){
   var b=$('#begin');
-  b.textContent=cfg.mode==='voice'?'마이크 확인하기':'검사 시작';
+  b.textContent=cfg.mode==='voice'?'마이크 확인하기':'시작';
   b.disabled=!cfg.dans.length;
 }
+/* 고른 단에 맞춰 '전체' 문항 수(단 수×9)를 보이고, 전체보다 많거나 같은 문항 수 버튼은 끈다 */
+function paintCount(){
+  var total=cfg.dans.length*9;
+  $('#countAll').textContent=total;
+  [].forEach.call($('#count').children,function(b){
+    if(b.dataset.v!=='all') b.disabled=+b.dataset.v>=total;
+  });
+  if(cfg.count!=='all'&&cfg.count>=total) cfg.count='all';
+  [].forEach.call($('#count').children,function(b){b.setAttribute('aria-pressed',String(b.dataset.v===String(cfg.count)));});
+}
 function initSetup(){
-  var box=$('#dans');
-  /* 모든 단(2~9단)을 검사함 — 단은 고를 수 없고 보여 주기만 함 */
-  for(var a=2;a<=9;a++){var b=el('button','',a+'단');b.type='button';b.dataset.v=a;b.setAttribute('aria-pressed','true');b.tabIndex=-1;b.style.cursor='default';box.appendChild(b);}
-  seg('count','count');seg('thr','thr');seg('mode','mode',paintBegin);
-  if(!SR){$('#mode').children[0].disabled=true;$('#noSR').hidden=false;}
-  paintBegin();
+  /* 단 고르기: 기본은 '전체'. 단을 누르면 그 단만 골라지고, 모두 끄면 다시 '전체' */
+  var box=$('#dans'),ALL=[2,3,4,5,6,7,8,9];
+  var all=el('button','','전체');all.type='button';all.dataset.v='all';box.appendChild(all);
+  for(var a=2;a<=9;a++){var b=el('button','',String(a));b.type='button';b.dataset.v=a;b.setAttribute('aria-label',a+'단');box.appendChild(b);}
+  var isAll=true;
+  var paintDans=function(){
+    [].forEach.call(box.children,function(b){
+      b.setAttribute('aria-pressed',String(b.dataset.v==='all'?isAll:(!isAll&&cfg.dans.indexOf(+b.dataset.v)>=0)));
+    });
+    paintCount();paintBegin();
+  };
+  box.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b) return;
+    if(b.dataset.v==='all'){isAll=true;cfg.dans=ALL.slice();}
+    else{
+      var v=+b.dataset.v,cur=isAll?[]:cfg.dans.slice(),i=cur.indexOf(v);
+      if(i>=0)cur.splice(i,1);else cur.push(v);
+      cur.sort();
+      if(!cur.length||cur.length===ALL.length){isAll=true;cfg.dans=ALL.slice();}
+      else{isAll=false;cfg.dans=cur;}
+    }
+    paintDans();
+  });
+  seg('count','count');seg('thr','thr');
+  var vo=$('#voice');
+  vo.checked=cfg.mode==='voice';
+  vo.addEventListener('change',function(){cfg.mode=vo.checked?'voice':'pad';paintBegin();});
+  if(!SR){vo.checked=false;vo.disabled=true;$('#noSR').hidden=false;}
+  paintDans();
   $('#begin').addEventListener('click',function(){
     cfg.name=$('#name').value.trim();
     if(cfg.mode==='voice')micCheck();else startTest(buildList());

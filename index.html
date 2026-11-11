@@ -490,9 +490,9 @@
 
     <!-- 🗣️ 말로 푸는 구구단: 소리 내어 답하며 정확도·빠르기를 재는 연습 — 화면은 gugudan.html 하나(시트 저장 없음, 결과는 화면에서 바로 확인) -->
     <div id="screen-gugu" class="screen">
-      <div id="gugu-curriculumControls" style="background: #e7f0ea; border: 2px solid #86b39b; border-radius: 8px; padding: 12px 20px; margin-bottom: 12px; text-align: center;">
-        <div style="font-size: 14px; color: #1e4a3c; margin-bottom: 10px;"><b>구구단을 말로 답해요</b> · 2~9단 가운데 고른 단을 소리 내어 답하면 정확도와 빠르기를 함께 재요<br><small style="color:#586a61;">마이크 허용 창이 뜨면 “허용”을 눌러 주세요. 교실이 시끄러우면 터치·키보드로도 답할 수 있어요.</small></div>
-        <button class="submit-btn" id="gugu-startBtn" style="background-color: #1e4a3c; width: auto; padding: 8px 60px;" onclick="startGugudan()">구구단 시작</button>
+      <div id="gugu-curriculumControls" style="background: #e7f0ea; border: 1px solid #b7d1c2; border-radius: 8px; padding: 10px 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
+        <div style="font-size: 14px; color: #1e4a3c;"><b>구구단 말하기</b> · 소리 내어 답하고 정확도·빠르기 확인</div>
+        <button class="submit-btn" id="gugu-startBtn" style="background-color: #1e4a3c; width: auto; padding: 8px 36px; margin: 0;" onclick="startGugudan()">시작</button>
       </div>
       <iframe id="gugu-frame" title="말로 푸는 구구단" allow="microphone" style="display:none; width:100%; border:none; min-height:400px;"></iframe>
     </div>
