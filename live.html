@@ -47,7 +47,7 @@
     border-radius: 12px; padding: 10px 12px; cursor: pointer; min-height: 118px; transition: transform .15s; }
   .card:hover { transform: translateY(-2px); }
   .card.none { background: var(--none); color: var(--none-ink); cursor: default; }
-  .card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .card .top { display: flex; justify-content: flex-start; align-items: baseline; gap: .3em; min-width: 0; }   /* 번호와 이름을 한 칸 띄워 붙임 */
   .card .num { font-size: 15px; font-weight: 700; }
   .card .name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card .score { font-size: 30px; font-weight: 800; line-height: 1.1; margin-top: 4px; }
