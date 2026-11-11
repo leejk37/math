@@ -447,13 +447,18 @@ function render() {
 }
 
 /* 단계별 문항 오답: 학생마다 그 단계의 가장 최근 기록만 */
-// 100칸 계산 순위: 계산(예: 뺄셈 25칸)마다, 오늘 100점을 받은 기록 가운데 학생별 가장 빠른 시간으로 줄 세움 (같은 시간은 같은 순위)
+// 100칸 계산 순위: 계산(예: 뺄셈 25칸)마다 학생별 가장 최근 기록만 봄
+//  - 최근 기록이 100점이 아니면 순위 밖, 100점이면 그 기록의 걸린 시간이 빠른 순 (같은 시간은 같은 순위)
 function hundredRanks(nums) {
-  const best = {}; // 계산 -> { 번호: 가장 빠른 초 }
-  nums.forEach((n) => attemptsOf(n).forEach((r) => {
-    if (r.op !== '100칸 계산' || Number(r.score) !== 100) return;
-    const k = shortLevel(r.level), b = best[k] || (best[k] = {});
-    if (b[n] == null || r.sec < b[n]) b[n] = r.sec;
+  const latest = {}; // 계산 -> { 번호: 가장 최근 기록 }
+  nums.forEach((n) => attemptsOf(n).forEach((r) => {   // attemptsOf는 시간 순이라 마지막 기록이 남음
+    if (r.op !== '100칸 계산') return;
+    const k = shortLevel(r.level);
+    (latest[k] || (latest[k] = {}))[n] = r;
+  }));
+  const best = {}; // 계산 -> { 번호: 최근 100점 기록의 초 }
+  Object.entries(latest).forEach(([k, m]) => Object.entries(m).forEach(([n, r]) => {
+    if (Number(r.score) === 100) (best[k] || (best[k] = {}))[n] = Number(r.sec) || 0;
   }));
   const out = {};
   Object.entries(best).forEach(([k, b]) => {
@@ -466,7 +471,7 @@ function hundredRanks(nums) {
 function rankBadge(ranks, r, n) {
   if (!r || r.op !== '100칸 계산') return '';
   const k = ranks[shortLevel(r.level)], rk = k && k.by[n];
-  return rk ? `<span class="rank${rk <= 3 ? ' r' + rk : ''}" title="${esc(shortLevel(r.level))} 100점 중 가장 빠른 기록 순위">${rk}위</span>` : '';
+  return rk ? `<span class="rank${rk <= 3 ? ' r' + rk : ''}" title="${esc(shortLevel(r.level))} 최근 기록이 100점인 학생 중 빠른 순">${rk}위</span>` : '';
 }
 
 function renderItems(nums, nameOf) {
