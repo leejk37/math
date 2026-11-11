@@ -604,6 +604,18 @@
     // ==========================================
     // 1. 공통 데이터
     // ==========================================
+    // 🖍️ 형광 표시할 단계 코드 — 단계 고르기 칸(덧셈·뺄셈·4학년 분수·소수)에서 노란 형광 배경으로 보임
+    const HIGHLIGHT_CODES = ['1153', '3113', '3116', '4215', '4216', '4234', '4238'];
+    const HIGHLIGHT_BG = '#fff176';
+    function isHighlightLevel(text) { return HIGHLIGHT_CODES.some(function(c) { return String(text).indexOf('(' + c + ')') >= 0; }); }
+    function markHighlightLevels(sel) {
+      if (!sel) return;
+      Array.prototype.forEach.call(sel.options, function(o) { o.style.backgroundColor = isHighlightLevel(o.text) ? HIGHLIGHT_BG : ''; });
+      const paint = function() { const o = sel.options[sel.selectedIndex]; sel.style.backgroundColor = (o && isHighlightLevel(o.text)) ? HIGHLIGHT_BG : ''; };
+      if (!sel.dataset.hlBound) { sel.addEventListener('change', paint); sel.dataset.hlBound = '1'; }
+      paint();
+    }
+
     const curriculumData = {
       // 💯 100칸 계산 (100 폴더) — 이름을 바꾸면 백칸.gs의 H100_STAGES와 100/index.html의 STAGES도 함께 바꿔야 함
       "100칸 계산": ["1단계: 곱셈 25칸", "2단계: 곱셈 50칸", "3단계: 곱셈 100칸", "4단계: 나눗셈 25칸", "5단계: 나눗셈 50칸", "6단계: 나눗셈 100칸",
@@ -2607,6 +2619,7 @@ setTimeout(() => {
       curriculumData['덧셈'].forEach(levelText => {
         subSelect.add(new Option(levelText, levelText));
       });
+      markHighlightLevels(subSelect);
     }
 
     // 💡 [라우터] 시작 버튼: 선택한 레벨에 맞는 문제 생성 함수 연결
@@ -3699,6 +3712,7 @@ setTimeout(() => {
       curriculumData['뺄셈'].forEach(levelText => {
         subSelect.add(new Option(levelText, levelText));
       });
+      markHighlightLevels(subSelect);
     }
 
     function startSubQuiz() {
@@ -5164,6 +5178,7 @@ setTimeout(() => {
         if (!sel) return;
         sel.innerHTML = '';
         (curriculumData[sel.dataset.op] || []).forEach(function(text) { sel.add(new Option(text, text)); });
+        markHighlightLevels(sel);
         sel.addEventListener('change', function() { document.getElementById(key + '-startBtn').focus(); });
       });
     }
