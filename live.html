@@ -237,6 +237,7 @@
     <div class="feedtools"><button id="feedMore"></button></div>
 
     <div class="foot">
+      <button id="guImportBtn" title="이 날짜·이 반의 구구단 기록 가운데 시트('구구단' 탭)에 없는 것을 옮깁니다. 이미 있는 검사는 다시 넣지 않습니다.">구구단 기록 시트로 옮기기</button>
       <button id="cleanBtn" title="오늘을 뺀 지난 날짜의 현황판 기록을 지웁니다. 시트 기록은 지워지지 않습니다.">지난 날짜 현황판 기록 지우기</button>
     </div>
   </section>
@@ -329,6 +330,7 @@ async function init() {
   $('showNames').checked = store.get('names', '1') === '1';
   $('showNames').onchange = () => { store.set('names', $('showNames').checked ? '1' : '0'); render(); };
   $('cleanBtn').onclick = cleanOld;
+  $('guImportBtn').onclick = importGuToSheet;
   $('resetBtn').onclick = resetScreen;
   $('resetUndo').onclick = undoReset;
   $('dim').onclick = (e) => { if (e.target.id === 'dim') $('dim').classList.remove('show'); };
@@ -864,6 +866,53 @@ setInterval(() => {  // 기다린 시간 갱신
     const at = Number(el.dataset.at); el.textContent = waitText(at); el.classList.toggle('long', Date.now() - at > 120000);
   });
 }, 1000);
+
+/* 구구단 기록을 시트('구구단' 탭)로 옮기기
+   현황판에는 구구단이 단마다 따로 들어 있음 (단계 이름 예: "7단: 3초 안 6/9 · 중앙값 1.4초 · ×1 1.2 ×2 0.8 … · 전체 2:05")
+   → 같은 학생이 15초 안에 보낸 단 기록을 검사 1회로 묶고, 문항(곱하는 수·맞음/틀림·걸린 초)을 되살려 서버로 보냄
+   서버(학생기록.gs의 importGugudanLive)가 선생님 계정을 확인하고, 시트에 이미 있는 검사(같은 학생·1분 안 시각)는 건너뜀 */
+function guTestsFromLive(raw) {
+  const out = [];
+  Object.keys(raw || {}).forEach((num) => {
+    if (String(num) === '0') return;
+    const list = Object.values(raw[num] || {}).filter((r) => r && r.op === '구구단' && typeof r.at === 'number').sort((a, b) => a.at - b.at);
+    let cur = null;
+    list.forEach((r) => {
+      if (!cur || r.at - cur.last > 15000) { cur = { studentNum: String(num), recs: [], last: r.at }; out.push(cur); }
+      cur.recs.push(r); cur.last = r.at;
+    });
+  });
+  return out.map((t) => {
+    const items = []; let thr = 3, wall = 0;
+    t.recs.forEach((r) => {
+      const a = parseInt(r.level, 10), lv = String(r.level || ''), res = String(r.results || '');
+      const m = lv.match(/(\d+)초 안/); if (m) thr = Number(m[1]);
+      const w = lv.match(/전체 (\d+):(\d{2})/); if (w) wall = Number(w[1]) * 60 + Number(w[2]);
+      let i = 0;
+      lv.replace(/×(\d) (\d+(?:\.\d)?)/g, (_, b, sec) => {
+        items.push({ a, b: Number(b), ok: res[i] === 'O', rt: Math.round(Number(sec) * 1000) }); i++; return '';
+      });
+    });
+    return { studentNum: t.studentNum, at: t.last, thr, totalSec: wall, items };
+  }).filter((t) => t.items.length);
+}
+async function importGuToSheet() {
+  if (!user) return;
+  const g = $('grade').value, c = $('classNum').value, day = $('day').value;
+  const tests = guTestsFromLive(data);
+  if (!tests.length) { alert(`${day} ${g}학년 ${c}에는 옮길 구구단 기록이 없습니다.`); return; }
+  const names = (roster[g] || {})[c] || {};
+  tests.forEach((t) => { t.name = names[t.studentNum] || ''; });
+  const studs = new Set(tests.map((t) => t.studentNum)).size;
+  if (!confirm(`${day} ${g}학년 ${c}의 구구단 검사 ${tests.length}회(${studs}명)를 시트('구구단' 탭)로 옮깁니다.\n이미 시트에 있는 검사는 다시 넣지 않습니다. 계속할까요?`)) return;
+  const btn = $('guImportBtn'); btn.disabled = true; btn.textContent = '옮기는 중…';
+  try {
+    const r = await callApi('importGugudanLive', [{ idToken: await user.getIdToken() }, { grade: g, classNum: c, tests }]);
+    if (r && r.status === 'error') throw new Error(r.message);
+    alert(`옮겼습니다. 새로 넣음 ${r.added}회 · 이미 있어서 건너뜀 ${r.skipped}회`);
+  } catch (e) { alert('옮기지 못했습니다: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = '구구단 기록 시트로 옮기기'; }
+}
 
 /* 지난 날짜 기록 지우기 (오늘 것은 남김). 시트 기록과는 무관 */
 async function cleanOld() {
