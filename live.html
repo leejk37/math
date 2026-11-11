@@ -56,7 +56,12 @@
   .marks { display: flex; gap: 3px; margin-top: 6px; flex-wrap: wrap; }
   .m { width: 20px; height: 20px; border-radius: 5px; font-size: 11px; font-weight: 700; color: #fff;
     display: inline-flex; align-items: center; justify-content: center; }
-  .m.O { background: var(--o); } .m.X { background: var(--x); }
+  .m.O { background: var(--o); } .m.X { background: var(--x); } .m.S { background: #d99a12; }
+  /* 구구단: 표시 아래에 문항별 걸린 시간 */
+  .mt { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
+  .mt small { font-size: 10px; color: var(--sub); line-height: 1; }
+  .gu-key { font-size: 11px; color: var(--sub); margin-top: 3px; }
+  .gu-key i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin: 0 2px 0 6px; vertical-align: -1px; font-style: normal; }
   .card.flash { animation: flash 2.4s ease-out; }
   @keyframes flash { 0% { box-shadow: 0 0 0 6px rgba(46,107,230,.55); } 100% { box-shadow: 0 0 0 0 rgba(46,107,230,0); } }
 
@@ -354,7 +359,24 @@ function ago(ts) {
 }
 function clock(ts) { return new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
 function mmss(sec) { sec = Number(sec) || 0; return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
-function marks(str) { return String(str || '').split('').map((m, i) => `<span class="m ${m}" title="Q${i + 1}">${i + 1}</span>`).join(''); }
+// 구구단 기록은 단계 이름 끝에 '×곱하는수 걸린초'가 붙어 옴 (예: "7단: 3초 안 6/9 · 중앙값 1.4초 · ×1 1.2 ×2 0.8 …")
+function guTimes(r) {
+  if (!r || r.op !== '구구단') return null;
+  const lv = String(r.level || ''), thr = Number((lv.match(/(\d+)초 안/) || [])[1]) || 3, list = [];
+  lv.replace(/×(\d) (\d+(?:\.\d)?)/g, (_, b, t) => { list.push({ b: Number(b), t: Number(t) }); return ''; });
+  return list.length ? { thr, list } : null;
+}
+// r을 넘기면 구구단은 곱하는 수와 걸린 시간을 함께 보여 줌 (기준 시간을 넘긴 정답은 주황)
+function marks(str, r) {
+  const g = guTimes(r), s = String(str || '');
+  if (!g) return s.split('').map((m, i) => `<span class="m ${m}" title="Q${i + 1}">${i + 1}</span>`).join('');
+  return s.split('').map((m, i) => {
+    const x = g.list[i]; if (!x) return `<span class="m ${m}">${i + 1}</span>`;
+    const c = m === 'O' && x.t > g.thr ? 'S' : m;
+    return `<span class="mt" title="×${x.b} · ${x.t}초"><span class="m ${c}">${x.b}</span><small>${x.t.toFixed(1)}</small></span>`;
+  }).join('');
+}
+function guKey(r) { const g = guTimes(r); return g ? `<div class="gu-key">숫자 아래는 걸린 초<i style="background:var(--o)"></i>${g.thr}초 안<i style="background:#d99a12"></i>느림<i style="background:var(--x)"></i>틀림</div>` : ''; }
 
 function render() {
   if ($('board').classList.contains('hidden')) return;
@@ -383,8 +405,8 @@ function render() {
       <div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
       <div class="lv" title="${esc(r.op + ' ' + r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</div>
       <div class="score" style="color:${colorOf(r.score)}">${r.score}</div>
-      <div class="marks">${marks(r.results)}</div>
-      <div class="meta"><span>${list.length}회째</span><span>${ago(r.at)}</span></div>${hb}</div>`;
+      <div class="marks">${marks(r.results, r)}</div>
+      <div class="meta"><span>${list.length}회째</span><span title="걸린 시간">⏱ ${mmss(r.sec)}</span><span>${ago(r.at)}</span></div>${hb}</div>`;
   }).join('');
   $('grid').innerHTML = html || '<div class="notice">이 반의 학생명부가 비어 있습니다.</div>';
   renderHelp(nameOf);
@@ -406,7 +428,7 @@ function render() {
     th.innerHTML = th.textContent.replace(/[▲▼]/g, '') + (on ? `<span class="arw">${sortDir > 0 ? '▲' : '▼'}</span>` : '');
   });
   $('feed').innerHTML = shown.map((r) => `<tr><td>${clock(r.at)}</td><td>${esc(r.num)}</td><td>${esc(nameOf(r.num))}</td>
-      <td>${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td><td><div class="marks" style="margin:0">${marks(r.results)}</div></td><td>${mmss(r.sec)}</td></tr>`).join('')
+      <td>${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td><td><div class="marks" style="margin:0">${marks(r.results, r)}</div></td><td>${mmss(r.sec)}</td></tr>`).join('')
     || '<tr><td colspan="7" style="color:var(--sub)">아직 제출이 없습니다.</td></tr>';
 }
 
@@ -421,8 +443,26 @@ function renderItems(nums, nameOf) {
   document.querySelectorAll('[data-iorder]').forEach((b) => b.classList.toggle('on', b.dataset.iorder === itemOrder));
   const card = (g) => {
     const recs = Object.entries(g.latest);
-    const qn = Math.max(...recs.map(([, r]) => String(r.results || '').length), 0);
     const rows = [];
+    if (g.op === '구구단') {
+      // 학생마다 나온 문항이 다를 수 있어(20·40문항 검사) 위치가 아니라 곱하는 수로 묶음
+      for (let b = 1; b <= 9; b++) {
+        const got = recs.map(([n, r]) => { const t = guTimes(r), i = t ? t.list.findIndex((x) => x.b === b) : -1;
+          return i < 0 ? null : { n, mark: String(r.results || '')[i], t: t.list[i].t, thr: t.thr }; }).filter(Boolean);
+        if (!got.length) continue;
+        const wrong = got.filter((x) => x.mark === 'X').map((x) => x.n).sort((a, b2) => a - b2);
+        const slow = got.filter((x) => x.mark === 'O' && x.t > x.thr).map((x) => x.n).sort((a, b2) => a - b2);
+        const avgT = (got.reduce((s, x) => s + x.t, 0) / got.length).toFixed(1);
+        const w = Math.round((wrong.length / got.length) * 100);
+        const who = (arr) => arr.map((n) => esc(n) + '번' + (nameOf(n) ? ' ' + esc(nameOf(n)) : '')).join(', ');
+        rows.push(`<div class="qrow"><span class="q">×${b}</span><div>
+          <div class="bar"><span class="fill${wrong.length ? '' : ' zero'}" style="width:${wrong.length ? Math.round(w * 0.7) : 2}%"></span>
+            <span>${wrong.length ? `<b>${wrong.length}명</b> 오답` : '모두 정답'} · 평균 ${avgT}초</span></div>
+          ${wrong.length ? `<div class="who-wrong">틀림: ${who(wrong)}</div>` : ''}${slow.length ? `<div class="who-wrong">느림: ${who(slow)}</div>` : ''}
+        </div></div>`);
+      }
+    }
+    const qn = g.op === '구구단' ? 0 : Math.max(...recs.map(([, r]) => String(r.results || '').length), 0);
     for (let q = 0; q < qn; q++) {
       const wrong = recs.filter(([, r]) => String(r.results || '')[q] === 'X').map(([n]) => n).sort((a, b) => a - b);
       const w = Math.round((wrong.length / recs.length) * 100);
@@ -434,7 +474,7 @@ function renderItems(nums, nameOf) {
     }
     const avg = Math.round(recs.reduce((s, [, r]) => s + r.score, 0) / recs.length);
     return `<div class="item"><div class="t">${esc(g.op)} · ${esc(shortLevel(g.level))}</div>
-      <div class="s">${esc(g.level)}<br>${recs.length}명 · 평균 ${avg}점</div>${rows.join('')}</div>`;
+      <div class="s">${g.op === '구구단' ? '' : esc(g.level) + '<br>'}${recs.length}명 · 평균 ${avg}점</div>${rows.join('')}</div>`;
   };
   const list = Object.values(groups);
   if (!list.length) { $('items').style.display = ''; $('items').innerHTML = '<div class="notice">아직 제출이 없습니다.</div>'; return; }
@@ -528,7 +568,7 @@ function openStudent(num, name) {
   $('modal').innerHTML = `<h3>${esc(num)}번 ${esc(name)} <small style="color:var(--sub);font-weight:500">${esc($('day').value)} · ${list.length}회</small></h3>
     <table class="feed"><thead><tr><th>시각</th><th>영역·단계</th><th>점수</th><th>문항</th><th>걸린 시간</th></tr></thead><tbody>
     ${list.map((r) => `<tr><td>${clock(r.at)}</td><td title="${esc(r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td>
-      <td><div class="marks" style="margin:0">${marks(r.results)}</div></td><td>${mmss(r.sec)}</td></tr>`).join('')}
+      <td><div class="marks" style="margin:0">${marks(r.results, r)}</div>${guKey(r)}</td><td>${mmss(r.sec)}</td></tr>`).join('')}
     </tbody></table><div class="foot"><button onclick="document.getElementById('dim').classList.remove('show')">닫기</button></div>`;
   $('dim').classList.add('show');
 }
