@@ -5322,7 +5322,8 @@ setTimeout(() => {
       document.getElementById('unit' + g + '-curriculumControls').style.display = 'none';
       const frame = document.getElementById('unit' + g + '-frame');
       frame.style.display = 'block';
-      frame.src = 'unit/kma.html?c=' + code + '&u=' + encodeURIComponent(who);
+      frame.src = 'unit/kma.html?c=' + code + '&u=' + encodeURIComponent(who) +
+        '&g=' + encodeURIComponent(document.getElementById('grade').value) + '&cls=' + encodeURIComponent(document.getElementById('classNum').value) + '&n=' + encodeURIComponent(document.getElementById('studentNum').value);
       setTimeout(function() { frame.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
     }
 

@@ -92,17 +92,22 @@ table.stair{margin:10px auto 2px;border-collapse:collapse;font-size:15px}table.s
 </main>
 <div class="bar"><span id="cnt" style="align-self:center;font-size:14px;color:var(--sub)"></span><button class="btn s" id="exit" style="display:none">메인으로</button><button class="btn s" id="reset">답 지우기</button><button class="btn s" id="save" style="background:#fef3c7">임시저장</button><button class="btn p" id="grade">채점하기</button></div>
 <div class="modal" id="modal"><div><p id="mtext"></p><button class="btn s" id="mno">취소</button> <button class="btn p" id="myes">확인</button></div></div>
+<!-- 연산진단시스템 안에서 열렸을 때 결과를 시트(단원평가 탭)에 저장: config.js(서버 주소) → api.js -->
+<script src="../config.js"></script>
+<script src="../api.js"></script>
 <script src="kma-core.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-let seed,set,answers,graded=false,savedAt=null,U,SECTIONS;
+let seed,set,answers,graded=false,savedAt=null,startedAt=null,U,SECTIONS;
 const UQ=new URLSearchParams(location.search);const CODE=(UQ.get('c')||'421').replace(/[^0-9a-z]/g,'');const WHO=(UQ.get('u')||'').replace(/[^0-9A-Za-z가-힣_-]/g,'');const EMBED=window.parent!==window;
+// 학생 정보(진단 첫 화면에서 넘겨줌): g 학년, cls 반, n 번호 — 있으면 채점 결과를 서버로 보냄
+const STU={grade:UQ.get('g')||'',classNum:UQ.get('cls')||'',studentNum:UQ.get('n')||''};const CAN_SEND=!!(STU.grade&&STU.classNum&&STU.studentNum&&typeof callApi==='function');
 const KEY=k=>'kma'+CODE+':'+(WHO?WHO+':':'')+k;
 const fmt=t=>{const d=new Date(t);return `${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
-function saveNow(){savedAt=Date.now();store.set(KEY(seed),{a:answers,t:savedAt});}
+function saveNow(){savedAt=Date.now();if(!startedAt)startedAt=savedAt;store.set(KEY(seed),{a:answers,t:savedAt,s:startedAt});}
 const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
 function confirmBox(text,yes){$('mtext').textContent=text;$('modal').style.display='flex';$('myes').onclick=()=>{$('modal').style.display='none';yes();};$('mno').onclick=()=>{$('modal').style.display='none';};}
-function load(s){seed=s;$('seed').value=s;set=generateSet(CODE,s);const raw=store.get(KEY(s));const saved=Array.isArray(raw)?{a:raw}:raw;answers=(saved&&saved.a&&saved.a.length===30)?saved.a:Array(30).fill('');savedAt=saved&&saved.t||null;const n0=answers.filter(a=>a!=='').length;const nt=$('notice');if(n0){nt.style.display='block';nt.textContent=`세트 ${s}에 지난번에 쓴 답 ${n0}개를 불러왔어요${savedAt?` (마지막 저장: ${fmt(savedAt)})`:''}. 이어서 풀면 됩니다.`;}else nt.style.display='none';graded=false;store.set(KEY('last'),s);render();$('result').style.display='none';window.scrollTo(0,0);}
+function load(s){seed=s;$('seed').value=s;set=generateSet(CODE,s);const raw=store.get(KEY(s));const saved=Array.isArray(raw)?{a:raw}:raw;answers=(saved&&saved.a&&saved.a.length===30)?saved.a:Array(30).fill('');savedAt=saved&&saved.t||null;startedAt=saved&&saved.s||null;const n0=answers.filter(a=>a!=='').length;const nt=$('notice');if(n0){nt.style.display='block';nt.textContent=`세트 ${s}에 지난번에 쓴 답 ${n0}개를 불러왔어요${savedAt?` (마지막 저장: ${fmt(savedAt)})`:''}. 이어서 풀면 됩니다.`;}else nt.style.display='none';graded=false;store.set(KEY('last'),s);render();$('result').style.display='none';window.scrollTo(0,0);}
 function render(){const L=$('list');L.innerHTML='';
  set.forEach((p,i)=>{const sec=SECTIONS.find(s=>s.from===p.no);if(sec){const t=document.createElement('div');t.className='sec';t.textContent=sec.name;L.appendChild(t);}
   const c=document.createElement('div');c.className='card';c.id='c'+p.no;
@@ -124,8 +129,18 @@ function grade(){graded=true;let ok=0;const wrong=[];
  const secs=SECTIONS.map(s=>{const n=s.to-s.from+1;const k=set.slice(s.from-1,s.to).filter((p,j)=>{const a=answers[s.from-1+j];return a!==''&&Number(a)===p.ans;}).length;return `<div class="rg">${s.name}<br><b>${k}</b> / ${n}</div>`;}).join('');
  const r=$('result');r.style.display='block';
  r.innerHTML=`<h2>${ok} / 30 문항 정답</h2><div style="color:var(--sub);font-size:14px">세트 번호 ${seed}</div><div class="rgrid">${secs}</div>${wrong.length?`<div class="wrong">틀린 문항(눌러서 이동): ${wrong.map(n=>`<a href="#c${n}" data-n="${n}">${n}번</a>`).join('')}</div>`:'<div class="wrong" style="color:var(--ok)">모두 맞혔어요! 🎉</div>'}`;
+ if(CAN_SEND)sendResult();
  r.querySelectorAll('a').forEach(a=>a.onclick=e=>{e.preventDefault();$('c'+a.dataset.n).scrollIntoView({behavior:'smooth',block:'center'});});
  $('grade').textContent='다시 풀기';window.scrollTo({top:0,behavior:'smooth'});}
+
+// 채점 결과를 '단원평가' 시트에 저장 (단원평가.gs의 submitUnitTest)
+function sendResult(){const box=document.createElement('div');box.id='sendbox';box.style.cssText='margin-top:10px;font-size:14px;font-weight:700';const old=$('sendbox');if(old)old.remove();$('result').appendChild(box);
+ const correct=set.map((p,i)=>answers[i]!==''&&Number(answers[i])===p.ans);const mins=startedAt?Math.round((Date.now()-startedAt)/60000):0;
+ const data=Object.assign({},STU,{code:CODE,title:U.title,seed,correct,answers:answers.slice(),minutes:mins,startedAt:startedAt?new Date(startedAt).toISOString():''});
+ const go=(tries)=>{box.style.color='var(--sub)';box.textContent='선생님께 결과를 보내는 중…';
+  callApi('submitUnitTest',[data]).then(()=>{box.style.color='var(--ok)';box.textContent='✅ 선생님께 결과를 보냈어요.';})
+  .catch(err=>{if(tries<2){setTimeout(()=>go(tries+1),4000*(tries+1));return;}box.style.color='var(--no)';box.innerHTML='⚠️ 결과를 보내지 못했어요. 답은 이 기기에 남아 있어요. <button class="btn s" id="resend" style="padding:3px 10px;margin-left:6px">다시 보내기</button>';$('resend').onclick=()=>go(0);});};
+ go(0);}
 $('grade').onclick=()=>{if(graded){answers=Array(30).fill('');saveNow();graded=false;$('grade').textContent='채점하기';$('result').style.display='none';render();window.scrollTo(0,0);return;}
  const n=answers.filter(a=>a!=='').length;if(n<30)confirmBox(`아직 ${30-n}문항을 풀지 않았어요. 그래도 채점할까요?`,grade);else grade();};
 $('reset').onclick=()=>confirmBox('이 세트에 쓴 답을 모두 지울까요?',()=>{answers=Array(30).fill('');saveNow();graded=false;$('grade').textContent='채점하기';$('result').style.display='none';render();});
