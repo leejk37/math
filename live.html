@@ -195,6 +195,7 @@
     <label class="toggle"><input type="checkbox" id="showNames" checked> 이름 보기</label>
     <span class="dot" id="conn" title="연결 상태"></span>
     <span id="who"></span>
+    <button id="resetBtn" title="지금 이 시각부터 새로 보이게 화면을 비웁니다. 기록은 지워지지 않습니다.">↺ 화면 초기화</button>
     <button id="fsBtn" title="큰 화면용: 학생 카드를 가로 5 × 세로 4로 크게 보여 줍니다">⛶ 전체화면</button>
     <button id="loginBtn" class="primary">선생님 로그인</button>
     <button id="logoutBtn" class="hidden">로그아웃</button>
@@ -206,6 +207,7 @@
 
   <section id="board" class="hidden">
     <div class="pastbar hidden" id="pastBar"><span id="pastText"></span><button id="pastToday">오늘 현황으로 돌아가기</button></div>
+    <div class="pastbar hidden" id="resetBar"><span id="resetText"></span><button id="resetUndo">오늘 기록 모두 다시 보기</button></div>
     <div class="helpbox quiet" id="helpBox">
       <div class="hd"><b>🙋 도움 요청</b><span class="cnt" id="helpCount">없음</span>
         <span class="right"><span id="helpDone"></span><label class="toggle"><input type="checkbox" id="helpSound" checked> 알림음</label></span></div>
@@ -265,6 +267,7 @@ let sortKey = store.get('sortKey', 'at');                 // 최근 제출 정�
 let sortDir = Number(store.get('sortDir', '-1')) || -1;   // 1 오름차순, -1 내림차순
 let feedAll = false;                                     // 최근 제출: 20개만 / 모두
 let itemOrder = store.get('iorder', 'step');             // 단계별 문항 오답: step(단계순) / recent(최근순)
+let resetAt = 0;          // 화면 초기화 시각(ms). 이 시각 전의 제출·도움 요청은 화면에서만 숨김 (Firebase·시트 기록은 그대로)
 
 function msg(html) { $('msg').innerHTML = html; $('msg').classList.remove('hidden'); $('board').classList.add('hidden'); }
 function showBoard() { $('msg').classList.add('hidden'); $('board').classList.remove('hidden'); }
@@ -326,6 +329,8 @@ async function init() {
   $('showNames').checked = store.get('names', '1') === '1';
   $('showNames').onchange = () => { store.set('names', $('showNames').checked ? '1' : '0'); render(); };
   $('cleanBtn').onclick = cleanOld;
+  $('resetBtn').onclick = resetScreen;
+  $('resetUndo').onclick = undoReset;
   $('dim').onclick = (e) => { if (e.target.id === 'dim') $('dim').classList.remove('show'); };
   setInterval(render, 30000); // '몇 분 전' 표시 갱신
 }
@@ -360,6 +365,7 @@ function subscribe() {
   data = {}; seenCount = {}; firstLoad = true; helpData = {}; helpSeen = null;
   msg('현황을 불러오는 중…');
   const cls = `${window.liveKey(g)}_${window.liveKey(c)}`;
+  loadReset(cls, day);
   const path = `live/${day}/${cls}`;
   unsubHelp = dbm.onValue(dbm.ref(db, `help/${day}/${cls}`), (snap) => {
     helpData = snap.val() || {};
@@ -382,7 +388,7 @@ function subscribe() {
 /* ---------- 화면 그리기 ---------- */
 function attemptsOf(num) {
   return Object.entries(data[num] || {}).map(([id, r]) => ({ id, ...r }))
-    .filter((r) => typeof r.at === 'number').sort((a, b) => a.at - b.at);
+    .filter((r) => typeof r.at === 'number' && r.at >= resetAt).sort((a, b) => a.at - b.at);
 }
 // 단계 이름의 짧은 표시. 100칸 계산은 단계 번호 대신 '연산 칸수'로 보여 줌 ("10단계: 뺄셈 25칸 · …" → "뺄셈 25칸")
 function shortLevel(lv) {
@@ -699,6 +705,37 @@ function updateDayUi() {
   $('pastBar').classList.toggle('hidden', !past);
   $('day').max = today;
   if (past) $('pastText').innerHTML = `📅 <b>${esc(day)} (${weekday(day)})</b> 지난 날짜의 기록을 보고 있습니다.`;
+  $('resetBtn').classList.toggle('hidden', !!past);   // 화면 초기화는 오늘 현황에서만
+}
+
+/* ---------- 화면 초기화 (오늘 현황) ----------
+   이 컴퓨터의 브라우저에 반별로 '초기화 시각'만 적어 두고, 그 전 기록을 화면에서 숨김.
+   날짜가 바뀌면 저절로 풀림. Firebase 현황판 기록과 평가데이터 시트는 지우지 않음 */
+function loadReset(cls, day) {
+  const [d, t] = String(store.get('reset_' + cls, '')).split('|');
+  resetAt = (d === day && Number(t)) || 0;
+  updateResetUi();
+}
+function updateResetUi() {
+  $('resetBar').classList.toggle('hidden', !resetAt);
+  if (resetAt) $('resetText').innerHTML = `↺ <b>${esc(clock(resetAt))}</b>에 화면을 초기화했습니다. 그 뒤의 제출과 도움 요청만 보입니다.`;
+}
+function curCls() { return `${window.liveKey($('grade').value)}_${window.liveKey($('classNum').value)}`; }
+function resetScreen() {
+  if (!user || $('day').value !== window.liveToday()) return;
+  if (!confirm(`${$('grade').value}학년 ${$('classNum').value}반 현황판 화면을 지금 시각부터 새로 시작합니다.\n` +
+               '지금까지의 제출·도움 요청은 화면에서만 사라지고, 기록은 그대로 남습니다.\n(아래 \'오늘 기록 모두 다시 보기\'로 되돌릴 수 있습니다) 계속할까요?')) return;
+  resetAt = Date.now();
+  store.set('reset_' + curCls(), $('day').value + '|' + resetAt);
+  seenCount = {}; helpSeen = new Set(Object.keys(helpData).flatMap(helpsOf).map((h) => h.id));
+  updateResetUi(); render();
+}
+function undoReset() {
+  resetAt = 0;
+  try { localStorage.removeItem('live_reset_' + curCls()); } catch (e) {}
+  helpSeen = new Set(Object.keys(helpData).flatMap(helpsOf).map((h) => h.id));   // 다시 보이는 요청에 알림음 없음
+  firstLoad = true;   // 다시 보이는 카드가 한꺼번에 깜빡이지 않게
+  updateResetUi(); render(); firstLoad = false;
 }
 /* 이 반의 기록이 있는 이전(-1)·다음(+1) 날짜로 이동. 다른 반만 기록이 있는 날은 건너뜀 */
 async function jumpDay(dir) {
@@ -743,7 +780,7 @@ function openStudent(num, name) {
 const HELP = { unknown: { icon: '🤔', label: '모르겠어요' }, check: { icon: '🙋', label: '확인해 주세요' } };
 function helpsOf(num) {
   return Object.entries(helpData[num] || {}).map(([id, h]) => ({ id, num, ...h }))
-    .filter((h) => HELP[h.type] && typeof h.at === 'number');
+    .filter((h) => HELP[h.type] && typeof h.at === 'number' && h.at >= resetAt);
 }
 function pendingOf(num) { return helpsOf(num).filter((h) => !h.done).sort((a, b) => a.at - b.at); }
 function waitText(ts) {
