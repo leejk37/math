@@ -165,6 +165,7 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
   </fieldset>
 
   <button type="button" class="go" id="begin"></button>
+  <button type="button" class="plain" id="exitMenu" hidden>진단 메뉴로 돌아가기</button>
 </section>
 
 <section id="s-mic" hidden>
@@ -608,6 +609,18 @@ function initResult(){
 }
 
 initSetup();initTest();initResult();
+
+/* ---------- 진단시스템(index.html) 안에서 열렸을 때 ---------- */
+/* 높이를 알려 iframe 크기를 맞추고, 고른 학생 이름을 미리 넣고, 메뉴로 돌아가는 버튼을 보인다 */
+var EMBED=window.parent!==window&&/[?&]embed=1/.test(location.search);
+if(EMBED){
+  try{var nm=sessionStorage.getItem('gugu_name');if(nm)$('#name').value=nm;}catch(e){}
+  var tell=function(){parent.postMessage({type:'frac-height',h:Math.ceil($('main').getBoundingClientRect().height)+20},location.origin);};
+  if(window.ResizeObserver)new ResizeObserver(tell).observe($('main'));
+  tell();
+  var ex=$('#exitMenu');ex.hidden=false;
+  ex.addEventListener('click',function(){earStop();parent.postMessage({type:'frac-exit'},location.origin);});
+}
 })();
 </script>
 </body>
