@@ -72,6 +72,7 @@
   }
 
   window.liveConnect = liveConnect; // help.js(도움 버튼)도 같은 연결을 씁니다
+  window.reportLive = function (data) { reportLive(data); }; // 시트에 저장하지 않는 화면(gugudan.html)이 현황판에만 보낼 때 씀
 
   function reportLive(data) {
     if (!data) return;

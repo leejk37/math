@@ -5253,9 +5253,17 @@ setTimeout(() => {
 
     initFracLevelSelects();
 
-    // 🗣️ 말로 푸는 구구단: 시트에 저장하지 않으므로 학생 선택 없이도 시작 가능 — 이름이 골라져 있으면 gugudan.html의 이름 칸에 미리 넣음
+    // 🗣️ 말로 푸는 구구단: 시트에는 저장하지 않고, 학생을 골랐을 때만 실시간 현황판(live.html)으로 단별 결과를 보냄
+    //  - 학생 정보는 sessionStorage 'gugu_who'로 넘김(주소에 이름을 넣지 않음)
     function startGugudan() {
-      try { sessionStorage.setItem('gugu_name', document.getElementById('studentName').value || ''); } catch (e) {}
+      const who = {
+        grade: document.getElementById('grade').value,
+        classNum: document.getElementById('classNum').value,
+        studentNum: document.getElementById('studentNum').value,
+        name: document.getElementById('studentName').value || ''
+      };
+      if (!who.name && !confirm('학생을 고르지 않으면 결과가 실시간 현황판에 나오지 않아요.\n그래도 시작할까요?')) return;
+      try { sessionStorage.setItem('gugu_who', JSON.stringify(who)); } catch (e) {}
       ['dashboardControls', 'targetSearchResult', 'chartContainer', 'nav-menu'].forEach(function(id) {
         const el = document.getElementById(id); if (el) el.style.display = 'none';
       });

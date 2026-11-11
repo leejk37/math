@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>말로 푸는 구구단</title>
+<script src="config.js"></script>
+<script src="api.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -272,6 +274,8 @@ function analyze(text,a,b,ans){
 var $=function(s){return document.querySelector(s);};
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 var LIMIT=10000;
+var EMBED=window.parent!==window&&/[?&]embed=1/.test(location.search);
+var WHO=null;if(EMBED){try{WHO=JSON.parse(sessionStorage.getItem('gugu_who')||'null');}catch(e){}}
 var cfg={dans:[2,3,4,5,6,7,8,9],count:'all',thr:3,mode:SR?'voice':'pad',name:''};
 var items=[],idx=0,cur=null,t0=0,shown=false,limitTimer=null,pendTimer=null,pendAt=0,firstSaidAt=0,run=0,padVal='',sel=null;
 
@@ -510,7 +514,25 @@ function kind(i){
 var MARK={fast:'○',slow:'△',bad:'✕',none:'–',off:''};
 var KIND={fast:'빠르고 정확',slow:'느리지만 정확',bad:'오답',none:'답하지 못함'};
 function median(a){if(!a.length) return 0;a=a.slice().sort(function(x,y){return x-y;});var m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;}
-function showResult(){cur=null;earStop();show('result');renderResult();}
+function showResult(){cur=null;earStop();show('result');renderResult();sendLive();}
+/* 실시간 현황판(live.html)으로 단별 결과 보내기 — 진단시스템에서 학생을 고르고 열었을 때만
+   현황판 규칙상 한 기록의 O·X는 20개까지라 단마다 한 기록으로 보냄
+   (점수=정확도, O·X는 ×1부터 ×9 순서, 단계 이름 뒤에 빠르고 정확한 문항 수와 중앙값을 적음) */
+function sendLive(){
+  if(!WHO||!WHO.studentNum||typeof window.reportLive!=='function') return;
+  var dans=[];items.forEach(function(i){if(i.status&&dans.indexOf(i.a)<0)dans.push(i.a);});
+  dans.sort().forEach(function(a){
+    var its=items.filter(function(i){return i.a===a&&i.status;}).sort(function(x,y){return x.b-y.b;});
+    var ok=its.filter(function(i){return i.status==='ok';});
+    var fast=its.filter(function(i){return kind(i)==='fast';}).length;
+    window.reportLive({grade:WHO.grade,classNum:WHO.classNum,studentNum:WHO.studentNum,
+      operation:'구구단',
+      level:a+'단: '+(its.length<9?its.map(function(i){return '×'+i.b;}).join(' ')+' · ':'')+cfg.thr+'초 안 '+fast+'/'+its.length+(ok.length?' · 중앙값 '+sec(median(ok.map(function(i){return i.rt;}))):''),
+      score:Math.round(ok.length/its.length*100),
+      timeSeconds:its.reduce(function(s,i){return s+i.rt;},0)/1000,
+      results:its.map(function(i){return i.status==='ok'?'O':'X';})});
+  });
+}
 function renderResult(){
   var n=items.length,ok=items.filter(function(i){return i.status==='ok';});
   var fast=items.filter(function(i){return kind(i)==='fast';});
@@ -612,9 +634,8 @@ initSetup();initTest();initResult();
 
 /* ---------- 진단시스템(index.html) 안에서 열렸을 때 ---------- */
 /* 높이를 알려 iframe 크기를 맞추고, 고른 학생 이름을 미리 넣고, 메뉴로 돌아가는 버튼을 보인다 */
-var EMBED=window.parent!==window&&/[?&]embed=1/.test(location.search);
 if(EMBED){
-  try{var nm=sessionStorage.getItem('gugu_name');if(nm)$('#name').value=nm;}catch(e){}
+  if(WHO&&WHO.name)$('#name').value=WHO.name;
   var tell=function(){parent.postMessage({type:'frac-height',h:Math.ceil($('main').getBoundingClientRect().height)+20},location.origin);};
   if(window.ResizeObserver)new ResizeObserver(tell).observe($('main'));
   tell();
