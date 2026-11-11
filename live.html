@@ -342,7 +342,11 @@ function attemptsOf(num) {
   return Object.entries(data[num] || {}).map(([id, r]) => ({ id, ...r }))
     .filter((r) => typeof r.at === 'number').sort((a, b) => a.at - b.at);
 }
-function shortLevel(lv) { return String(lv || '').split(':')[0].trim(); }
+// 단계 이름의 짧은 표시. 100칸 계산은 단계 번호 대신 '연산 칸수'로 보여 줌 ("10단계: 뺄셈 25칸 · …" → "뺄셈 25칸")
+function shortLevel(lv) {
+  const s = String(lv || ''), h = s.match(/^\d+단계:\s*(\S+ \d+칸)/);
+  return h ? h[1] : s.split(':')[0].trim();
+}
 function colorOf(score) {
   if (score == null) return 'var(--none)';
   if (score >= 100) return 'var(--s100)';
@@ -509,7 +513,8 @@ function renderItems(nums, nameOf) {
 }
 
 /* 단계 비교: '2단계'가 '10단계'보다 앞에 오도록 숫자로 비교 */
-function levelCmp(a, b) { return shortLevel(a).localeCompare(shortLevel(b), 'ko', { numeric: true }) || String(a).localeCompare(String(b), 'ko', { numeric: true }); }
+// 단계 순서는 단계 이름 앞의 번호로 (100칸 계산도 1~12단계 순: 곱셈→나눗셈→덧셈→뺄셈, 25→50→100칸)
+function levelCmp(a, b) { return String(a).localeCompare(String(b), 'ko', { numeric: true }); }
 
 /* ---------- 최근 제출 정렬 ---------- */
 function setSort(key) {
