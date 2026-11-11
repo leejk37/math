@@ -212,10 +212,12 @@
       <div id="helpList"></div>
     </div>
     <div class="summary">
-      <div class="stat"><div class="k">제출한 학생</div><div class="v" id="stSubmitted">-</div></div>
-      <div class="stat"><div class="k" id="stAttemptsK">오늘 제출 횟수</div><div class="v" id="stAttempts">-</div></div>
-      <div class="stat"><div class="k">최근 점수 평균</div><div class="v" id="stAvg">-</div></div>
-      <div class="stat"><div class="k">마지막 제출</div><div class="v" id="stLast">-</div></div>
+      <!-- 가장 최근에 제출된 계산(지금 반이 하고 있는 것)을 기준으로 한 요약 -->
+      <div class="stat"><div class="k">지금 하는 계산</div><div class="v" id="stNow">-</div></div>
+      <div class="stat"><div class="k">참여한 학생</div><div class="v" id="stJoin">-</div></div>
+      <div class="stat"><div class="k">반 평균</div><div class="v" id="stAvg">-</div></div>
+      <div class="stat"><div class="k">만점</div><div class="v" id="stFull">-</div></div>
+      <div class="stat"><div class="k">아직 안 한 학생</div><div class="v" id="stNot" style="font-size:18px">-</div></div>
     </div>
 
     <div class="grid" id="grid"></div>
@@ -429,6 +431,32 @@ function marks(str, r) {
 // ---- 반 평균 / 내 평균 (현황판에 모인 그날 기록 기준) ----
 // 100칸: 반 평균 = 같은 계산을 한 학생들의 최근 기록 평균, 내 평균 = 이 학생의 그 계산 기록 전체 평균
 // 구구단: 반 평균 = 학생마다 2~9단을 모은 결과의 평균, 내 평균 = 이 학생의 구구단 기록 전체(정확도는 문항 기준, 시간은 검사 1회당)
+// 요약 줄: 가장 최근에 제출된 계산(100칸은 '나눗셈 50칸'처럼 칸·연산까지, 구구단은 구구단 전체)을 기준으로
+// 참여 인원, 반 평균 점수·시간(학생마다 그 계산의 최근 기록), 만점 학생 수, 아직 안 한 학생
+function renderNowStats(nums, nameOf, all) {
+  const set = (id, v, t) => { $(id).textContent = v; $(id).title = t || ''; };
+  if (!all.length) { ['stNow', 'stJoin', 'stAvg', 'stFull', 'stNot'].forEach((id) => set(id, '-')); return; }
+  const cur = all.reduce((a, r) => (r.at > a.at ? r : a));
+  const keyOf = (r) => r.op === '구구단' ? '구구단' : r.op + '|' + shortLevel(r.level);
+  const key = keyOf(cur);
+  const label = cur.op === '구구단' ? '구구단' : cur.op === '100칸 계산' ? shortLevel(cur.level) : cur.op + ' ' + shortLevel(cur.level);
+  const recs = [], notYet = [];
+  nums.forEach((n) => {
+    const mine = attemptsOf(n).filter((r) => keyOf(r) === key);
+    if (!mine.length) { notYet.push(n); return; }
+    recs.push(key === '구구단' ? guSummary(mine) : mine[mine.length - 1]);
+  });
+  const avgS = recs.reduce((a, r) => a + (Number(r.score) || 0), 0) / recs.length;
+  const avgT = recs.reduce((a, r) => a + (Number(r.sec) || 0), 0) / recs.length;
+  set('stNow', label, cur.op + ' ' + cur.level);
+  set('stJoin', `${recs.length} / ${nums.length}명`);
+  set('stAvg', `${Math.round(avgS)}점 · ${mmss(Math.round(avgT))}`, '학생마다 이 계산의 가장 최근 기록으로 낸 평균');
+  set('stFull', `${recs.filter((r) => Number(r.score) === 100).length}명`);
+  // 칸에는 번호만(많아도 짧게), 이름은 마우스를 올리면
+  set('stNot', notYet.length ? notYet.join(', ') + '번' : '모두 참여',
+    notYet.map((n) => n + '번' + (nameOf(n) ? ' ' + nameOf(n) : '')).join(', '));
+}
+
 function guClassAvg(nums) {
   const xs = nums.map((n) => attemptsOf(n)).filter((l) => l.some((r) => r.op === '구구단')).map(guSummary);
   return xs.length ? { n: xs.length, score: xs.reduce((a, x) => a + x.score, 0) / xs.length, sec: xs.reduce((a, x) => a + x.sec, 0) / xs.length } : null;
@@ -509,10 +537,7 @@ function render() {
   renderHelp(nameOf);
   $('grid').querySelectorAll('.card[data-num]').forEach((el) => { el.onclick = () => openStudent(el.dataset.num, nameOf(el.dataset.num)); });
 
-  $('stSubmitted').textContent = `${submitted} / ${nums.length}`;
-  $('stAttempts').textContent = attempts;
-  $('stAvg').textContent = submitted ? Math.round(sum / submitted) : '-';
-  $('stLast').textContent = last ? ago(last) : '-';
+  renderNowStats(nums, nameOf, all);
 
   fitFs();
   renderItems(nums, nameOf);
@@ -668,7 +693,6 @@ function updateDayUi() {
   $('todayBtn').disabled = !past;
   $('nextDay').disabled = !day || day >= today;
   $('pastBar').classList.toggle('hidden', !past);
-  $('stAttemptsK').textContent = past ? '그날 제출 횟수' : '오늘 제출 횟수';
   $('day').max = today;
   if (past) $('pastText').innerHTML = `📅 <b>${esc(day)} (${weekday(day)})</b> 지난 날짜의 기록을 보고 있습니다.`;
 }
