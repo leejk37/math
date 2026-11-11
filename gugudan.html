@@ -135,6 +135,7 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
   <fieldset>
     <legend>검사할 단</legend>
     <div class="chips" id="dans"></div>
+    <p class="muted" style="margin-top:6px">구구단은 2단부터 9단까지 모든 단을 검사합니다.</p>
   </fieldset>
 
   <fieldset>
@@ -353,13 +354,8 @@ function paintBegin(){
 }
 function initSetup(){
   var box=$('#dans');
-  for(var a=2;a<=9;a++){var b=el('button','',a+'단');b.type='button';b.dataset.v=a;b.setAttribute('aria-pressed','true');box.appendChild(b);}
-  box.addEventListener('click',function(e){
-    var b=e.target.closest('button');if(!b) return;
-    var v=+b.dataset.v,i=cfg.dans.indexOf(v);
-    if(i>=0)cfg.dans.splice(i,1);else cfg.dans.push(v);
-    b.setAttribute('aria-pressed',String(i<0));paintBegin();
-  });
+  /* 모든 단(2~9단)을 검사함 — 단은 고를 수 없고 보여 주기만 함 */
+  for(var a=2;a<=9;a++){var b=el('button','',a+'단');b.type='button';b.dataset.v=a;b.setAttribute('aria-pressed','true');b.tabIndex=-1;b.style.cursor='default';box.appendChild(b);}
   seg('count','count');seg('thr','thr');seg('mode','mode',paintBegin);
   if(!SR){$('#mode').children[0].disabled=true;$('#noSR').hidden=false;}
   paintBegin();

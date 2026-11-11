@@ -79,6 +79,8 @@
   body.fs .card .score { font-size: 44px; margin-top: auto; line-height: 1.05; }
   body.fs .rank { font-size: 60px; line-height: 1.1; }
   body.fs .card .marks { margin-top: 4px; }
+  body.fs .card .marks .m { width: 36px !important; height: 30px; font-size: 17px; }
+  body.fs .card .marks .mt small { font-size: 14px; }
   body.fs .card .who-wrong { font-size: 15px; }
   body.fs .card .meta { font-size: 16px; margin-top: auto; }
   .rank.r1 { background: #fde68a; color: #854d0e; } .rank.r2 { background: #e5e7eb; color: #374151; } .rank.r3 { background: #fed7aa; color: #9a3412; }
@@ -413,6 +415,23 @@ function marks(str, r) {
     return `<span class="mt" title="×${x.b} · ${x.t}초"><span class="m ${c}">${x.b}</span><small>${x.t.toFixed(1)}</small></span>`;
   }).join('');
 }
+// 구구단 카드: 학생의 단별 가장 최근 기록을 모아 하나로 (점수=전체 정확도, 시간=합계)
+// 표시는 단마다 한 칸(색=그 단 정확도, 아래 숫자=그 단 정답 반응시간 중앙값)
+function guSummary(list) {
+  const by = {}, cnt = {};
+  list.forEach((r) => { if (r.op === '구구단') { const d = parseInt(r.level, 10); by[d] = r; cnt[d] = (cnt[d] || 0) + 1; } });
+  const dans = Object.keys(by).map(Number).filter((d) => d >= 2 && d <= 9).sort((a, b) => a - b);
+  let ok = 0, tot = 0, sec = 0, at = 0;
+  const cells = dans.map((d) => {
+    const x = by[d], res = String(x.results || '');
+    ok += (res.match(/O/g) || []).length; tot += res.length; sec += Number(x.sec) || 0; at = Math.max(at, x.at);
+    const med = (String(x.level).match(/중앙값 ([\d.]+)초/) || [])[1];
+    return `<span class="mt" title="${d}단 ${x.score}점${med ? ' · 중앙값 ' + med + '초' : ''}"><span class="m" style="background:${colorOf(x.score)};width:26px">${d}</span><small>${med ? med : '-'}</small></span>`;
+  });
+  return { op: '구구단', level: '구구단 ' + (dans.length === 8 ? '2~9단' : dans.map((d) => d + '단').join(' ')),
+    score: tot ? Math.round(ok / tot * 100) : 0, sec, at, results: '', tries: Math.max(0, ...Object.values(cnt)),
+    gu: cells.join('') + `<div class="gu-key" style="width:100%">칸 색은 단별 정확도, 아래 숫자는 정답 시간 중앙값(초)</div>` };
+}
 function guKey(r) { const g = guTimes(r); return g ? `<div class="gu-key">숫자 아래는 걸린 초<i style="background:var(--o)"></i>${g.thr}초 안<i style="background:#d99a12"></i>느림<i style="background:var(--x)"></i>틀림</div>` : ''; }
 
 function render() {
@@ -439,16 +458,17 @@ function render() {
       return `<div class="card none${asks.length ? ' asking' : ''}"><div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
               <div class="lv" style="margin-top:14px">아직 제출 없음</div>${hb}</div>`;
     }
-    const r = list[list.length - 1];
+    let r = list[list.length - 1];
+    if (r.op === '구구단') r = guSummary(list);   // 구구단은 단마다 따로 오는 기록을 모아 2~9단 한 장으로
     submitted++; sum += r.score; last = Math.max(last, r.at);
     return `<div class="card${changed ? ' flash' : ''}${asks.length ? ' asking' : ''}" data-num="${esc(n)}" style="border-left-color:${colorOf(r.score)}">
       <div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
-      ${r.op === '100칸 계산'
+      ${r.op === '100칸 계산' || r.gu
         ? `<div class="lv h100" title="${esc(r.op + ' ' + r.level)}">${esc(shortLevel(r.level))}</div>`
         : `<div class="lv" title="${esc(r.op + ' ' + r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</div>`}
       <div class="score" style="color:${colorOf(r.score)}">${r.score}${rankBadge(ranks, r, n)}</div>
-      <div class="marks">${marks(r.results, r)}</div>
-      <div class="meta"><span>${list.length}회째</span><span title="걸린 시간">⏱ ${mmss(r.sec)}</span><span>${ago(r.at)}</span></div>${hb}</div>`;
+      <div class="marks">${r.gu ? r.gu : marks(r.results, r)}</div>
+      <div class="meta"><span>${r.gu ? r.tries : list.length}회째</span><span title="걸린 시간">⏱ ${mmss(r.sec)}</span><span>${ago(r.at)}</span></div>${hb}</div>`;
   }).join('');
   $('grid').innerHTML = html || '<div class="notice">이 반의 학생명부가 비어 있습니다.</div>';
   renderHelp(nameOf);
