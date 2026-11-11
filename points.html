@@ -132,11 +132,11 @@
       <div class="tablewrap"><table>
         <thead><tr>
           <th data-k="num">번호</th><th data-k="name">이름</th><th class="n" data-k="left">남은</th><th class="n" data-k="earned">모은</th>
-          <th class="n" data-k="spent">쓴</th><th class="n" data-k="month">이달</th><th class="n" data-k="reach">도달 단계</th><th class="n" data-k="badges">뱃지</th>
+          <th class="n" data-k="spent">쓴</th><th class="n" data-k="month">이달</th><th class="n" data-k="reach">도달 단계</th><th class="n" data-k="streak">연속</th><th class="n" data-k="badges">뱃지</th>
         </tr></thead>
         <tbody id="clsBody"></tbody>
       </table></div>
-      <div class="note">포인트는 진단 기록(종합평가결과)으로 그때그때 계산합니다. 규칙은 평가데이터 스프레드시트의 '수학포인트규칙' 탭, 선물은 '수학선물목록' 탭에서 고칩니다.</div>
+      <div class="note">포인트는 진단 기록(종합평가결과)·100칸계산·구구단 탭으로 그때그때 계산합니다. '연속'은 오늘의 훈련 완료가 이어진 날 수(토·일 건너뜀)입니다. 규칙은 평가데이터 스프레드시트의 '수학포인트규칙' 탭, 선물은 '수학선물목록' 탭에서 고칩니다.</div>
     </div>
   </section>
 
@@ -221,9 +221,9 @@ async function startTeacher() {
 async function loadClass() {
   const [g, c] = $('cls').value.split('|');
   store.set('cls', $('cls').value);
-  $('clsBody').innerHTML = '<tr><td colspan="8" class="muted">계산하는 중…</td></tr>';
+  $('clsBody').innerHTML = '<tr><td colspan="9" class="muted">계산하는 중…</td></tr>';
   try { cls = await call('getClassMathPoints', g, c); }
-  catch (e) { $('clsBody').innerHTML = `<tr><td colspan="8">${esc(e.message)}</td></tr>`; return; }
+  catch (e) { $('clsBody').innerHTML = `<tr><td colspan="9">${esc(e.message)}</td></tr>`; return; }
   drawClass();
   if (picked) openStudent(picked);
   else $('student').classList.add('hidden');
@@ -240,7 +240,7 @@ function drawClass() {
   $('clsSum').textContent = `반 전체 모은 포인트 ${tot} · 선물 ${cls.gifts.length}종`;
   $('clsBody').innerHTML = rows.map((s) => `<tr data-num="${esc(s.num)}" class="${picked === s.num ? 'sel' : ''}">
     <td>${esc(s.num)}</td><td><b>${esc(s.name)}</b></td><td class="n"><span class="left">${s.left}</span></td><td class="n">${s.earned}</td>
-    <td class="n">${s.spent}</td><td class="n">${s.month}</td><td class="n">${s.reach}</td><td class="n">${s.badges}/${cls.badgeTotal}</td></tr>`).join('');
+    <td class="n">${s.spent}</td><td class="n">${s.month}</td><td class="n">${s.reach}</td><td class="n">${s.streak ? '🔥' + s.streak : 0}</td><td class="n">${s.badges}/${cls.badgeTotal}</td></tr>`).join('');
   $('clsBody').querySelectorAll('tr[data-num]').forEach((tr) => tr.onclick = () => openStudent(tr.dataset.num));
 }
 
@@ -270,7 +270,12 @@ async function cancelGift(d, log) {
 
 /* ---------- 학생 한 명 그리기 ---------- */
 const KIND_ICON = { '단계 도달': '🎯', '완주': '🔁', '만점': '💯', '성장': '📈', '도달 5단계마다': '🎁',
-  '100칸 도달': '🏁', '100칸 향상': '⬆️', '100칸 유창성': '⚡' };
+  '100칸 통과': '🏁', '100칸 기록경신': '⚡', '100칸 마스터': '🎯',
+  '구구단 통과': '✖️', '구구단 기록경신': '⚡', '구구단 마스터': '🎯',
+  '오늘의 훈련 완료': '✅', '연속 5일': '🔥', '연속 10일': '🔥', '연속 20일': '☄️' };
+const TRAIN_OPS = ['100칸 계산', '구구단', '매일 훈련'];   // 이 영역의 포인트는 level에 설명이 들어 있음
+const masterChip = (x) => x.mastered ? '<span class="chip ok">✓ 마스터</span>'
+  : `<span class="chip ${x.passDays ? 'more' : 'try'}">통과한 날 ${x.passDays || 0} / 3</span>`;
 function lvName(l) { const i = String(l.level).indexOf(':'); return i === -1 ? '' : String(l.level).slice(i + 1).trim(); }
 
 function renderStudent(d, teacher) {
@@ -328,27 +333,47 @@ function renderStudent(d, teacher) {
       : '<p class="muted">아직 진단 기록이 없어요. 진단을 풀면 포인트가 쌓여요.</p>'}
   </div>
 
+  ${(() => { const dl = d.daily || { days: 0, streak: 0, maxStreak: 0 }; return `<div class="card">
+    <h3>✅ 매일 훈련 <small>하루에 정한 훈련을 모두 통과하면 '오늘의 훈련 완료' · 토·일은 건너뛰고 이어져요</small></h3>
+    <div class="tiles">
+      <div class="tile"><div class="k">지금 연속</div><div class="v">${dl.streak ? '🔥 ' + dl.streak + '일' : '0일'}</div></div>
+      <div class="tile"><div class="k">가장 긴 연속</div><div class="v">${dl.maxStreak}일</div></div>
+      <div class="tile"><div class="k">훈련 완료한 날</div><div class="v">${dl.days}일</div></div>
+    </div>
+    <div class="note">5일 · 10일 · 20일 연속이 되면 보너스 포인트를 받아요. 평일에 하루라도 빠지면 1일부터 다시 시작해요.</div>
+  </div>`; })()}
+
   ${(d.hundred || []).length ? `<div class="card">
-    <h3>💯 100칸 계산 <small>도달 = 기준 점수 이상을 목표 시간 안에 · 어려운 단계일수록 포인트 배율이 커요</small></h3>
+    <h3>💯 100칸 계산 <small>통과 = 기준 점수 이상을 목표 시간 안에 · 25칸 ×1 · 50칸 ×2 · 100칸 ×4</small></h3>
     ${d.hundred.map((h) => `<div class="lvrow">
       <div class="nm"><b>${esc(h.name.split(':')[0])}</b><small>${esc((h.name.split(':')[1] || '').trim())} · ×${h.weight}</small></div>
-      <div>${h.reached ? '<span class="chip ok">✓ 도달</span>' : `<span class="chip try">목표 ${h.rate}점 · ${h.target}초</span>`}</div>
-      <div class="sc">${h.tries}번 · 평균 ${h.avgScore}점 · 최고 기록 ${h.bestTime ? h.bestTime + '초' : '—'}
-        · 초기 평균 ${h.baseAvg ? h.baseAvg + '초' : (h.baseNeed + '번 더')}${h.nextFluency ? ` · 다음 목표 ${h.nextFluency.sec}초` : ''}</div>
+      <div>${masterChip(h)}</div>
+      <div class="sc">${h.tries}번 · 기준 ${h.rate}점 · ${h.target}초 · 최고 기록 ${h.bestTime ? h.bestTime + '초' : '—'}
+        ${h.nextRecord ? ` · 기록경신은 ${h.nextRecord.sec}초 이하` : (h.baseNeed > 0 ? ` · 기록경신까지 ${h.baseNeed}번 더` : '')}</div>
       <div class="pt">+${h.pts}</div></div>`).join('')}
+  </div>` : ''}
+
+  ${(d.gugudan || []).length ? `<div class="card">
+    <h3>✖️ 구구단 <small>통과 = 정답률 95% 이상 + 3초 안에 맞힌 문항 90% 이상 · 20문항 ×1 · 40문항 ×2 · 72문항 ×4</small></h3>
+    ${d.gugudan.map((g) => `<div class="lvrow">
+      <div class="nm"><b>${esc(g.name.replace('구구단 ', ''))}</b><small>×${g.weight}</small></div>
+      <div>${masterChip(g)}</div>
+      <div class="sc">${g.tries}번 · 통과 ${g.passes}번 · 가장 빠른 반응 ${g.bestMedian != null ? g.bestMedian + '초' : '—'}
+        ${g.tries < 3 ? ` · 기록경신까지 ${3 - g.tries}번 더` : ''}</div>
+      <div class="pt">+${g.pts}</div></div>`).join('')}
   </div>` : ''}
 
   <div class="two">
     <div class="card">
       <h3>🕑 최근 받은 포인트</h3>
       ${d.events.length ? `<ul class="plain">${d.events.slice(0, 15).map((e) => `<li><span>${KIND_ICON[e.kind] || '⭐'} ${esc(e.kind)}
-        <span class="muted">${e.op === '100칸 계산' ? esc(e.level.replace(/^\d+단계: /, '')) : (e.no ? e.no + '단계' : esc(e.level))}${e.op && e.op !== '100칸 계산' ? ' · ' + esc(e.op) : ''}</span> <span class="when">${esc(e.day)}</span></span><span class="p">+${e.pts}</span></li>`).join('')}</ul>`
+        <span class="muted">${TRAIN_OPS.includes(e.op) ? esc(e.level.replace(/^\d+단계: /, '')) : (e.no ? e.no + '단계' : esc(e.level))}${e.op && !TRAIN_OPS.includes(e.op) ? ' · ' + esc(e.op) : ''}</span> <span class="when">${esc(e.day)}</span></span><span class="p">+${e.pts}</span></li>`).join('')}</ul>`
         : '<p class="muted">아직 받은 포인트가 없어요.</p>'}
     </div>
     <div class="card">
       <h3>⭐ 포인트 받는 법</h3>
       <ul class="plain">${d.rules.filter((r) => r.pts > 0).map((r) => `<li><span>${KIND_ICON[r.name] || '⭐'} <b>${esc(r.name)}</b><br><span class="muted" style="font-size:12px">${esc(r.desc)}</span></span><span class="p">+${r.pts}</span></li>`).join('')}</ul>
-      <div class="note">진단 단계는 여러 번 풀어도 포인트를 단계마다 한 번씩만 받아요. 100칸 계산은 내 평균보다 잘하거나, 처음보다 빨라질 때마다 받아요. 늘 정확하게 푸는 것이 먼저예요.</div>
+      <div class="note">진단 단계는 여러 번 풀어도 포인트를 단계마다 한 번씩만 받아요. 100칸 계산과 구구단은 매일 통과할 때마다(같은 단계 하루 3번까지), 내 최고기록을 깰 때, 서로 다른 3일에 통과해 마스터할 때 받아요. 늘 정확하게 푸는 것이 먼저예요.</div>
       ${d.gifts.length ? `<h3 style="margin-top:18px">🎁 선물</h3>${d.gifts.map((g) => `<div class="gift ${can(g) ? 'can' : ''}"><span>${esc(g.name)}${g.desc ? `<br><span class="muted" style="font-size:12px">${esc(g.desc)}</span>` : ''}</span><span class="p">${g.pts}${can(g) ? ' ✓' : ''}</span></div>`).join('')}
         <div class="note">선물은 선생님께 말씀드리면 받을 수 있어요.</div>` : ''}
     </div>

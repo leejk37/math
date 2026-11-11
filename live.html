@@ -502,6 +502,30 @@ function guSummary(list) {
     score: tot ? Math.round(ok / tot * 100) : 0, sec, at, results: '', tries: Math.max(0, ...Object.values(cnt)),
     gu: cells.join('') + `<div class="gu-key" style="width:100%">칸 색은 단별 정확도, 아래 숫자는 정답 시간 중앙값(초)</div>` };
 }
+// 최근 제출 표: 구구단은 한 번 검사하면 단마다(2~9단) 기록이 따로 와서 8줄이 됨 → 같은 학생이 15초 안에 보낸 구구단 기록을 한 줄로
+//  점수 = 전체 정확도(정답 수 ÷ 문항 수), 표시 = 'n문항 중 n개 정답 · 3초 안에 맞힘 n개', 시간 = 모두 푸는 데 걸린 시간
+function mergeGuFeed(all) {
+  const out = [], open = {};
+  all.slice().sort((a, b) => a.at - b.at).forEach((r) => {
+    if (r.op !== '구구단') { out.push(r); return; }
+    const g = open[r.num];
+    if (g && r.at - g.last <= 15000) { g.list.push(r); g.last = r.at; return; }
+    const ng = { num: r.num, list: [r], last: r.at, gu: true };
+    open[r.num] = ng; out.push(ng);
+  });
+  return out.map((x) => {
+    if (!x.gu) return x;
+    const s = guSummary(x.list), res = x.list.map((r) => String(r.results || '')).join('');
+    const dans = x.list.map((r) => parseInt(r.level, 10)).filter((d) => d >= 2 && d <= 9).sort((a, b) => a - b);
+    const dTxt = dans.length === 8 ? '2~9단' : dans.map((d) => d + '단').join(' ');
+    // 3초 안에 맞힌 문항 수: 단계 이름의 '3초 안 6/9'를 모두 더함
+    let fast = 0, thr = 3;
+    x.list.forEach((r) => { const m = String(r.level).match(/(\d+)초 안 (\d+)\//); if (m) { thr = Number(m[1]); fast += Number(m[2]); } });
+    const ok = (res.match(/O/g) || []).length;
+    return { num: x.num, op: '구구단', level: dTxt + ' · ' + res.length + '문항', score: s.score, sec: s.sec, at: s.at, results: res,
+      gu: `<span class="who-wrong" style="margin:0"><b>${res.length}문항 중 ${ok}개 정답</b> · ${thr}초 안에 맞힘 ${fast}개${res.length - ok ? ' · 틀림 ' + (res.length - ok) + '개' : ''}</span>` };
+  });
+}
 function guKey(r) { const g = guTimes(r); return g ? `<div class="gu-key">숫자 아래는 걸린 초<i style="background:var(--o)"></i>${g.thr}초 안<i style="background:#d99a12"></i>느림<i style="background:var(--x)"></i>틀림</div>` : ''; }
 
 function render() {
@@ -551,17 +575,18 @@ function render() {
 
   fitFs();
   renderItems(nums, nameOf);
-  sortFeed(all, nameOf);
-  const shown = feedAll ? all : all.slice(0, 20);
-  $('feedMore').classList.toggle('hidden', all.length <= 20);
-  $('feedMore').textContent = feedAll ? '20개만 보기' : `모두 보기 (${all.length}개)`;
+  const feedRows = mergeGuFeed(all);   // 구구단은 단마다 따로 온 기록을 검사 1회 = 한 줄로 묶음
+  sortFeed(feedRows, nameOf);
+  const shown = feedAll ? feedRows : feedRows.slice(0, 20);
+  $('feedMore').classList.toggle('hidden', feedRows.length <= 20);
+  $('feedMore').textContent = feedAll ? '20개만 보기' : `모두 보기 (${feedRows.length}개)`;
   document.querySelectorAll('#feedHead th.sort').forEach((th) => {
     const on = th.dataset.key === sortKey;
     th.classList.toggle('on', on);
     th.innerHTML = th.textContent.replace(/[▲▼]/g, '') + (on ? `<span class="arw">${sortDir > 0 ? '▲' : '▼'}</span>` : '');
   });
   $('feed').innerHTML = shown.map((r) => `<tr><td>${clock(r.at)}</td><td>${esc(r.num)}</td><td>${esc(nameOf(r.num))}</td>
-      <td>${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td><td><div class="marks" style="margin:0">${marks(r.results, r)}</div></td><td>${mmss(r.sec)}</td></tr>`).join('')
+      <td>${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td><td><div class="marks" style="margin:0">${r.gu ? r.gu : marks(r.results, r)}</div></td><td>${mmss(r.sec)}</td></tr>`).join('')
     || '<tr><td colspan="7" style="color:var(--sub)">아직 제출이 없습니다.</td></tr>';
 }
 
