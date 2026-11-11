@@ -68,6 +68,9 @@ input[type=text]{width:100%;border:1.5px solid var(--line);background:var(--card
 
 /* 검사 화면 */
 #prog{text-align:left;color:var(--chalk-dim);margin:0;font-size:.95rem}
+.progRow{display:flex;justify-content:space-between;align-items:baseline}
+#clock{margin:0;font-family:var(--display);font-size:1.5rem;color:var(--yellow);font-variant-numeric:tabular-nums}
+#clock.wait{color:var(--chalk-dim);font-size:.95rem}
 #q{font-family:var(--display);font-size:clamp(4.2rem,25vw,7rem);line-height:1.15;margin:10px 0 0;min-height:1.2em}
 #q.wait{color:var(--chalk-dim)}
 .heardRow{min-height:2.6rem;display:flex;align-items:center;justify-content:center;gap:10px;font-size:1.15rem}
@@ -189,7 +192,7 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
 
 <section id="s-test" hidden>
   <div class="board">
-    <p id="prog"></p>
+    <div class="progRow"><p id="prog"></p><p id="clock" class="wait" aria-live="off">첫 답을 하면 시간이 시작돼요</p></div>
     <div id="q" class="wait">…</div>
     <div class="heardRow"><span id="heard"></span><span id="mark" aria-live="polite"></span></div>
   </div>
@@ -278,6 +281,20 @@ function analyze(text,a,b,ans){
 var $=function(s){return document.querySelector(s);};
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 var LIMIT=10000;
+/* 전체 초시계: 첫 문제에 답하기 시작한 순간(말·터치·키보드·모르겠어요)부터 마지막 문제를 마칠 때까지 */
+var clockStart=0,clockEnd=0,clockTimer=null,wallMs=0;
+function clk(ms){var s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function startClock(){
+  if(clockStart) return;
+  clockStart=performance.now();
+  var c=$('#clock');c.className='';
+  clockTimer=setInterval(function(){c.textContent='⏱ '+clk(performance.now()-clockStart);},250);
+  c.textContent='⏱ 0:00';
+}
+function stopClock(){
+  clearInterval(clockTimer);clockTimer=null;
+  wallMs=clockStart&&clockEnd>clockStart?clockEnd-clockStart:items.reduce(function(s,i){return s+(i.status?i.rt:0);},0);
+}
 var EMBED=window.parent!==window&&/[?&]embed=1/.test(location.search);
 var WHO=null;if(EMBED){try{WHO=JSON.parse(sessionStorage.getItem('gugu_who')||'null');}catch(e){}}
 var cfg={dans:[2,3,4,5,6,7,8,9],count:'all',thr:3,mode:SR?'voice':'pad',name:''};
@@ -398,6 +415,8 @@ function startTest(list){
   run++;
   items=list.map(function(p){return {a:p[0],b:p[1],ans:p[0]*p[1],status:null,rt:null,onset:null,said:null,heard:'',retries:0,fixed:false};});
   idx=0;sel=null;$('#testNote').hidden=true;
+  clearInterval(clockTimer);clockTimer=null;clockStart=0;clockEnd=0;wallMs=0;
+  $('#clock').className='wait';$('#clock').textContent='첫 답을 하면 시간이 시작돼요';
   show('test');ask();
 }
 function setMic(s){
@@ -436,6 +455,7 @@ function onHeard(alts,fin){
   if(!shown||!cur||cur.status) return;
   var now=performance.now(),match=false,said=null;
   if(cur.onset==null)cur.onset=Math.round(now-t0);
+  startClock();
   if(!padVal)$('#heard').textContent=alts[0];
   alts.forEach(function(t){var r=analyze(t,cur.a,cur.b,cur.ans);if(r.match)match=true;if(said==null&&r.said!=null)said=r.said;});
   if(said!=null&&!firstSaidAt)firstSaidAt=now;
@@ -459,6 +479,7 @@ function finish(status,rt,said,heard){
   clearTimeout(limitTimer);clearTimeout(pendTimer);pendTimer=null;clearTimeout(wrongTimer);wrongTimer=null;
   earMute();
   cur.status=status;cur.rt=Math.max(0,Math.round(rt));cur.said=said;cur.heard=heard||'';
+  if(clockStart)clockEnd=performance.now();
   $('#heard').textContent=said!=null?String(said):'';
   $('#mark').textContent=status==='ok'?'○':status==='wrong'?'✕':'–';
   if(cfg.mode==='voice')setMic('off');
@@ -467,6 +488,7 @@ function finish(status,rt,said,heard){
 }
 function padKey(k,via){
   if(!shown||!cur||cur.status) return;
+  startClock();
   if(k==='지우기')padVal=padVal.slice(0,-1);
   else if(k==='제출'){
     if(!padVal) return;
@@ -493,9 +515,9 @@ function initTest(){
     if(k==null) return;
     e.preventDefault();padKey(k,'키보드');
   });
-  $('#skip').addEventListener('click',function(){if(shown&&cur&&!cur.status)finish('none',performance.now()-t0,null,'');});
+  $('#skip').addEventListener('click',function(){if(shown&&cur&&!cur.status)startClock();if(shown&&cur&&!cur.status)finish('none',performance.now()-t0,null,'');});
   $('#quit').addEventListener('click',function(){
-    run++;earStop();clearTimeout(limitTimer);clearTimeout(pendTimer);cur=null;
+    run++;earStop();clearTimeout(limitTimer);clearTimeout(pendTimer);cur=null;clearInterval(clockTimer);clockTimer=null;
     items=items.filter(function(i){return i.status;});
     if(items.length)showResult();else show('setup');
   });
@@ -513,7 +535,7 @@ function kind(i){
 var MARK={fast:'○',slow:'△',bad:'✕',none:'–',off:''};
 var KIND={fast:'빠르고 정확',slow:'느리지만 정확',bad:'오답',none:'답하지 못함'};
 function median(a){if(!a.length) return 0;a=a.slice().sort(function(x,y){return x-y;});var m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;}
-function showResult(){cur=null;earStop();show('result');renderResult();sendLive();saveGugu();}
+function showResult(){cur=null;earStop();stopClock();show('result');renderResult();sendLive();saveGugu();}
 /* 시트('구구단' 탭)에 저장하고 반 평균·내 기록 표를 보여 줌 — 서버 학생기록.gs의 submitGugudan
    진단시스템에서 학생을 고르고 열었을 때만 (따로 열면 저장하지 않음) */
 function saveGugu(){
@@ -521,9 +543,9 @@ function saveGugu(){
   if(!WHO||!WHO.studentNum||typeof window.callApi!=='function') return;
   var done=items.filter(function(i){return i.status;});
   if(!done.length) return;
-  var now={score:Math.round(done.filter(function(i){return i.status==='ok';}).length/done.length*100),sec:done.reduce(function(s,i){return s+i.rt;},0)/1000,partial:done.length<72};
+  var now={score:Math.round(done.filter(function(i){return i.status==='ok';}).length/done.length*100),sec:wallMs/1000,partial:done.length<72};
   box.innerHTML='<p class="muted">저장하고 반 평균을 불러오는 중… ⏳</p>';
-  window.callApi('submitGugudan',[{grade:WHO.grade,classNum:WHO.classNum,studentNum:WHO.studentNum,name:WHO.name,thr:cfg.thr,
+  window.callApi('submitGugudan',[{grade:WHO.grade,classNum:WHO.classNum,studentNum:WHO.studentNum,name:WHO.name,thr:cfg.thr,totalSec:Math.round(wallMs/1000),
     items:done.map(function(i){return {a:i.a,b:i.b,ok:i.status==='ok',rt:i.rt};})}]).then(function(d){
     if(typeof window.renderCompare==='function')window.renderCompare(box,d,now);else box.innerHTML='';
   }).catch(function(){box.innerHTML='';});   /* 서버에 아직 함수가 없으면 표 없이 지나감 */
@@ -534,14 +556,16 @@ function saveGugu(){
 function sendLive(){
   if(!WHO||!WHO.studentNum||typeof window.reportLive!=='function') return;
   var dans=[];items.forEach(function(i){if(i.status&&dans.indexOf(i.a)<0)dans.push(i.a);});
-  dans.sort().forEach(function(a){
+  dans.sort();
+  dans.forEach(function(a,di){
     var its=items.filter(function(i){return i.a===a&&i.status;}).sort(function(x,y){return x.b-y.b;});
     var ok=its.filter(function(i){return i.status==='ok';});
     var fast=its.filter(function(i){return kind(i)==='fast';}).length;
     window.reportLive({grade:WHO.grade,classNum:WHO.classNum,studentNum:WHO.studentNum,
       operation:'구구단',
       /* 예: "7단: 3초 안 6/9 · 중앙값 1.4초 · ×1 1.2 ×2 0.8 …" — 뒤쪽 '×곱하는수 걸린초'를 live.html이 읽어 문항마다 시간을 보여 줌 */
-      level:a+'단: '+cfg.thr+'초 안 '+fast+'/'+its.length+(ok.length?' · 중앙값 '+sec(median(ok.map(function(i){return i.rt;}))):'')+' · '+its.map(function(i){return '×'+i.b+' '+(i.rt/1000).toFixed(1);}).join(' '),
+      level:a+'단: '+cfg.thr+'초 안 '+fast+'/'+its.length+(ok.length?' · 중앙값 '+sec(median(ok.map(function(i){return i.rt;}))):'')+' · '+its.map(function(i){return '×'+i.b+' '+(i.rt/1000).toFixed(1);}).join(' ')
+        +(di===dans.length-1?' · 전체 '+clk(wallMs):''),   /* 마지막 단 기록에 '모두 푸는 데 걸린 시간'을 붙임 — live.html 구구단 카드가 읽음 */
       score:Math.round(ok.length/its.length*100),
       timeSeconds:its.reduce(function(s,i){return s+i.rt;},0)/1000,
       results:its.map(function(i){return i.status==='ok'?'O':'X';})});
@@ -550,11 +574,12 @@ function sendLive(){
 function renderResult(){
   var n=items.length,ok=items.filter(function(i){return i.status==='ok';});
   var fast=items.filter(function(i){return kind(i)==='fast';});
-  var total=items.reduce(function(s,i){return s+i.rt;},0);
+  var total=wallMs||items.reduce(function(s,i){return s+i.rt;},0);   /* 모두 푸는 데 걸린 시간 */
   var cpm=total?ok.length/(total/60000):0;
   $('#rTitle').textContent=(cfg.name?cfg.name+'의 ':'')+'구구단 결과';
 
   var rows=[
+    ['모두 푸는 데 걸린 시간',clk(total),n+'문항'],
     ['정확도',Math.round(ok.length/n*100)+'%',n+'문항 중 '+ok.length+'개 정답'],
     ['1분당 정답 수',cpm.toFixed(1)+'개',''],
     ['정답 반응시간 (중앙값)',ok.length?sec(median(ok.map(function(i){return i.rt;}))):'–',''],

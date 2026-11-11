@@ -488,6 +488,10 @@ function guSummary(list) {
     const med = (String(x.level).match(/중앙값 ([\d.]+)초/) || [])[1];
     return `<span class="mt" title="${d}단 ${x.score}점${med ? ' · 중앙값 ' + med + '초' : ''}"><span class="m" style="background:${colorOf(x.score)};width:26px">${d}</span><small>${med ? med : '-'}</small></span>`;
   });
+  // 걸린 시간: 가장 최근 기록에 '전체 m:ss'(모두 푸는 데 걸린 시간, 첫 답부터 끝까지)가 있으면 그것, 없으면 단별 시간의 합
+  const latest = dans.map((d) => by[d]).reduce((a, x) => (!a || x.at > a.at ? x : a), null);
+  const tm = latest && String(latest.level).match(/전체 (\d+):(\d{2})/);
+  if (tm) sec = Number(tm[1]) * 60 + Number(tm[2]);
   return { op: '구구단', level: '구구단 ' + (dans.length === 8 ? '2~9단' : dans.map((d) => d + '단').join(' ')),
     score: tot ? Math.round(ok / tot * 100) : 0, sec, at, results: '', tries: Math.max(0, ...Object.values(cnt)),
     gu: cells.join('') + `<div class="gu-key" style="width:100%">칸 색은 단별 정확도, 아래 숫자는 정답 시간 중앙값(초)</div>` };
