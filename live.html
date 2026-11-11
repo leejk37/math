@@ -56,6 +56,11 @@
   .marks { display: flex; gap: 3px; margin-top: 6px; flex-wrap: wrap; }
   .m { width: 20px; height: 20px; border-radius: 5px; font-size: 11px; font-weight: 700; color: #fff;
     display: inline-flex; align-items: center; justify-content: center; }
+  /* 100칸 계산 순위 (같은 계산끼리, 100점 기록 중 가장 빠른 시간 순) */
+  .card .score { display: flex; align-items: center; gap: 8px; }
+  .rank { font-size: 14px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #e0e7ff; color: #3730a3; line-height: 1.4; }
+  .rank.r1 { background: #fde68a; color: #854d0e; } .rank.r2 { background: #e5e7eb; color: #374151; } .rank.r3 { background: #fed7aa; color: #9a3412; }
+  .rankline { font-size: 13px; padding: 6px 0 4px; border-top: 1px dashed var(--line); }
   .m.O { background: var(--o); } .m.X { background: var(--x); } .m.S { background: #d99a12; }
   /* 구구단: 표시 아래에 문항별 걸린 시간 */
   .mt { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
@@ -395,6 +400,7 @@ function render() {
 
   let submitted = 0, attempts = 0, sum = 0, last = 0;
   const all = [];
+  const ranks = hundredRanks(nums);
   const html = nums.map((n) => {
     const list = attemptsOf(n);
     attempts += list.length;
@@ -412,7 +418,7 @@ function render() {
     return `<div class="card${changed ? ' flash' : ''}${asks.length ? ' asking' : ''}" data-num="${esc(n)}" style="border-left-color:${colorOf(r.score)}">
       <div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
       <div class="lv" title="${esc(r.op + ' ' + r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</div>
-      <div class="score" style="color:${colorOf(r.score)}">${r.score}</div>
+      <div class="score" style="color:${colorOf(r.score)}">${r.score}${rankBadge(ranks, r, n)}</div>
       <div class="marks">${marks(r.results, r)}</div>
       <div class="meta"><span>${list.length}회째</span><span title="걸린 시간">⏱ ${mmss(r.sec)}</span><span>${ago(r.at)}</span></div>${hb}</div>`;
   }).join('');
@@ -441,7 +447,30 @@ function render() {
 }
 
 /* 단계별 문항 오답: 학생마다 그 단계의 가장 최근 기록만 */
+// 100칸 계산 순위: 계산(예: 뺄셈 25칸)마다, 오늘 100점을 받은 기록 가운데 학생별 가장 빠른 시간으로 줄 세움 (같은 시간은 같은 순위)
+function hundredRanks(nums) {
+  const best = {}; // 계산 -> { 번호: 가장 빠른 초 }
+  nums.forEach((n) => attemptsOf(n).forEach((r) => {
+    if (r.op !== '100칸 계산' || Number(r.score) !== 100) return;
+    const k = shortLevel(r.level), b = best[k] || (best[k] = {});
+    if (b[n] == null || r.sec < b[n]) b[n] = r.sec;
+  }));
+  const out = {};
+  Object.entries(best).forEach(([k, b]) => {
+    const list = Object.entries(b).sort((x, y) => x[1] - y[1] || x[0] - y[0]);
+    out[k] = { list: list.map(([n, sec], i) => ({ n, sec, rank: i && sec === list[i - 1][1] ? null : i + 1 })), by: {} };
+    out[k].list.forEach((x, i) => { if (x.rank == null) x.rank = out[k].list[i - 1].rank; out[k].by[x.n] = x.rank; });
+  });
+  return out;
+}
+function rankBadge(ranks, r, n) {
+  if (!r || r.op !== '100칸 계산') return '';
+  const k = ranks[shortLevel(r.level)], rk = k && k.by[n];
+  return rk ? `<span class="rank${rk <= 3 ? ' r' + rk : ''}" title="${esc(shortLevel(r.level))} 100점 중 가장 빠른 기록 순위">${rk}위</span>` : '';
+}
+
 function renderItems(nums, nameOf) {
+  const ranks = hundredRanks(nums);
   const groups = {}; // key -> { op, level, latest: {num: rec} }
   nums.forEach((n) => attemptsOf(n).forEach((r) => {
     const key = r.op + '|' + shortLevel(r.level);
@@ -472,6 +501,8 @@ function renderItems(nums, nameOf) {
     }
     if (g.op === '100칸 계산') {
       // 100칸은 문항별 O·X 대신 학생마다 정답 칸 수·걸린 시간·틀린 셈을 한 줄씩 보여 줌
+      const rk = ranks[shortLevel(g.level)];
+      if (rk) rows.push(`<div class="rankline">🏆 <b>100점 빠른 순</b> · ${rk.list.map((x) => `${x.rank}위 ${esc(x.n)}번${nameOf(x.n) ? ' ' + esc(nameOf(x.n)) : ''} ${mmss(x.sec)}`).join(' · ')}</div>`);
       recs.sort((a, b) => a[0] - b[0]).forEach(([n, r]) => {
         const parts = String(r.level || '').split(' · ');
         const wrongTxt = parts.slice(2).join(' · ');
