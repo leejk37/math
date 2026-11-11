@@ -6,6 +6,7 @@
 <title>말로 푸는 구구단</title>
 <script src="config.js"></script>
 <script src="api.js"></script>
+<script src="compare.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -204,6 +205,7 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
 <section id="s-result" hidden>
   <h2 id="rTitle"></h2>
   <p id="rStory"></p>
+  <div id="cmp"></div>
   <dl class="report" id="report"></dl>
 
   <h3>문항별 채점표</h3>
@@ -511,7 +513,21 @@ function kind(i){
 var MARK={fast:'○',slow:'△',bad:'✕',none:'–',off:''};
 var KIND={fast:'빠르고 정확',slow:'느리지만 정확',bad:'오답',none:'답하지 못함'};
 function median(a){if(!a.length) return 0;a=a.slice().sort(function(x,y){return x-y;});var m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;}
-function showResult(){cur=null;earStop();show('result');renderResult();sendLive();}
+function showResult(){cur=null;earStop();show('result');renderResult();sendLive();saveGugu();}
+/* 시트('구구단' 탭)에 저장하고 반 평균·내 기록 표를 보여 줌 — 서버 학생기록.gs의 submitGugudan
+   진단시스템에서 학생을 고르고 열었을 때만 (따로 열면 저장하지 않음) */
+function saveGugu(){
+  var box=$('#cmp');box.innerHTML='';
+  if(!WHO||!WHO.studentNum||typeof window.callApi!=='function') return;
+  var done=items.filter(function(i){return i.status;});
+  if(!done.length) return;
+  var now={score:Math.round(done.filter(function(i){return i.status==='ok';}).length/done.length*100),sec:done.reduce(function(s,i){return s+i.rt;},0)/1000,partial:done.length<72};
+  box.innerHTML='<p class="muted">저장하고 반 평균을 불러오는 중… ⏳</p>';
+  window.callApi('submitGugudan',[{grade:WHO.grade,classNum:WHO.classNum,studentNum:WHO.studentNum,name:WHO.name,thr:cfg.thr,
+    items:done.map(function(i){return {a:i.a,b:i.b,ok:i.status==='ok',rt:i.rt};})}]).then(function(d){
+    if(typeof window.renderCompare==='function')window.renderCompare(box,d,now);else box.innerHTML='';
+  }).catch(function(){box.innerHTML='';});   /* 서버에 아직 함수가 없으면 표 없이 지나감 */
+}
 /* 실시간 현황판(live.html)으로 단별 결과 보내기 — 진단시스템에서 학생을 고르고 열었을 때만
    현황판 규칙상 한 기록의 O·X는 20개까지라 단마다 한 기록으로 보냄
    (점수=정확도, O·X는 ×1부터 ×9 순서, 단계 이름 뒤에 빠르고 정확한 문항 수와 중앙값을 적음) */

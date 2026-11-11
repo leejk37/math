@@ -7,6 +7,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../config.js"></script>
 <script src="../api.js"></script>
+<script src="../compare.js"></script>
 <script src="../confirm-near.js"></script>
 <style>
   /* 100칸 계산 — 첫 화면(index.html)의 '💯 100칸 계산' 탭이 iframe으로 띄움. 서버: 백칸.gs */
@@ -299,6 +300,16 @@
       operation: '100칸 계산', level: lv, score: score, timeSeconds: lastPack.seconds, results: [] });
   }
 
+  // 저장한 뒤 '반 평균과 내 기록' 표 (서버 학생기록.gs의 getHundredClass — 저장된 이번 기록까지 들어간 평균)
+  function showCompare(now) {
+    var res = $('res'); if (!res || !session || typeof window.renderCompare !== 'function') return;
+    var box = document.createElement('div'); res.appendChild(box);
+    box.innerHTML = '<div style="margin-top:10px;color:#64748b">반 평균을 불러오는 중… ⏳</div>';
+    callApi('getHundredClass', [session.grade, session.classNum, session.studentNum, stage.name]).then(function (d) {
+      window.renderCompare(box, d, now); reportHeight();
+    }).catch(function () { box.innerHTML = ''; reportHeight(); });   // 서버에 아직 함수가 없으면 표 없이 지나감
+  }
+
   var saving = false;
   function save() {
     if (saving || !lastPack) return;
@@ -318,6 +329,7 @@
       }
       $('saveMsg').innerHTML = html;
       if (res.mine && status) { status.mine = res.mine; drawInfo(); }
+      showCompare({ score: Math.round(lastPack.correct * 100 / cells.length), sec: lastPack.seconds });
       lastPack = null;
       reportHeight();
     }).catch(function (err) {
