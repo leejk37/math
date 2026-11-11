@@ -419,7 +419,9 @@ function render() {
   if ($('board').classList.contains('hidden')) return;
   const names = (roster[$('grade').value] || {})[$('classNum').value] || {};
   const showNames = $('showNames').checked;
-  const nums = Array.from(new Set([...Object.keys(names), ...Object.keys(data), ...Object.keys(helpData)])).sort((a, b) => Number(a) - Number(b));
+  // 0번은 담임이 학생 입장에서 시험해 보는 계정이라 현황판(카드·요약·순위·문항 분석)에서 뺌
+  const nums = Array.from(new Set([...Object.keys(names), ...Object.keys(data), ...Object.keys(helpData)]))
+    .filter((n) => String(n) !== '0').sort((a, b) => Number(a) - Number(b));
   const nameOf = (n) => showNames ? (names[n] || '') : '';
 
   let submitted = 0, attempts = 0, sum = 0, last = 0;
@@ -681,7 +683,7 @@ function ding() {
 }
 function renderHelp(nameOf) {
   nameOf = nameOf || ((n) => ($('showNames').checked ? (((roster[$('grade').value] || {})[$('classNum').value] || {})[n] || '') : ''));
-  const all = Object.keys(helpData).flatMap(helpsOf);
+  const all = Object.keys(helpData).filter((n) => String(n) !== '0').flatMap(helpsOf);   // 0번(담임 테스트 계정) 제외
   const pending = all.filter((h) => !h.done).sort((a, b) => a.at - b.at);
   const doneCount = all.length - pending.length;
 
