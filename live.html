@@ -63,8 +63,13 @@
   .rank small { font-size: .5em; font-weight: 800; margin-left: 1px; }
   .card .lv.h100 { color: var(--ink); font-weight: 800; font-size: 15px; }
   /* 전체화면: 카드 가로 5 × 세로 4 (줄 높이는 화면 높이에 맞춰 스크립트가 정함) */
-  body.fs .summary, body.fs .pastbar { display: none !important; }
-  body.fs main { padding-top: 10px; padding-bottom: 10px; max-width: none; }
+  /* 전체화면: 카드만 보이게 (도움 요청은 카드의 노란 테두리·태그로 보임) */
+  body.fs header, body.fs #msg, body.fs .helpbox, body.fs .summary, body.fs .pastbar,
+  body.fs #board > :not(#grid) { display: none !important; }
+  body.fs main { padding: 8px; max-width: none; }
+  #fsExit { display: none; }
+  body.fs #fsExit { display: block; position: fixed; right: 10px; bottom: 10px; z-index: 20; opacity: .25; font-size: 13px; }
+  body.fs #fsExit:hover { opacity: 1; }
   body.fs .card > * { flex-shrink: 0; }
   body.fs .grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
   body.fs .card { min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding: 12px 16px; }
@@ -222,6 +227,7 @@
   </section>
 </main>
 
+<button id="fsExit" title="전체화면 끄기 (Esc)">✕ 전체화면 끄기</button>
 <div class="dim" id="dim"><div class="modal" id="modal"></div></div>
 
 <script type="module">
@@ -731,8 +737,8 @@ async function cleanOld() {
 function fitFs() {
   const g = $('grid');
   if (!document.body.classList.contains('fs')) { g.style.gridAutoRows = ''; return; }
-  const top = g.getBoundingClientRect().top + window.scrollY;
-  const h = Math.max(120, Math.floor((window.innerHeight - top - 12 - 3 * 10) / 4));
+  const top = g.getBoundingClientRect().top + window.scrollY;   // 전체화면에서는 카드 위에 아무것도 없어 main 여백만큼
+  const h = Math.max(120, Math.floor((window.innerHeight - top - 8 - 3 * 10) / 4));
   g.style.gridAutoRows = h + 'px';
 }
 $('fsBtn').addEventListener('click', () => {
@@ -750,6 +756,10 @@ document.addEventListener('fullscreenchange', () => {
   setTimeout(fitFs, 50);
 });
 window.addEventListener('resize', fitFs);
+$('fsExit').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else { document.body.classList.remove('fs'); fitFs(); }
+});
 </script>
 </body>
 </html>
