@@ -317,7 +317,31 @@
         <button id="btn-frac6" class="nav-btn" onclick="switchScreen('frac6')">🧁 6학년 분수</button>
         <button id="btn-dec6" class="nav-btn" onclick="switchScreen('dec6')">🔢 6학년 소수</button>
       </div></div>
+      <div class="nav-group"><span class="nav-label">단원평가</span><div class="nav-row">
+        <button id="btn-unit3" class="nav-btn" onclick="switchScreen('unit3')">📝 3학년</button>
+        <button id="btn-unit4" class="nav-btn" onclick="switchScreen('unit4')">📝 4학년</button>
+        <button id="btn-unit5" class="nav-btn" onclick="switchScreen('unit5')">📝 5학년</button>
+        <button id="btn-unit6" class="nav-btn" onclick="switchScreen('unit6')">📝 6학년</button>
+      </div></div>
     </div>
+
+    <!-- 단원평가(KMA형 심화 30문항) — 문제 화면은 unit 폴더(예: unit/421.html = 4학년 2학기 1단원). 화면은 UNIT_DATA로 채움 -->
+    <style>
+      .unit-sem { display:flex; gap:8px; justify-content:center; margin-bottom:10px; }
+      .unit-sem button { padding:6px 22px; border-radius:20px; border:2px solid #c7d2fe; background:#fff; color:#3730a3; font-weight:bold; font-size:15px; cursor:pointer; }
+      .unit-sem button.on { background:#3730a3; color:#fff; border-color:#3730a3; }
+      .unit-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+      @media (max-width: 700px) { .unit-grid { grid-template-columns:1fr 1fr; } }
+      .unit-card { text-align:left; padding:12px 14px; border-radius:10px; border:2px solid #c7d2fe; background:#fff; font-size:15px; cursor:pointer; }
+      .unit-card b { color:#3730a3; margin-right:4px; }
+      .unit-card small { display:block; color:#4f46e5; margin-top:2px; }
+      .unit-card:disabled { cursor:default; border-color:#e2e8f0; background:#f8fafc; color:#94a3b8; }
+      .unit-card:disabled b, .unit-card:disabled small { color:#94a3b8; }
+    </style>
+    <div id="screen-unit3" class="screen"><div id="unit3-curriculumControls" class="unit-ctrl" data-grade="3"></div><iframe id="unit3-frame" title="3학년 단원평가" style="display:none; width:100%; border:none; height:85vh;"></iframe></div>
+    <div id="screen-unit4" class="screen"><div id="unit4-curriculumControls" class="unit-ctrl" data-grade="4"></div><iframe id="unit4-frame" title="4학년 단원평가" style="display:none; width:100%; border:none; height:85vh;"></iframe></div>
+    <div id="screen-unit5" class="screen"><div id="unit5-curriculumControls" class="unit-ctrl" data-grade="5"></div><iframe id="unit5-frame" title="5학년 단원평가" style="display:none; width:100%; border:none; height:85vh;"></iframe></div>
+    <div id="screen-unit6" class="screen"><div id="unit6-curriculumControls" class="unit-ctrl" data-grade="6"></div><iframe id="unit6-frame" title="6학년 단원평가" style="display:none; width:100%; border:none; height:85vh;"></iframe></div>
 
 
 
@@ -872,7 +896,7 @@
     });
 
     function switchScreen(type) {
-      ['add', 'sub', 'mul', 'div', 'frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'h100', 'gugu', 'frac6', 'dec6'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
+      ['add', 'sub', 'mul', 'div', 'frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'h100', 'gugu', 'frac6', 'dec6', 'unit3', 'unit4', 'unit5', 'unit6'].forEach(t => { document.getElementById('screen-' + t).classList.remove('active'); document.getElementById('btn-' + t).classList.remove('active'); });
       document.getElementById('screen-' + type).classList.add('active'); document.getElementById('btn-' + type).classList.add('active');
     }
 
@@ -5227,7 +5251,7 @@ setTimeout(() => {
     }
 
     function resetFracScreen() {
-      ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'h100', 'gugu', 'frac6', 'dec6'].forEach(function(key) {
+      ['frac3', 'frac4', 'mix5', 'frac5', 'dec5', 'range5', 'h100', 'gugu', 'frac6', 'dec6', 'unit3', 'unit4', 'unit5', 'unit6'].forEach(function(key) {
         const frame = document.getElementById(key + '-frame');
         if (frame) { frame.style.display = 'none'; frame.src = 'about:blank'; }
         const ctrl = document.getElementById(key + '-curriculumControls');
@@ -5252,6 +5276,55 @@ setTimeout(() => {
     });
 
     initFracLevelSelects();
+
+    // ==========================================
+    // 📝 단원평가(KMA형 30문항) — 학년 → 학기 → 6개 단원
+    //  - 단원 이름은 기존 진단 코드(M421 등)와 같은 교과서 단원 순서
+    //  - UNIT_FILES에 있는 단원만 열리고, 나머지는 '준비 중'
+    // ==========================================
+    const UNIT_DATA = {
+      3: { 1: ['덧셈과 뺄셈', '평면도형', '나눗셈', '곱셈', '길이와 시간', '분수와 소수'],
+           2: ['곱셈', '나눗셈', '원', '분수', '들이와 무게', '자료의 정리'] },
+      4: { 1: ['큰 수', '각도', '곱셈과 나눗셈', '평면도형의 이동', '막대그래프', '규칙 찾기'],
+           2: ['분수의 덧셈과 뺄셈', '삼각형', '소수의 덧셈과 뺄셈', '사각형', '꺾은선그래프', '다각형'] },
+      5: { 1: ['자연수의 혼합 계산', '약수와 배수', '규칙과 대응', '약분과 통분', '분수의 덧셈과 뺄셈', '다각형의 둘레와 넓이'],
+           2: ['수의 범위와 어림하기', '분수의 곱셈', '합동과 대칭', '소수의 곱셈', '직육면체', '평균과 가능성'] },
+      6: { 1: ['분수의 나눗셈', '각기둥과 각뿔', '소수의 나눗셈', '비와 비율', '여러 가지 그래프', '직육면체의 부피와 겉넓이'],
+           2: ['분수의 나눗셈', '소수의 나눗셈', '공간과 입체', '비례식과 비례배분', '원의 넓이', '원기둥, 원뿔, 구'] }
+    };
+    const UNIT_FILES = { '421': 'unit/421.html' };   // 학년·학기·단원 → 문제 화면
+    const unitSem = {};
+
+    function renderUnitScreen(g) {
+      const box = document.getElementById('unit' + g + '-curriculumControls');
+      if (!box) return;
+      if (!unitSem[g]) { const m = new Date().getMonth() + 1; unitSem[g] = (m >= 8 || m <= 2) ? 2 : 1; }
+      const sem = unitSem[g];
+      box.style.cssText = 'background:#eef2ff; border:2px solid #c7d2fe; border-radius:8px; padding:12px 16px; margin-bottom:12px;';
+      box.innerHTML = '<div class="unit-sem">' + [1, 2].map(function(s) {
+          return '<button class="' + (s === sem ? 'on' : '') + '" onclick="unitSem[' + g + ']=' + s + ';renderUnitScreen(' + g + ')">' + g + '-' + s + ' (' + s + '학기)</button>';
+        }).join('') + '</div><div class="unit-grid">' +
+        UNIT_DATA[g][sem].map(function(name, i) {
+          const code = '' + g + sem + (i + 1), ready = !!UNIT_FILES[code];
+          return '<button class="unit-card" ' + (ready ? 'onclick="startUnitTest(\'' + code + '\')"' : 'disabled') + '><b>' + (i + 1) + '.</b>' + name +
+                 '<small>' + (ready ? '심화 단원평가 30문항 ▶' : '준비 중') + '</small></button>';
+        }).join('') + '</div>';
+    }
+    [3, 4, 5, 6].forEach(renderUnitScreen);
+
+    function startUnitTest(code) {
+      if (!document.getElementById('studentName').value) { alert("학생 정보를 먼저 선택해주세요!"); return; }
+      const g = code.charAt(0);
+      const who = [document.getElementById('grade').value, document.getElementById('classNum').value, document.getElementById('studentNum').value].join('-');
+      ['dashboardControls', 'targetSearchResult', 'chartContainer', 'nav-menu'].forEach(function(id) {
+        const el = document.getElementById(id); if (el) el.style.display = 'none';
+      });
+      document.getElementById('unit' + g + '-curriculumControls').style.display = 'none';
+      const frame = document.getElementById('unit' + g + '-frame');
+      frame.style.display = 'block';
+      frame.src = UNIT_FILES[code] + '?u=' + encodeURIComponent(who);
+      setTimeout(function() { frame.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+    }
 
     // 🗣️ 말로 푸는 구구단: 시트에는 저장하지 않고, 학생을 골랐을 때만 실시간 현황판(live.html)으로 단별 결과를 보냄
     //  - 학생 정보는 sessionStorage 'gugu_who'로 넘김(주소에 이름을 넣지 않음)
