@@ -76,6 +76,14 @@
 
   <div class="how" id="startText"></div>
 
+  <!-- 나눗셈: 시작 전에 칸 이동 방향 고르기 (고르면 시간이 시작됨) -->
+  <div class="start hidden" id="dirBox">
+    <p><b>칸을 어느 방향으로 풀까요?</b><br>
+      <small>➡ 가로: 한 줄씩 오른쪽으로 · ⬇ 세로: 위에서 아래로 (같은 수로 계속 나누기)</small></p>
+    <button class="btn main" id="dirRow" type="button">➡ 가로로 풀기</button>
+    <button class="btn main" id="dirCol" type="button">⬇ 세로로 풀기</button>
+  </div>
+
   <div class="gridbox"><table class="g" id="grid"></table></div>
   <div class="pad hidden" id="pad"></div>
   <div id="resultBox"></div>
@@ -121,14 +129,24 @@
   function reportHeight() { post({ type: 'frac-height', h: document.documentElement.scrollHeight + 20 }); }
   if (window.ResizeObserver) new ResizeObserver(reportHeight).observe(document.body);
 
-  var stage = null, cells = [], cur = 0, started = false, finished = false, t0 = 0, timerId = null, seconds = 0, lastPack = null, status = null;
+  var stage = null, cells = [], order = [], cur = 0, started = false, finished = false, t0 = 0, timerId = null, seconds = 0, lastPack = null, status = null;
+
+  // ---------- 칸 이동 방향 (나눗셈만 고름: row = 가로, col = 세로) ----------
+  var dir = 'row';
+  try { if (localStorage.getItem('h100_dir') === 'col') dir = 'col'; } catch (e) {}
+  function useDir() { return stage && stage.op === '나눗셈' ? dir : 'row'; }
+  function makeOrder() {
+    order = cells.map(function (c, k) { return k; });
+    if (useDir() === 'col') order.sort(function (a, b) { return cells[a].c - cells[b].c || cells[a].r - cells[b].r; });
+  }
+  function prevCell() { var p = order.indexOf(cur); return p > 0 ? order[p - 1] : cur; }
 
   function setStage(name) {
     var s = STAGES.filter(function (x) { return x[0] === name; })[0] || STAGES[2];
     stage = { name: s[0], op: s[1], cells: s[2], rows: s[2] === 100 ? 10 : 5, cols: s[2] === 25 ? 5 : 10 };
     $('stageName').textContent = stage.name;
     $('startText').innerHTML = HOW[stage.op] + (stage.op === '나눗셈'
-      ? ' 몫은 한 자리라서 <b>쓰면 저절로 다음 칸</b>으로 가요.'
+      ? ' 몫은 한 자리라서 <b>쓰면 저절로 다음 칸</b>(고른 방향)으로 가요.'
       : ' 답을 쓰고 <b>Enter</b> (두 자리 수는 저절로 다음 칸).') + ' <b>정확하게</b>가 먼저예요.';
     drawInfo();
   }
@@ -179,6 +197,7 @@
       html += '</tr>';
     }
     $('grid').innerHTML = html;
+    makeOrder();
     [].forEach.call($('grid').querySelectorAll('td input'), function (inp, k) {
       inp.addEventListener('focus', function () { focusCell(k, true); });
       inp.addEventListener('input', function () {
@@ -190,7 +209,7 @@
         else if (e.key === 'ArrowLeft') { e.preventDefault(); focusCell(Math.max(0, cur - 1)); }
         else if (e.key === 'ArrowDown') { e.preventDefault(); focusCell(Math.min(cells.length - 1, cur + Cn)); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); focusCell(Math.max(0, cur - Cn)); }
-        else if (e.key === 'Backspace' && !inp.value && cur > 0) { e.preventDefault(); focusCell(cur - 1); }
+        else if (e.key === 'Backspace' && !inp.value && order.indexOf(cur) > 0) { e.preventDefault(); focusCell(prevCell()); }
       });
     });
   }
@@ -211,9 +230,10 @@
   // 한 칸에 쓰는 자릿수: 나눗셈은 몫이 한 자리(1~9)라 한 자리를 쓰면 바로 다음 칸, 나머지는 두 자리
   function maxDigits() { return stage && stage.op === '나눗셈' ? 1 : 2; }
 
-  function next() {
-    for (var k = cur + 1; k < cells.length; k++) if (!input(k).value) return focusCell(k);
-    for (var k2 = 0; k2 < cells.length; k2++) if (!input(k2).value) return focusCell(k2);
+  function next() {   // 고른 방향(order)대로 다음 빈칸
+    var p = order.indexOf(cur);
+    for (var i = p + 1; i < order.length; i++) if (!input(order[i]).value) return focusCell(order[i]);
+    for (var i2 = 0; i2 < order.length; i2++) if (!input(order[i2]).value) return focusCell(order[i2]);
     $('doneBtn').focus();
   }
 
@@ -226,7 +246,7 @@
       b.addEventListener('click', function () {
         if (!started || finished) return;
         var inp = input(cur), k = b.textContent;
-        if (k === '⌫') { if (inp.value) inp.value = inp.value.slice(0, -1); else if (cur > 0) focusCell(cur - 1); return; }
+        if (k === '⌫') { if (inp.value) inp.value = inp.value.slice(0, -1); else if (order.indexOf(cur) > 0) focusCell(prevCell()); return; }
         if (k.indexOf('다음') === 0) return next();
         if (inp.value.length < maxDigits()) inp.value += k;
         if (inp.value.length >= maxDigits()) next();
@@ -235,15 +255,38 @@
   }
 
   // ---------- 시작 · 끝 ----------
+  // 나눗셈이면 먼저 방향을 고르게 하고, 고르면 begin()으로 시작
   function start() {
     if (started) return;
+    if (stage && stage.op === '나눗셈') {
+      $('grid').innerHTML = ''; $('timer').textContent = '0:00';
+      $('pad').classList.add('hidden'); $('doneBtn').classList.add('hidden');
+      $('dirBox').classList.remove('hidden');
+      ($(dir === 'col' ? 'dirCol' : 'dirRow')).focus();   // 지난번 고른 쪽에 바로 Enter
+      reportHeight();
+      return;
+    }
+    begin();
+  }
+  function chooseDir(d) {
+    dir = d;
+    try { localStorage.setItem('h100_dir', d); } catch (e) {}
+    $('dirBox').classList.add('hidden');
+    begin();
+  }
+  $('dirRow').onclick = function () { chooseDir('row'); };
+  $('dirCol').onclick = function () { chooseDir('col'); };
+
+  function begin() {
+    if (started) return;
     started = true; finished = false;
+    $('dirBox').classList.add('hidden');
     build();
     $('pad').classList.remove('hidden');
     $('doneBtn').classList.remove('hidden');
     t0 = Date.now(); seconds = 0;
     timerId = setInterval(function () { seconds = Math.floor((Date.now() - t0) / 1000); $('timer').textContent = fmt(seconds); }, 250);
-    focusCell(0);
+    focusCell(order[0]);
     reportHeight();
   }
 

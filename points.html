@@ -127,6 +127,7 @@
       <div class="tools">
         <select id="cls"></select>
         <button id="reloadBtn">↻ 새로 고침</button>
+        <button id="mineBtn" title="학생명부 0번(담임 테스트 계정)으로 보이는 학생 화면">🧒 0번(학생 화면)</button>
         <span class="muted" id="clsSum"></span>
       </div>
       <div class="tablewrap"><table>
@@ -193,17 +194,34 @@ async function call(action, ...args) {
 
 async function start() {
   msg('포인트를 계산하는 중입니다…');
+  // 1) '교사학급' 탭에 있는 선생님이면 담임 화면 (담임 계정이 학생명부 0번으로도 있어도 선생님이 먼저)
+  let sc = null;
+  try { sc = await call('getReportScope'); } catch (e) { sc = null; }   // 선생님이 아니면 오류 → 학생으로 진행
+  if (sc && sc.classes && sc.classes.length) return startTeacher(sc);
+  // 2) 학생
+  showMine();
+}
+
+/** 로그인한 계정의 학생 화면 (학생 본인, 또는 선생님의 0번 테스트 계정) */
+async function showMine(fromTeacher) {
   let me;
   try { me = await call('getMyMathPoints'); } catch (e) { msg('<b>' + esc(e.message) + '</b>'); return; }
-  if (me.role === 'teacher') return startTeacher();
+  if (me.role === 'teacher') { if (!fromTeacher) return startTeacher(); msg('<b>학생명부에 이 계정의 0번이 없습니다.</b>'); return; }
   $('msg').classList.add('hidden');
+  $('teacher').classList.add('hidden');
   renderStudent(me, false);
+  if (fromTeacher) {
+    const back = document.createElement('div');
+    back.className = 'card';
+    back.innerHTML = '<button id="backTeacher" class="primary">← 학생별 포인트(담임 화면)로 돌아가기</button>';
+    $('student').prepend(back);
+    $('backTeacher').onclick = () => { $('student').classList.add('hidden'); picked = null; startTeacher(); };
+  }
 }
 
 /* ---------- 선생님 ---------- */
-async function startTeacher() {
-  let sc;
-  try { sc = await call('getReportScope'); } catch (e) { msg('<b>' + esc(e.message) + '</b>'); return; }
+async function startTeacher(sc) {
+  if (!sc) { try { sc = await call('getReportScope'); } catch (e) { msg('<b>' + esc(e.message) + '</b>'); return; } }
   if (!sc.classes.length) { msg('<b>볼 수 있는 학급이 없습니다.</b><br>교사학급 탭의 학년·반을 확인해 주세요.'); return; }
   $('cls').innerHTML = sc.classes.map((c) => `<option value="${esc(c.grade + '|' + c.classNum)}">${esc(c.grade)}학년 ${esc(c.classNum)} (${c.count}명)</option>`).join('');
   const saved = store.get('cls', '');
@@ -212,6 +230,7 @@ async function startTeacher() {
   $('teacher').classList.remove('hidden');
   $('cls').onchange = () => { picked = null; loadClass(); };
   $('reloadBtn').onclick = () => loadClass();
+  $('mineBtn').onclick = () => showMine(true);
   document.querySelectorAll('#teacher th[data-k]').forEach((th) => th.onclick = () => {
     const k = th.dataset.k; sortDir = sortKey === k ? -sortDir : (k === 'num' || k === 'name' ? 1 : -1); sortKey = k; store.set('sort', k); drawClass();
   });
