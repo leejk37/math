@@ -229,6 +229,22 @@
     .report { padding: 18px 14px; }
     .cover h2 { font-size: 21px; }
   }
+  /* 유창성 보고서: 학생별 소견 카드 */
+  .scard { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 12px 0; break-inside: avoid; }
+  .scard .hd { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; margin-bottom: 8px; }
+  .scard .hd b { font-size: 16px; }
+  .scard .lab { font-weight: 700; }
+  .scard ul { margin: 6px 0 10px; padding-left: 18px; font-size: 14px; }
+  .scard ul li { margin: 3px 0; }
+  .gapline { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; font-size: 13px; }
+  .gapline span { border-radius: 999px; padding: 2px 10px; }
+  .gap-above { background: var(--reach-soft); color: #0a6b0a; } .gap-near { background: #eef1f6; color: var(--sub); }
+  .gap-below { background: var(--effort-soft); color: #8a5a00; } .gap-far { background: var(--support-soft); color: var(--support); font-weight: 700; }
+  table.rx { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--accent-soft); border-radius: 8px; }
+  table.rx th { width: 92px; text-align: left; color: var(--accent); padding: 5px 10px; font-weight: 700; vertical-align: top; }
+  table.rx td { padding: 5px 10px; }
+  .rxnote { margin-top: 6px; font-size: 13px; color: var(--support); }
+  .grp { border-left: 4px solid var(--accent); }
   @media print {
     @page { size: A4; margin: 14mm 12mm; }
     body { background: #fff; font-size: 12px; }
@@ -726,7 +742,7 @@ function fluGuguHtml(d) {
   const lines = [`재적 ${sm.enrolled}명 중 <b>${sm.tested}명</b>이 구구단을 연습했습니다. 통과 기준은 <b>정답률 ${sc.pass.score}% 이상 + ${sc.pass.sec}초 안 정답 ${sc.pass.fast}% 이상</b>, 마스터는 서로 다른 ${sc.masterDays}일 통과입니다.`];
   if (d.hot.length) lines.push(`학급에서 가장 많이 틀린 문항은 <b>${d.hot.slice(0, 3).map((f) => `${f.a}×${f.b}(오답률 ${f.wrongRate}%)`).join(', ')}</b>입니다.`);
   lines.push(`다시 외우기가 필요한 학생 <b>${sm.relearn}명</b>, 빠르기 연습이 필요한 학생 <b>${sm.speed}명</b>입니다.`);
-  return fluCover(d, '구구단', ['Ⅰ 진단', 'Ⅱ 분석', 'Ⅲ 처방']) + `
+  return fluCover(d, '구구단', ['Ⅰ 진단', 'Ⅱ 분석', 'Ⅲ 지도 그룹', 'Ⅳ 학생별 처방']) + `
   <section class="part">
     <h3><span class="no">Ⅰ</span> 진단 — 어디까지 왔나</h3>
     <p class="lead">단계는 <b>문항 수와 고른 단이 같은 기록끼리</b> 나눕니다. 점수·시간은 학생마다 첫 기록과 최근 기록을 하나씩 정해 평균합니다. '틀린 문항만 다시'와 중간에 그만둔 기록은 단계 통계에서 뺍니다.</p>
@@ -763,16 +779,15 @@ function fluGuguHtml(d) {
   </section>
 
   <section class="part">
-    <h3><span class="no">Ⅲ</span> 처방 — 누구에게 무엇을</h3>
-    <p class="lead">표적 문항은 학생마다 최근 기록에서 고른 '지금 가장 먼저 연습할 문항'입니다(잘못 외움 → 아직 모름 → 느림 순). 서로 다른 2일에 빠르게 맞히면 졸업합니다.</p>
-    <div class="tablewrap"><table>
-      <thead><tr><th>학생</th><th>단계별 최근 기록</th><th>표적 문항</th><th>처방</th></tr></thead>
-      <tbody>${d.students.map((s) => `<tr>
-        <td style="white-space:nowrap"><b>${esc(who(d, s.num))}</b></td>
-        <td style="font-size:13px">${s.stages.length ? s.stages.map((x) => `<div>${esc(x.stage)} · ${x.latestScore}점 · ${fmtS(x.latestMed)} <span class="badge ${STCLS[x.status]}">${STATUS[x.status]}</span></div>`).join('') : '<span class="muted">—</span>'}</td>
-        <td style="font-size:13px">${s.targets.length ? s.targets.map((t) => `<div><b>${t.a}×${t.b}</b> ${esc(t.kind)}${t.wrongs.length ? ' · 답 ' + t.wrongs.join(',') : ''}</div>`).join('') + (s.targetMore ? `<div class="muted">외 ${s.targetMore}개</div>` : '') : '<span class="muted">—</span>'}</td>
-        <td style="font-size:13px; min-width:200px">${esc(s.advice)}</td></tr>`).join('')}</tbody>
-    </table></div>
+    <h3><span class="no">Ⅲ</span> 처방 — 지도 그룹</h3>
+    <p class="lead">처방이 같은 학생끼리 묶었습니다. 빨간 글씨 학생은 반 평균에서 많이 떨어져 있어 먼저 살펴볼 학생입니다.</p>
+    ${groupCards(d)}
+  </section>
+
+  <section class="part page-break">
+    <h3><span class="no">Ⅳ</span> 학생별 진단 소견과 처방</h3>
+    <p class="lead">학생마다 <b>어떠한지(유형) → 근거 → 무엇을, 하루 몇 번, 며칠 동안, 언제 다시 확인할지</b>를 적었습니다.</p>
+    ${d.rules ? studentCards(d) + rulesTable(d) : '<div class="notice"><b>서버의 보고서유창성.gs가 예전 버전입니다.</b><br>새 파일로 바꾸고 새 버전으로 배포하면 학생별 소견과 처방이 나옵니다.</div>'}
   </section>
   <p class="note">이 보고서는 '구구단'·'구구단문항' 시트로 자동 작성되었습니다. 음성 인식 오류로 오답 처리된 문항이 있을 수 있으니 학생 관찰과 함께 판단해 주세요.</p>`;
 }
@@ -784,7 +799,7 @@ function fluHundredHtml(d) {
   if (!sc.hasRule) lines.push('<b>서버에서 단계별 통과 기준을 읽지 못해</b> 통과·마스터를 판정하지 않았습니다.');
   const weak = d.stages.filter((x) => x.tested && x.practice.length > x.tested / 2);
   if (weak.length) lines.push(`연습 중인 학생이 절반이 넘는 단계: <b>${weak.map((x) => x.no + '단계').join(', ')}</b>`);
-  return fluCover(d, '100칸 계산', ['Ⅰ 진단', 'Ⅱ 분석', 'Ⅲ 처방']) + `
+  return fluCover(d, '100칸 계산', ['Ⅰ 진단', 'Ⅱ 분석', 'Ⅲ 지도 그룹', 'Ⅳ 학생별 처방']) + `
   <section class="part">
     <h3><span class="no">Ⅰ</span> 진단 — 어디까지 왔나</h3>
     <p class="lead">12단계를 <b>단계마다 따로</b> 봅니다. 점수·시간은 학생마다 첫 기록과 최근 기록을 하나씩 정해 평균합니다.</p>
@@ -811,7 +826,8 @@ function fluHundredHtml(d) {
   </section>
 
   <section class="part">
-    <h3><span class="no">Ⅲ</span> 처방 — 학생×단계</h3>
+    <h3><span class="no">Ⅲ</span> 처방 — 지도 그룹과 학생×단계</h3>
+    ${groupCards(d)}
     <p class="lead">칸마다 그 학생의 <b>최고 점수와 가장 빠른 시간</b>입니다. 초록 마스터 · 노랑 통과 · 빨강 연습 중 · — 미응시. 다음 단계는 연습 중인 단계부터, 없으면 아직 안 한 첫 단계입니다.</p>
     <div class="legend"><span><i style="background:var(--reach)"></i>마스터</span><span><i style="background:var(--effort)"></i>통과</span><span><i style="background:var(--support)"></i>연습 중</span><span>— 미응시</span></div>
     <div class="tablewrap"><table class="qgrid matrix">
@@ -821,7 +837,77 @@ function fluHundredHtml(d) {
         <td style="font-size:13px; min-width:200px">${esc(s.advice)}</td></tr>`).join('')}</tbody>
     </table></div>
   </section>
+  <section class="part page-break">
+    <h3><span class="no">Ⅳ</span> 학생별 진단 소견과 처방</h3>
+    <p class="lead">학생마다 <b>어떠한지(유형) → 근거 → 어느 단계를, 하루 몇 번, 며칠 동안, 언제 다시 확인할지</b>를 적었습니다.</p>
+    ${d.rules ? studentCards(d) + rulesTable(d) : '<div class="notice"><b>서버의 보고서유창성.gs가 예전 버전입니다.</b><br>새 파일로 바꾸고 새 버전으로 배포하면 학생별 소견과 처방이 나옵니다.</div>'}
+  </section>
   <p class="note">이 보고서는 '100칸계산' 시트로 자동 작성되었습니다.</p>`;
+}
+
+/* ---------- 학생별 소견·처방 (유창성) ---------- */
+const TYPE_CLS = { unlearned: 'support', stuck: 'support', fixed: 'support', accuracy: 'effort', partial: 'effort', slow: 'effort', speed: 'effort', next: 'reach', auto: 'reach', done: 'reach', none: 'none' };
+const TREND_TXT = { up: '향상 중', flat: '정체', down: '하락', keep: '유지', early: '' };
+const GAP_TXT = { above: '평균보다 좋음', near: '평균 근처', below: '조금 아래', far: '많이 떨어짐' };
+function gapChips(p) {
+  const g = p.gap; if (!g) return '';
+  const items = [['정답률', g.acc, '%'], ['반응시간', g.med, '초'], ['점수', g.score, '점'], ['시간', g.sec, '초']].filter((x) => x[1]);
+  if (!items.length) return '';
+  return `<div class="gapline"><span class="muted" style="padding-left:0">반 평균과의 거리${g.stage ? ' (' + esc(g.stage.replace(/^\d+단계: /, '')) + ')' : ''}:</span>${items.map(([k, x, u]) =>
+    `<span class="gap-${x.band}" title="반 평균 ${x.avg}${u}, 표준편차 ${x.sd}${u}">${k} ${x.value}${u} · ${x.total}명 중 ${x.rank}번째 · ${GAP_TXT[x.band]}</span>`).join('')}</div>`;
+}
+function rxTable(rx) {
+  return `<table class="rx"><tbody>
+    <tr><th>무엇을</th><td>${esc(rx.what)}</td></tr>
+    <tr><th>얼마나 자주</th><td>${esc(rx.freq)}</td></tr>
+    <tr><th>기간</th><td>${esc(rx.period)}</td></tr>
+    <tr><th>다시 확인</th><td>${esc(rx.check)}</td></tr>
+    <tr><th>목표</th><td>${esc(rx.goal)}</td></tr></tbody></table>
+    ${(rx.notes || []).map((n) => `<div class="rxnote">⚠ ${esc(n)}</div>`).join('')}`;
+}
+function studentCards(d) {
+  return d.students.map((s) => {
+    const p = s.profile; if (!p) return '';
+    const findings = p.findings.filter((f) => !/^반 평균과의 거리/.test(f));
+    return `<div class="scard">
+      <div class="hd"><b>${esc(who(d, s.num))}</b><span class="badge ${TYPE_CLS[p.type] || 'none'} lab">${esc(p.label)}</span>${TREND_TXT[p.trend] ? `<span class="muted">${TREND_TXT[p.trend]}</span>` : ''}</div>
+      ${gapChips(p)}
+      <ul>${findings.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
+      ${rxTable(p.rx)}
+    </div>`;
+  }).join('');
+}
+function groupCards(d) {
+  if (!d.groups || !d.groups.length) return '';
+  return `<div class="cards">${d.groups.map((g) => `<div class="card grp">
+    <div class="t"><span class="badge ${TYPE_CLS[g.type] || 'none'}">${esc(g.label)}</span> ${g.nums.length}명</div>
+    ${chips(d, g.nums, TYPE_CLS[g.type] === 'reach' ? '' : TYPE_CLS[g.type])}
+    ${g.far.length ? `<div class="s" style="margin-top:6px;color:var(--support)">반 평균에서 많이 떨어진 학생: ${g.far.map((n) => esc(who(d, n))).join(', ')} — 먼저 살펴보기</div>` : ''}
+    ${g.type !== 'none' ? `<div class="s" style="margin-top:6px">공통 처방: ${esc(g.rx.what)} · ${esc(g.rx.freq)} · ${esc(g.rx.period)}</div>` : '<div class="s" style="margin-top:6px">진단부터 실시</div>'}
+  </div>`).join('')}</div>`;
+}
+function rulesTable(d) {
+  const R = d.rules || {};
+  const rows = d.kind === '구구단' ? [
+    ['미습득', `정답률 ${R.unlearned}% 미만`],
+    ['잘못 외움', `같은 문항을 빠르게(3초 안) 틀린 응시가 ${R.wrongFixRepeat}번 이상`],
+    ['부분 습득', `정답률 ${R.unlearned}~${R.accurate - 1}%`],
+    ['정확하지만 느림', `정답률 ${R.accurate}% 이상, 맞힌 문항 중 3초 안이 ${R.fastShare}% 미만`],
+    ['자동화', `정답률 ${R.accurate}% 이상, 3초 안 ${R.fastShare}% 이상`],
+    ['약한 단 / 느린 단', `단별 오답률 ${R.weakDanWrong}% 이상 / 정답 반응시간이 자기 중앙값의 ${R.weakDanSlow}배 이상(3초 이상)`],
+    ['향상 · 하락 · 정체', `가장 많이 푼 단계의 첫→최근: 점수 ±${R.trendScore}점 또는 반응시간 ±${R.trendMed}초 / ${R.trendTries}번 이상 풀었는데 변화 없음`],
+    ['반 평균과의 거리', '학생마다 한 값(문항 기록 20개 이상이면 그 전체, 아니면 최근 기록)을 반 학생들과 비교. 표준편차의 0.5배 안 = 평균 근처, 1배 넘게 나쁨 = 많이 떨어짐'],
+    ['판정 근거 자료', `문항 기록이 ${R.guguMinItems}개 이상이면 '구구단문항' 탭, 아니면 '구구단' 탭 요약`]
+  ] : [
+    ['통과 · 마스터', '백칸.gs의 단계별 기준(점수·시간) 통과 / 서로 다른 3일 통과'],
+    ['정확도 먼저', `지금 단계 최근 점수가 통과 점수(${R.h100Score}점 등) 미만`],
+    ['정체', `같은 단계를 ${R.trendTries}번 이상 풀었는데 점수가 ${R.trendScore}점 넘게 오르지 않고 시간도 ${R.trendSecPct}% 넘게 줄지 않음 → 한 단계 낮추거나 구구단 먼저`],
+    ['정확하지만 시간 초과', '점수는 통과, 시간이 기준을 넘음 → 같은 단계 기록경신'],
+    ['구구단이 원인', '지금 단계에서 틀린 셈이 같은 단(곱셈의 두 수, 나눗셈의 나누는 수·몫)에 2번 이상 몰림'],
+    ['반 평균과의 거리', '지금 연습하는 단계에서 학생마다 최근 기록 하나씩 비교. 표준편차의 0.5배 안 = 평균 근처, 1배 넘게 나쁨 = 많이 떨어짐']
+  ];
+  return `<h4>판정 기준표 <small>보고서의 모든 판정은 아래 규칙으로 자동으로 했습니다</small></h4>
+    <div class="tablewrap"><table><tbody>${rows.map((r) => `<tr><td style="white-space:nowrap"><b>${esc(r[0])}</b></td><td style="font-size:13px">${esc(r[1])}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 boot().catch((e) => msg('<b>화면을 준비하지 못했습니다.</b><br>' + esc(e.message)));
