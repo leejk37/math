@@ -321,7 +321,7 @@ function stopClock(){
 var EMBED=window.parent!==window&&/[?&]embed=1/.test(location.search);
 var WHO=null;if(EMBED){try{WHO=JSON.parse(sessionStorage.getItem('gugu_who')||'null');}catch(e){}}
 var cfg={dans:[2,3,4,5,6,7,8,9],count:'all',thr:3,mode:SR?'voice':'pad',name:''};
-var items=[],idx=0,cur=null,t0=0,shown=false,limitTimer=null,pendTimer=null,pendAt=0,firstSaidAt=0,run=0,padVal='',sel=null;
+var planned=0,items=[],idx=0,cur=null,t0=0,shown=false,limitTimer=null,pendTimer=null,pendAt=0,firstSaidAt=0,run=0,padVal='',sel=null;
 
 function show(name){
   ['setup','mic','test','result'].forEach(function(n){$('#s-'+n).hidden=n!==name;});
@@ -470,6 +470,7 @@ function micCheck(){
 function startTest(list){
   run++;
   items=list.map(function(p){return {a:p[0],b:p[1],ans:p[0]*p[1],status:null,rt:null,onset:null,said:null,heard:'',retries:0,fixed:false};});
+  planned=items.length;   /* '그만하기'로 멈췄는지 알기 위해 처음 낸 문항 수를 기억 */
   idx=0;sel=null;$('#testNote').hidden=true;$('#targets').textContent='';
   clearInterval(clockTimer);clockTimer=null;clockStart=0;clockEnd=0;wallMs=0;
   $('#clock').className='wait';$('#clock').textContent='첫 답을 하면 시간이 시작돼요';
@@ -599,7 +600,7 @@ function saveGugu(){
   if(!WHO||!WHO.studentNum||typeof window.callApi!=='function') return;
   var done=items.filter(function(i){return i.status;});
   if(!done.length) return;
-  var now={score:Math.round(done.filter(function(i){return i.status==='ok';}).length/done.length*100),sec:wallMs/1000,partial:done.length<72};
+  var now={score:Math.round(done.filter(function(i){return i.status==='ok';}).length/done.length*100),sec:wallMs/1000,partial:done.length<planned};   /* 중간에 '그만하기'로 멈췄을 때만 비교하지 않음 (20·40문항도 끝까지 풀면 같은 단계끼리 비교) */
   box.innerHTML='<p class="muted">저장하고 반 평균을 불러오는 중… ⏳</p>';
   window.callApi('submitGugudan',[{grade:WHO.grade,classNum:WHO.classNum,studentNum:WHO.studentNum,name:WHO.name,thr:cfg.thr,totalSec:Math.round(wallMs/1000),
     /* 문항마다 학생답(said)·인식원문(heard)·답한 방법·다시 말한 횟수·첫 소리까지 시간도 보냄 → 서버 구구단문항.gs가 '구구단문항' 탭에 한 줄씩 저장 */

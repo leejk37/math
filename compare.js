@@ -3,6 +3,7 @@
  * renderCompare(상자, 서버결과, { score, sec, partial })  — partial: 끝까지 풀지 않은 기록이면 true — 서버결과는 학생기록.gs의 getHundredClass / submitGugudan 이 돌려준 값
  *  - 이번 기록 / 내 오늘 평균 / 반 오늘 평균 / 내 전체 평균 / 반 전체 평균 을 점수·시간으로 비교
  *  - 맨 위에 '반 평균보다 몇 초 빨라요/느려요' 한 줄
+ *  - 서버가 d.stage(예: '2~9단 20문항')를 주면 제목에 붙임 — 평균은 같은 단계 기록끼리만 (구구단, 2026-11-13)
  */
 (function () {
   var css = '.cmp{margin-top:12px;border:1.5px solid #cbd5e1;border-radius:12px;padding:10px 12px;background:#fff;color:#0f172a;font-size:15px;text-align:left}' +
@@ -33,6 +34,8 @@
     var ref = (d.today && d.today.cls) || (d.all && d.all.cls), msg = '';
     if (now && now.partial) {
       msg = '끝까지 풀지 않아서 반 평균과 비교하지 않아요. 모든 문제를 풀면 비교할 수 있어요.';
+    } else if (d.stage === null) {
+      msg = '틀리거나 느린 문항만 다시 푼 연습은 반 평균과 비교하지 않아요.';
     } else if (ref && now && now.score < Math.round(ref.score)) {
       msg = '점수가 반 평균보다 <b class="slow">' + (Math.round(ref.score) - now.score) + '점 낮아요</b>. 빠르기보다 <b>정확하게</b>가 먼저예요!';
     } else if (ref && now && now.sec != null) {
@@ -44,7 +47,7 @@
     var mine = d.all && d.all.mine;
     if (mine && mine.best != null && now && !now.partial && now.score === 100 && now.sec <= mine.best) msg += (msg ? '<br>' : '') + '🏆 <b>내 최고 기록(100점 중 가장 빠름)</b>이에요!';
 
-    var html = '<div class="hd">📊 반 평균과 내 기록</div>' + (msg ? '<div class="msg">' + msg + '</div>' : '') +
+    var html = '<div class="hd">📊 반 평균과 내 기록' + (d.stage ? ' <small style="font-weight:400;color:#64748b">(' + esc(d.stage) + ' 끼리)</small>' : '') + '</div>' + (msg ? '<div class="msg">' + msg + '</div>' : '') +
       '<table><tr><th></th><th>점수</th><th>걸린 시간</th></tr>' +
       rows.map(function (r) {
         return '<tr' + (r[3] ? ' class="me"' : '') + '><td>' + r[0] + ' ' + r[2] + '</td><td>' + Math.round(r[1].score) + '점</td><td>' + mmss(r[1].sec) + '</td></tr>';
