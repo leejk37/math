@@ -345,6 +345,9 @@ async function call(action, ...args) {
 // 첫 화면(index.html) 영역 탭과 같은 이름·순서. 탭을 고치면 여기도 함께 고쳐 주세요.
 const AREAS = ['덧셈', '뺄셈', '곱셈', '나눗셈', '혼합계산', '수의 범위·어림',
   '3학년 분수·소수', '4학년 분수·소수', '5학년 분수', '5학년 소수', '6학년 분수', '6학년 소수'];
+// 유창성 훈련: 구구단·100칸 계산 — 단계 체크 없이 기간만 골라 보고서를 만듦 (서버 보고서유창성.gs의 getFluencyReport)
+const FLU = ['구구단', '100칸 계산'];
+const isFlu = () => FLU.includes($('op').value);
 async function loadScope() {
   msg('선생님 권한을 확인하는 중입니다…');
   try { scope = await call('getReportScope'); }
@@ -370,6 +373,7 @@ async function loadLevels() {
   const find = (name) => levelsByOp.find((o) => o.operation === name);
   const old = levelsByOp.filter((o) => !AREAS.includes(o.operation));   // 예전 이름으로 저장된 기록
   $('op').innerHTML = AREAS.map((a) => opt(a, find(a))).join('') +
+    `<optgroup label="유창성 훈련">${FLU.map((k) => `<option value="${esc(k)}">${esc(k)}</option>`).join('')}</optgroup>` +
     (old.length ? `<optgroup label="예전 영역 이름 (기록만 남아 있음)">${old.map((o) => opt(o.operation, o)).join('')}</optgroup>` : '');
   const savedOp = store.get('op', '');
   const firstWith = AREAS.find((a) => find(a)) || (old[0] && old[0].operation) || AREAS[0];
@@ -385,6 +389,13 @@ function unitLabel(u) {
 
 function renderUnits() {
   store.set('op', $('op').value);
+  $('allLv').parentNode.parentNode.classList.toggle('hidden', isFlu());
+  if (isFlu()) {
+    $('units').innerHTML = `<span class="muted">${$('op').value === '구구단'
+      ? '구구단은 단계(2~9단 20·40·72문항 등)를 저절로 나누어 모두 봅니다. 기간만 골라 주세요.'
+      : '100칸 계산은 1~12단계(곱셈·나눗셈·덧셈·뺄셈 × 25·50·100칸)를 모두 봅니다. 기간만 골라 주세요.'}</span>`;
+    return;
+  }
   const op = levelsByOp.find((o) => o.operation === $('op').value);
   if (!op) { $('units').innerHTML = '<span class="muted">이 학급은 이 영역의 진단 기록이 아직 없습니다.</span>'; syncAll(); return; }
   const units = [];
@@ -426,6 +437,7 @@ $('op').onchange = renderUnits;
 
 /* ---------- 보고서 만들기 ---------- */
 $('makeBtn').onclick = async () => {
+  if (isFlu()) return makeFlu();
   const levels = picked();
   if (!$('op').value) { alert('영역을 골라 주세요.'); return; }
   if (!levels.length) { alert('단계를 하나 이상 골라 주세요.'); return; }
@@ -445,8 +457,8 @@ $('makeBtn').onclick = async () => {
 };
 $('printBtn').onclick = () => window.print();
 $('showNames').checked = store.get('names', '1') === '1';
-$('showNames').onchange = () => { store.set('names', $('showNames').checked ? '1' : '0'); if (lastData) render(); };
-$('perStudent').onchange = () => { if (lastData) render(); };
+$('showNames').onchange = () => { store.set('names', $('showNames').checked ? '1' : '0'); if (lastData) (lastData.kind ? renderFlu() : render()); };
+$('perStudent').onchange = () => { if (lastData) (lastData.kind ? renderFlu() : render()); };
 
 /* ---------- 그리기 ---------- */
 const BAND = { reach: '도달', effort: '노력 중', support: '보충 필요' };
@@ -656,6 +668,160 @@ function studentPages(d) {
       </table></div>
       <div class="advice">💡 ${esc(s.advice)}</div>
     </div>`).join('');
+}
+
+/* ---------- 유창성 훈련 보고서 (구구단 · 100칸 계산) ---------- */
+async function makeFlu() {
+  const [grade, classNum] = $('cls').value.split('|');
+  $('makeBtn').disabled = true; $('makeBtn').textContent = '만드는 중…';
+  try {
+    lastData = await call('getFluencyReport', { grade, classNum, kind: $('op').value, from: $('from').value, to: $('to').value });
+    renderFlu();
+    $('printBtn').disabled = false;
+    $('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    $('report').classList.remove('hidden');
+    const m = /알 수 없는 요청|아직 설치되지/.test(e.message) ? '서버에 유창성 보고서 파일(보고서유창성.gs)이 아직 설치되지 않았습니다.' : e.message;
+    $('report').innerHTML = '<div class="notice"><b>보고서를 만들지 못했습니다.</b><br>' + esc(m) + '</div>';
+  } finally {
+    $('makeBtn').disabled = false; $('makeBtn').textContent = '보고서 만들기';
+  }
+}
+const STATUS = { master: '마스터', pass: '통과', practice: '연습 중' };
+const STCLS = { master: 'reach', pass: 'effort', practice: 'support' };
+function fmtS(v, unit) { return v == null ? '—' : v + (unit || '초'); }
+function fluRange(d) { const sc = d.scope; return (sc.from || sc.to) ? `${sc.from || '처음'} ~ ${sc.to || '오늘'}` : (sc.firstDay ? `전체 기간 (${sc.firstDay} ~ ${sc.lastDay})` : '전체 기간'); }
+function fluCover(d, title, parts) {
+  const sc = d.scope;
+  return `<div class="cover">
+    <div class="school">${esc(d.meta.schoolName)} ${esc(d.meta.schoolYear)}학년도 · 초등수학 연산영역 진단시스템 · 유창성 훈련</div>
+    <h2>${esc(sc.grade)}학년 ${esc(sc.classNum)} · ${esc(title)} 분석보고서</h2>
+    <div class="meta"><span>기간: ${esc(fluRange(d))}</span><span>작성: ${esc(d.meta.made)} · ${esc(d.meta.email)}</span></div>
+    <div class="flow">${parts.map((p, i) => `<span>${p}</span>${i < parts.length - 1 ? '<i>→</i>' : ''}`).join('')}</div>
+  </div>`;
+}
+function stageRow(x, unit) {
+  const gain = x.timeGain == null ? '<span class="muted">—</span>' : (x.timeGain > 0 ? `<b style="color:var(--reach)">${x.timeGain}${unit} 빨라짐</b>` : `${-x.timeGain}${unit} 느려짐`) + ` <small class="muted">(${x.gainN}명)</small>`;
+  return `<td class="n">${x.tested}/${x.enrolled}</td>
+    <td class="n">${x.firstScore ?? '—'} → ${x.latestScore ?? '—'}점</td>
+    <td class="n">${fmtS(x.firstTime, unit)} → ${fmtS(x.latestTime, unit)}</td>
+    <td class="n">${gain}</td>
+    <td class="n"><span class="badge reach">${x.master.length}</span> / <span class="badge effort">${x.pass.length}</span> / <span class="badge support">${x.practice.length}</span></td>
+    <td class="n">${x.tries}회</td>`;
+}
+function renderFlu() {
+  const d = lastData, r = $('report');
+  r.classList.remove('hidden');
+  if (!d.summary.tested) {
+    r.innerHTML = `<div class="notice"><b>선택한 기간에 ${esc(d.kind)} 기록이 없습니다.</b><br>${esc(d.scope.grade)}학년 ${esc(d.scope.classNum)} · ${esc(fluRange(d))}</div>`;
+    return;
+  }
+  r.innerHTML = d.kind === '구구단' ? fluGuguHtml(d) : fluHundredHtml(d);
+}
+
+function fluGuguHtml(d) {
+  const sc = d.scope, sm = d.summary;
+  const map = {}; d.facts.forEach((f) => { map[f.a + 'x' + f.b] = f; });
+  const cls = (f) => f.wrongRate >= 30 ? 'support' : f.wrongRate >= 10 ? 'effort' : 'reach';
+  const lines = [`재적 ${sm.enrolled}명 중 <b>${sm.tested}명</b>이 구구단을 연습했습니다. 통과 기준은 <b>정답률 ${sc.pass.score}% 이상 + ${sc.pass.sec}초 안 정답 ${sc.pass.fast}% 이상</b>, 마스터는 서로 다른 ${sc.masterDays}일 통과입니다.`];
+  if (d.hot.length) lines.push(`학급에서 가장 많이 틀린 문항은 <b>${d.hot.slice(0, 3).map((f) => `${f.a}×${f.b}(오답률 ${f.wrongRate}%)`).join(', ')}</b>입니다.`);
+  lines.push(`다시 외우기가 필요한 학생 <b>${sm.relearn}명</b>, 빠르기 연습이 필요한 학생 <b>${sm.speed}명</b>입니다.`);
+  return fluCover(d, '구구단', ['Ⅰ 진단', 'Ⅱ 분석', 'Ⅲ 처방']) + `
+  <section class="part">
+    <h3><span class="no">Ⅰ</span> 진단 — 어디까지 왔나</h3>
+    <p class="lead">단계는 <b>문항 수와 고른 단이 같은 기록끼리</b> 나눕니다. 점수·시간은 학생마다 첫 기록과 최근 기록을 하나씩 정해 평균합니다. '틀린 문항만 다시'와 중간에 그만둔 기록은 단계 통계에서 뺍니다.</p>
+    <div class="tiles">
+      <div class="tile"><div class="k">연습한 학생</div><div class="v">${sm.tested}<small>/ ${sm.enrolled}명</small></div><div class="d">단계 기록 ${sm.attempts}회</div></div>
+      <div class="tile"><div class="k">문항 기록</div><div class="v">${sm.itemRows}<small>문항</small></div><div class="d">'구구단문항' 탭 (11/13부터)</div></div>
+      <div class="tile"><div class="k">다시 외우기</div><div class="v">${sm.relearn}<small>명</small></div><div class="d">틀린 답이 굳었거나 모르는 문항</div></div>
+      <div class="tile"><div class="k">빠르기 연습</div><div class="v">${sm.speed}<small>명</small></div><div class="d">정확하지만 ${sc.pass.sec}초를 넘김</div></div>
+    </div>
+    <div class="summary-text">${lines.map((l) => `<p>${l}</p>`).join('')}</div>
+    <h4>단계별 결과 <small>시간 = 정답 반응시간 중앙값 · 빨라짐 = 첫 기록 → 가장 빠른 기록(2번 이상 푼 학생)</small></h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>단계</th><th class="n">연습</th><th class="n">점수 첫→최근</th><th class="n">반응시간 첫→최근</th><th class="n">빨라진 정도</th><th class="n">마스터/통과/연습 중</th><th class="n">기록</th></tr></thead>
+      <tbody>${d.stages.map((x) => `<tr><td class="lvname"><b>${esc(x.stage)}</b></td>${stageRow(x, '초')}</tr>`).join('')}</tbody>
+    </table></div>
+  </section>
+
+  <section class="part">
+    <h3><span class="no">Ⅱ</span> 분석 — 어디서 막히나</h3>
+    <p class="lead">칸마다 그 문항의 <b>오답률</b>(무응답 포함)과 정답일 때 평균 반응시간입니다. 초록 10% 미만 · 노랑 10~29% · 빨강 30% 이상.</p>
+    ${d.facts.length ? `<div class="tablewrap"><table class="qgrid matrix"><thead><tr><th>×</th>${[1,2,3,4,5,6,7,8,9].map((b) => `<th class="c">${b}</th>`).join('')}</tr></thead>
+      <tbody>${[2,3,4,5,6,7,8,9].map((a) => `<tr><td class="lvname"><b>${a}단</b></td>${[1,2,3,4,5,6,7,8,9].map((b) => {
+        const f = map[a + 'x' + b];
+        if (!f) return '<td class="q na">—</td>';
+        return `<td class="q ${cls(f)}" title="${a}×${b}=${a * b} · ${f.n}회 중 오답률 ${f.wrongRate}% · 틀린 학생 ${f.students}명${f.topWrong.length ? ' · 자주 한 답 ' + f.topWrong.map((t) => t.v + '(' + t.n + ')').join(', ') : ''}">${f.wrongRate}%<span class="tries">${f.avgRt == null ? '' : f.avgRt + '초'}</span></td>`;
+      }).join('')}</tr>`).join('')}</tbody></table></div>`
+      : '<p class="muted">이 기간에 문항별 기록이 없습니다. 문항별 기록은 \'구구단문항\' 탭이 생긴 2026-11-13부터 쌓입니다.</p>'}
+    <div class="cards" style="margin-top:14px">
+      <div class="card"><div class="t">많이 틀린 문항</div><div class="s">3회 이상 나온 문항 중 오답률 20% 이상</div>
+        ${d.hot.length ? `<ul class="plain">${d.hot.map((f) => `<li><b>${f.a}×${f.b}=${f.ans}</b> — 오답률 ${f.wrongRate}% (${f.students}명)${f.topWrong.length ? ` · 자주 한 답 ${f.topWrong.map((t) => `<b>${t.v}</b>${t.type ? ' (' + esc(t.type) + ')' : ''}`).join(', ')}` : ''}</li>`).join('')}</ul>` : '<span class="muted">해당 문항이 없습니다.</span>'}</div>
+      <div class="card"><div class="t">느린 문항</div><div class="s">정답일 때 평균 반응시간이 긴 순서</div>
+        ${d.slow.length ? `<ul class="plain">${d.slow.map((f) => `<li><b>${f.a}×${f.b}</b> — 평균 ${f.avgRt}초 (${f.n}회)</li>`).join('')}</ul>` : '<span class="muted">기록이 부족합니다.</span>'}</div>
+    </div>
+  </section>
+
+  <section class="part">
+    <h3><span class="no">Ⅲ</span> 처방 — 누구에게 무엇을</h3>
+    <p class="lead">표적 문항은 학생마다 최근 기록에서 고른 '지금 가장 먼저 연습할 문항'입니다(잘못 외움 → 아직 모름 → 느림 순). 서로 다른 2일에 빠르게 맞히면 졸업합니다.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>학생</th><th>단계별 최근 기록</th><th>표적 문항</th><th>처방</th></tr></thead>
+      <tbody>${d.students.map((s) => `<tr>
+        <td style="white-space:nowrap"><b>${esc(who(d, s.num))}</b></td>
+        <td style="font-size:13px">${s.stages.length ? s.stages.map((x) => `<div>${esc(x.stage)} · ${x.latestScore}점 · ${fmtS(x.latestMed)} <span class="badge ${STCLS[x.status]}">${STATUS[x.status]}</span></div>`).join('') : '<span class="muted">—</span>'}</td>
+        <td style="font-size:13px">${s.targets.length ? s.targets.map((t) => `<div><b>${t.a}×${t.b}</b> ${esc(t.kind)}${t.wrongs.length ? ' · 답 ' + t.wrongs.join(',') : ''}</div>`).join('') + (s.targetMore ? `<div class="muted">외 ${s.targetMore}개</div>` : '') : '<span class="muted">—</span>'}</td>
+        <td style="font-size:13px; min-width:200px">${esc(s.advice)}</td></tr>`).join('')}</tbody>
+    </table></div>
+  </section>
+  <p class="note">이 보고서는 '구구단'·'구구단문항' 시트로 자동 작성되었습니다. 음성 인식 오류로 오답 처리된 문항이 있을 수 있으니 학생 관찰과 함께 판단해 주세요.</p>`;
+}
+
+function fluHundredHtml(d) {
+  const sc = d.scope, sm = d.summary;
+  const short = (s) => s.replace(/^\d+단계: /, '');
+  const lines = [`재적 ${sm.enrolled}명 중 <b>${sm.tested}명</b>이 100칸 계산을 연습했습니다 (모두 ${sm.attempts}회). 마스터는 한 단계를 서로 다른 ${sc.masterDays}일에 통과한 것입니다.`];
+  if (!sc.hasRule) lines.push('<b>서버에서 단계별 통과 기준을 읽지 못해</b> 통과·마스터를 판정하지 않았습니다.');
+  const weak = d.stages.filter((x) => x.tested && x.practice.length > x.tested / 2);
+  if (weak.length) lines.push(`연습 중인 학생이 절반이 넘는 단계: <b>${weak.map((x) => x.no + '단계').join(', ')}</b>`);
+  return fluCover(d, '100칸 계산', ['Ⅰ 진단', 'Ⅱ 분석', 'Ⅲ 처방']) + `
+  <section class="part">
+    <h3><span class="no">Ⅰ</span> 진단 — 어디까지 왔나</h3>
+    <p class="lead">12단계를 <b>단계마다 따로</b> 봅니다. 점수·시간은 학생마다 첫 기록과 최근 기록을 하나씩 정해 평균합니다.</p>
+    <div class="tiles">
+      <div class="tile"><div class="k">연습한 학생</div><div class="v">${sm.tested}<small>/ ${sm.enrolled}명</small></div><div class="d">모두 ${sm.attempts}회</div></div>
+      <div class="tile"><div class="k">연습한 단계</div><div class="v">${d.stages.filter((x) => x.tested).length}<small>/ 12단계</small></div><div class="d">한 명이라도 푼 단계</div></div>
+    </div>
+    <div class="summary-text">${lines.map((l) => `<p>${l}</p>`).join('')}</div>
+    <h4>단계별 결과 <small>빨라짐 = 첫 기록 → 가장 빠른 기록(2번 이상 푼 학생, 통과 점수 이상만)</small></h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>단계</th><th class="n">연습</th><th class="n">점수 첫→최근</th><th class="n">시간 첫→최근</th><th class="n">빨라진 정도</th><th class="n">마스터/통과/연습 중</th><th class="n">기록</th></tr></thead>
+      <tbody>${d.stages.map((x) => `<tr><td class="lvname"><b>${x.no}단계</b><small>${esc(short(x.stage))}${x.rule ? ` · 기준 ${x.rule.minScore}점·${x.rule.maxSec}초` : ''}</small></td>${x.tested ? stageRow(x, '초') : '<td class="n">0/' + x.enrolled + '</td><td colspan="5" class="muted">기록 없음</td>'}</tr>`).join('')}</tbody>
+    </table></div>
+  </section>
+
+  <section class="part">
+    <h3><span class="no">Ⅱ</span> 분석 — 어디서 막히나</h3>
+    <p class="lead">단계마다 여러 학생이 틀린 셈입니다. 괄호 안은 가장 많이 쓴 오답(?는 비워 둠)입니다.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>단계</th><th>자주 틀린 셈</th></tr></thead>
+      <tbody>${d.stages.filter((x) => x.tested).map((x) => `<tr><td class="lvname"><b>${x.no}단계</b><small>${esc(short(x.stage))}</small></td>
+        <td style="font-size:13px">${x.hotWrong.length ? x.hotWrong.map((w) => `<b>${esc(w.expr)}</b>${w.top ? ' (' + esc(w.top) + ')' : ''} ${w.students}명`).join(' · ') : '<span class="muted">없음</span>'}</td></tr>`).join('')}</tbody>
+    </table></div>
+  </section>
+
+  <section class="part">
+    <h3><span class="no">Ⅲ</span> 처방 — 학생×단계</h3>
+    <p class="lead">칸마다 그 학생의 <b>최고 점수와 가장 빠른 시간</b>입니다. 초록 마스터 · 노랑 통과 · 빨강 연습 중 · — 미응시. 다음 단계는 연습 중인 단계부터, 없으면 아직 안 한 첫 단계입니다.</p>
+    <div class="legend"><span><i style="background:var(--reach)"></i>마스터</span><span><i style="background:var(--effort)"></i>통과</span><span><i style="background:var(--support)"></i>연습 중</span><span>— 미응시</span></div>
+    <div class="tablewrap"><table class="qgrid matrix">
+      <thead><tr><th>학생</th>${d.stages.map((x) => `<th class="c" title="${esc(x.stage)}">${x.no}<small>${esc(short(x.stage).replace('칸', ''))}</small></th>`).join('')}<th>다음 할 일</th></tr></thead>
+      <tbody>${d.students.map((s) => `<tr><td style="white-space:nowrap"><b>${esc(who(d, s.num))}</b></td>
+        ${s.cells.map((c) => c ? `<td class="q ${STCLS[c.status]}" title="${esc(c.stage)} · ${c.tries}회 · 최고 ${c.bestScore}점 · 가장 빠른 ${fmtS(c.bestSec)} · ${STATUS[c.status]}">${c.bestScore}<span class="tries">${c.bestSec == null ? c.latestSec + '초' : c.bestSec + '초'}</span></td>` : '<td class="q na">—</td>').join('')}
+        <td style="font-size:13px; min-width:200px">${esc(s.advice)}</td></tr>`).join('')}</tbody>
+    </table></div>
+  </section>
+  <p class="note">이 보고서는 '100칸계산' 시트로 자동 작성되었습니다.</p>`;
 }
 
 boot().catch((e) => msg('<b>화면을 준비하지 못했습니다.</b><br>' + esc(e.message)));
