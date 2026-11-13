@@ -144,6 +144,15 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
 .facts li{border-radius:8px;padding:3px 9px;font-family:var(--display)}
 .facts.bad li{background:var(--bad-bg);color:var(--bad)}
 .facts.slow li{background:var(--slow-bg);color:var(--slow)}
+/* 표적 3문항 */
+.tgts{display:grid;gap:10px;margin-top:6px}
+.tgt{background:var(--card);border:1.5px solid var(--line);border-left:6px solid var(--slow);border-radius:12px;padding:12px 14px}
+.tgt.k4{border-left-color:var(--bad)}.tgt.k3{border-left-color:var(--none)}
+.tgt .eq{font-family:var(--display);font-size:1.6rem;line-height:1.2}
+.tgt .eq small{font-family:var(--body);font-size:.85rem;margin-left:8px;padding:2px 8px;border-radius:8px;background:var(--slow-bg);color:var(--slow);vertical-align:middle}
+.tgt.k4 .eq small{background:var(--bad-bg);color:var(--bad)}.tgt.k3 .eq small{background:var(--none-bg);color:var(--none)}
+.tgt p{margin:4px 0 0;font-size:.93rem}
+.tgt .hint{color:var(--ok)}
 </style>
 </head>
 <body>
@@ -221,6 +230,7 @@ table.dans th:first-child,table.dans td:first-child{text-align:left;font-family:
 <section id="s-result" hidden>
   <h2 id="rTitle"></h2>
   <p id="rStory"></p>
+  <div id="targets"></div>
   <div id="cmp"></div>
   <dl class="report" id="report"></dl>
 
@@ -460,7 +470,7 @@ function micCheck(){
 function startTest(list){
   run++;
   items=list.map(function(p){return {a:p[0],b:p[1],ans:p[0]*p[1],status:null,rt:null,onset:null,said:null,heard:'',retries:0,fixed:false};});
-  idx=0;sel=null;$('#testNote').hidden=true;
+  idx=0;sel=null;$('#testNote').hidden=true;$('#targets').textContent='';
   clearInterval(clockTimer);clockTimer=null;clockStart=0;clockEnd=0;wallMs=0;
   $('#clock').className='wait';$('#clock').textContent='첫 답을 하면 시간이 시작돼요';
   show('test');ask();
@@ -592,9 +602,55 @@ function saveGugu(){
   var now={score:Math.round(done.filter(function(i){return i.status==='ok';}).length/done.length*100),sec:wallMs/1000,partial:done.length<72};
   box.innerHTML='<p class="muted">저장하고 반 평균을 불러오는 중… ⏳</p>';
   window.callApi('submitGugudan',[{grade:WHO.grade,classNum:WHO.classNum,studentNum:WHO.studentNum,name:WHO.name,thr:cfg.thr,totalSec:Math.round(wallMs/1000),
-    items:done.map(function(i){return {a:i.a,b:i.b,ok:i.status==='ok',rt:i.rt};})}]).then(function(d){
+    /* 문항마다 학생답(said)·인식원문(heard)·답한 방법·다시 말한 횟수·첫 소리까지 시간도 보냄 → 서버 구구단문항.gs가 '구구단문항' 탭에 한 줄씩 저장 */
+    items:done.map(function(i){return {a:i.a,b:i.b,ok:i.status==='ok',rt:i.rt,said:i.said,heard:i.heard||'',via:i.via||'',retries:i.retries||0,onset:i.onset};})}]).then(function(d){
     if(typeof window.renderCompare==='function')window.renderCompare(box,d,now);else box.innerHTML='';
+    renderTargets(d&&d.targets);
   }).catch(function(){box.innerHTML='';});   /* 서버에 아직 함수가 없으면 표 없이 지나감 */
+}
+/* 표적 3문항: 서버(구구단문항.gs의 guguTargetsCore_)가 최근 기록에서 고른 '지금 가장 먼저 연습할 문항' */
+var targets=[];
+function renderTargets(t){
+  var box=$('#targets');box.textContent='';targets=[];
+  if(!t||!t.list) return;
+  box.appendChild(el('h3','','🎯 나의 표적 문항'));
+  if(!t.list.length){
+    box.appendChild(el('p','muted','최근 기록에서 다시 연습할 문항이 없어요. 지금처럼 빠르고 정확하게!'));
+    return;
+  }
+  targets=t.list;
+  box.appendChild(el('p','muted','최근 '+t.days+'일 · '+t.attempts+'번 검사한 기록에서 골랐어요. 서로 다른 2일에 빠르게 맞히면 졸업해요.'+(t.attempts<2?' (기록이 더 쌓이면 더 정확해져요)':'')));
+  var wrap=el('div','tgts');
+  t.list.forEach(function(x){
+    var lv=x.kind==='잘못 외움'?4:x.kind==='아직 모름'?3:2;
+    var c=el('div','tgt k'+lv),eq=el('div','eq',x.a+' × '+x.b+' = '+x.ans);
+    eq.appendChild(el('small','',x.kind));c.appendChild(eq);
+    if(x.wrongs&&x.wrongs.length)c.appendChild(el('p','','내가 한 답: '+x.wrongs.join(', ')+(x.errorType?' → '+x.errorType:'')));
+    else if(x.kind==='느림')c.appendChild(el('p','','맞혔지만 시간이 걸렸어요'+(x.lastRt!=null?' (최근 '+x.lastRt+'초)':'')));
+    c.appendChild(el('p','hint','💡 '+x.hint));
+    c.appendChild(el('p','muted','졸업까지: 빠른 정답 '+x.fastDays+' / 2일'));
+    wrap.appendChild(c);
+  });
+  box.appendChild(wrap);
+  var more=t.more?el('p','muted','이 밖에 연습할 문항이 '+t.more+'개 더 있어요. 표적 문항을 졸업하면 차례로 나와요.'):null;
+  if(more)box.appendChild(more);
+  var b=el('button','go','표적 문항 연습하기');b.type='button';
+  b.addEventListener('click',function(){startTest(targetList());});
+  box.appendChild(b);
+}
+/* 표적 문항 연습 세트: 표적마다 2번 + 바꾼 곱셈(예: 7×8 → 8×7) 1번, 같은 문항이 바로 이어지지 않게 섞음 */
+function targetList(){
+  var l=[];
+  targets.forEach(function(x){
+    l.push([x.a,x.b],[x.a,x.b]);
+    if(x.a!==x.b&&x.b>=2) l.push([x.b,x.a]);
+  });
+  for(var k=0;k<20;k++){
+    shuffle(l);
+    var okOrder=true;for(var i=1;i<l.length;i++)if(l[i][0]===l[i-1][0]&&l[i][1]===l[i-1][1]){okOrder=false;break;}
+    if(okOrder) break;
+  }
+  return l;
 }
 /* 실시간 현황판(live.html)으로 단별 결과 보내기 — 진단시스템에서 학생을 고르고 열었을 때만
    현황판 규칙상 한 기록의 O·X는 20개까지라 단마다 한 기록으로 보냄
