@@ -48,8 +48,9 @@
   .card:hover { transform: translateY(-2px); }
   .card.none { background: var(--none); color: var(--none-ink); cursor: default; }
   .card .top { display: flex; justify-content: flex-start; align-items: baseline; gap: .3em; min-width: 0; }   /* 번호와 이름을 한 칸 띄워 붙임 */
-  .card .num { font-size: 15px; font-weight: 700; }
-  .card .name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 번호·이름은 줄지 않고 한 줄로 다 보이게. 칸이 모자라면 계산 이름(.lvs)이 먼저 '…'으로 줄어듦 */
+  .card .num { font-size: 15px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .card .name { font-size: 15px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
   .card .score { font-size: 30px; font-weight: 800; line-height: 1.1; margin-top: 4px; }
   .card .lv { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); margin-top: 4px; }
@@ -62,7 +63,7 @@
   .rank { font-size: 34px; font-weight: 900; white-space: nowrap; padding: 0 10px; border-radius: 14px; background: #e0e7ff; color: #3730a3; line-height: 1.25; }
   .rank small { font-size: .5em; font-weight: 800; margin-left: 1px; }
   .card .lv.h100 { color: var(--ink); font-weight: 800; font-size: 15px; }
-  .card .lvs { font-size: 12px; font-weight: 700; color: var(--sub); margin-right: 6px; white-space: nowrap; }
+  .card .lvs { font-size: 12px; font-weight: 700; color: var(--sub); margin-right: 3px; white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* 전체화면: 카드 가로 5 × 세로 4 (줄 높이는 화면 높이에 맞춰 스크립트가 정함) */
   /* 전체화면: 카드만 보이게 (도움 요청은 카드의 노란 테두리·태그로 보임) */
   body.fs header, body.fs #msg, body.fs .helpbox, body.fs .summary, body.fs .pastbar,
@@ -561,7 +562,7 @@ function render() {
     return `<div class="card${changed ? ' flash' : ''}${asks.length ? ' asking' : ''}" data-num="${esc(n)}" style="border-left-color:${colorOf(r.score)}">
       ${r.op === '100칸 계산' || r.gu
         // 100칸·구구단: 계산 이름을 첫째 줄 번호 왼쪽에 작게 (아래 정보가 카드 안에 다 들어가도록)
-        ? `<div class="top"><span><span class="lvs" title="${esc(r.op + ' ' + r.level)}">${esc(shortLevel(r.level))}</span><span class="num">${esc(n)}번</span></span><span class="name">${esc(nameOf(n))}</span></div>`
+        ? `<div class="top"><span class="lvs" title="${esc(r.op + ' ' + r.level)}">${esc(shortLevel(r.level))}</span><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>`
         : `<div class="top"><span class="num">${esc(n)}번</span><span class="name">${esc(nameOf(n))}</span></div>
            <div class="lv" title="${esc(r.op + ' ' + r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</div>`}
       <div class="score" style="color:${colorOf(r.score)}">${r.score}${rankBadge(ranks, r, n)}</div>
