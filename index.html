@@ -5364,102 +5364,157 @@ setTimeout(() => {
   </div>
 
   <!-- ==========================================
-       손글씨 메모장 (화면 어디서나 열 수 있는 공통 팝업, 임시용 - 저장 안 됨)
+       손글씨 연습장 (2026-11-18 바꿈)
+       - 화면 위에 투명하게 겹쳐서, 문제를 보면서 그 위에 바로 계산할 수 있습니다.
+       - [⌨️ 답 쓰기]를 누르면 손글씨는 화면에 남은 채로 답 칸을 누를 수 있습니다.
+         (연습장이 터치를 받지 않고 아래 화면으로 넘겨 줍니다: pointer-events:none)
+       - 획은 '페이지 좌표'로 기억해 두어, 화면을 위아래로 움직여도 글씨가 문제 위에 그대로 붙어 있습니다.
+       - 임시용이라 저장되지 않습니다.
        ========================================== -->
-  <button id="memoFab" onclick="openMemoPopup()" title="손글씨 메모장"
-    style="position:fixed; bottom:24px; right:24px; z-index:9998; width:56px; height:56px; border-radius:50%;
-           background:#0ea5e9; color:#fff; border:none; box-shadow:0 4px 14px rgba(14,165,233,0.45);
-           font-size:24px; cursor:pointer;">✏️</button>
+  <style>
+    #memoFab { position:fixed; bottom:24px; right:24px; z-index:9998; width:56px; height:56px; border-radius:50%;
+               background:#0ea5e9; color:#fff; border:none; box-shadow:0 4px 14px rgba(14,165,233,0.45); font-size:24px; cursor:pointer; }
+    #memoCanvas { display:none; position:fixed; inset:0; width:100vw; height:100vh; z-index:9997; touch-action:none; cursor:crosshair; }
+    #memoCanvas.input-mode { pointer-events:none; cursor:default; }
+    #memoFrame { display:none; position:fixed; inset:0; z-index:9996; pointer-events:none; border:4px solid #0ea5e9; box-sizing:border-box; }
+    #memoFrame.input-mode { border-color:#f59e0b; border-style:dashed; }
+    #memoBar { display:none; position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:9999;
+               background:#fff; border:2px solid #cbd5e1; border-radius:14px; padding:8px; gap:6px; align-items:center;
+               box-shadow:0 6px 24px rgba(0,0,0,0.22); flex-wrap:wrap; justify-content:center; max-width:96vw; box-sizing:border-box; }
+    #memoBar button { padding:8px 12px; border-radius:9px; border:2px solid #cbd5e1; background:#fff; color:#475569; font-weight:bold; font-size:15px; cursor:pointer; white-space:nowrap; }
+    #memoBar button.on { background:#e0f2fe; border-color:#0ea5e9; color:#0369a1; }
+    #memoBar .memo-mode { min-width:118px; }
+    #memoBar .memo-mode.draw { background:#0ea5e9; border-color:#0284c7; color:#fff; }
+    #memoBar .memo-mode.input { background:#f59e0b; border-color:#d97706; color:#fff; }
+    #memoBar .memo-sep { width:1px; height:28px; background:#e2e8f0; margin:0 2px; }
+    #memoBar .memo-clear { border-color:#fca5a5; background:#fef2f2; color:#dc2626; }
+  </style>
 
-  <div id="memoOverlay" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:16px; padding:16px; width:min(94vw, 900px); max-height:92vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <div style="font-weight:bold; font-size:17px; color:#0f172a;">✏️ 손글씨 메모장 <span style="font-weight:normal; font-size:12px; color:#94a3b8;">(저장되지 않는 임시 메모장입니다)</span></div>
-        <button onclick="closeMemoPopup()" style="border:none; background:#f1f5f9; width:32px; height:32px; border-radius:8px; font-size:18px; cursor:pointer; color:#475569;">×</button>
-      </div>
-      <div style="display:flex; gap:8px; margin-bottom:10px;">
-        <button id="memoPenBtn" onclick="setMemoTool('pen')"
-          style="padding:8px 14px; border-radius:8px; border:2px solid #0ea5e9; background:#e0f2fe; color:#0369a1; font-weight:bold; cursor:pointer;">✏️ 펜</button>
-        <button id="memoEraserBtn" onclick="setMemoTool('eraser')"
-          style="padding:8px 14px; border-radius:8px; border:2px solid #cbd5e1; background:#fff; color:#475569; font-weight:bold; cursor:pointer;">🧹 지우개</button>
-        <button onclick="clearMemoCanvas()"
-          style="padding:8px 14px; border-radius:8px; border:2px solid #fca5a5; background:#fef2f2; color:#dc2626; font-weight:bold; cursor:pointer; margin-left:auto;">전체 지우기</button>
-      </div>
-      <canvas id="memoCanvas" style="width:100%; height:60vh; background:#fff; border:2px dashed #cbd5e1; border-radius:10px; touch-action:none; cursor:crosshair;"></canvas>
-    </div>
+  <button id="memoFab" onclick="openMemoPopup()" title="손글씨 연습장">✏️</button>
+  <div id="memoFrame"></div>
+  <canvas id="memoCanvas"></canvas>
+  <div id="memoBar">
+    <button id="memoModeBtn" class="memo-mode draw" onclick="toggleMemoMode()">⌨️ 답 쓰기</button>
+    <span class="memo-sep"></span>
+    <button id="memoPenBtn" class="on" onclick="setMemoTool('pen')">✏️ 펜</button>
+    <button id="memoEraserBtn" onclick="setMemoTool('eraser')">🧹 지우개</button>
+    <button class="memo-clear" onclick="clearMemoCanvas()">전체 지우기</button>
+    <span class="memo-sep"></span>
+    <button onclick="closeMemoPopup()" title="연습장 닫기">✕ 닫기</button>
   </div>
 
   <script>
-    let memoCtx = null, memoDrawing = false, memoTool = 'pen', memoLastX = 0, memoLastY = 0, memoCanvasReady = false;
+    // 획 목록: [{ tool:'pen'|'eraser', pts:[{x,y}, ...] }]  — x,y는 페이지 좌표(스크롤 포함)
+    let memoStrokes = [], memoCur = null, memoTool = 'pen', memoMode = 'draw', memoCtx = null, memoReady = false, memoRaf = 0;
+    const MEMO_PEN = { color:'#1e3a8a', width:3 }, MEMO_ERASER_WIDTH = 24;
 
     function openMemoPopup() {
-      document.getElementById('memoOverlay').style.display = 'flex';
-      if (!memoCanvasReady) initMemoCanvas();
+      if (!memoReady) initMemoCanvas();
+      ['memoCanvas', 'memoFrame'].forEach(function (id) { document.getElementById(id).style.display = 'block'; });
+      document.getElementById('memoBar').style.display = 'flex';
+      document.getElementById('memoFab').style.display = 'none';
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();  // 열 때 화상 키보드 닫기
+      setMemoMode('draw');
+      resizeMemoCanvas();
     }
     function closeMemoPopup() {
-      document.getElementById('memoOverlay').style.display = 'none';
+      ['memoCanvas', 'memoFrame', 'memoBar'].forEach(function (id) { document.getElementById(id).style.display = 'none'; });
+      document.getElementById('memoFab').style.display = 'block';
     }
+
+    // 필기 ↔ 답 쓰기 바꾸기
+    function toggleMemoMode() { setMemoMode(memoMode === 'draw' ? 'input' : 'draw'); }
+    function setMemoMode(mode) {
+      memoMode = mode;
+      const isInput = (mode === 'input');
+      document.getElementById('memoCanvas').classList.toggle('input-mode', isInput);
+      document.getElementById('memoFrame').classList.toggle('input-mode', isInput);
+      const btn = document.getElementById('memoModeBtn');
+      btn.className = 'memo-mode ' + (isInput ? 'input' : 'draw');
+      btn.textContent = isInput ? '✏️ 다시 필기' : '⌨️ 답 쓰기';
+      document.getElementById('memoPenBtn').disabled = isInput;
+      document.getElementById('memoEraserBtn').disabled = isInput;
+      if (!isInput && document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    }
+
     function initMemoCanvas() {
       const canvas = document.getElementById('memoCanvas');
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
       memoCtx = canvas.getContext('2d');
-      memoCtx.lineCap = 'round';
-      memoCtx.lineJoin = 'round';
-
       canvas.addEventListener('pointerdown', memoPointerDown);
       canvas.addEventListener('pointermove', memoPointerMove);
       window.addEventListener('pointerup', memoPointerUp);
-      memoCanvasReady = true;
+      window.addEventListener('pointercancel', memoPointerUp);
+      window.addEventListener('scroll', memoRequestRedraw, { passive: true });
+      window.addEventListener('resize', resizeMemoCanvas);
+      memoReady = true;
     }
-    function memoGetPos(e, canvas) {
-      const rect = canvas.getBoundingClientRect();
-      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    }
-    function memoPointerDown(e) {
-      memoDrawing = true;
+    function resizeMemoCanvas() {
       const canvas = document.getElementById('memoCanvas');
-      const pos = memoGetPos(e, canvas);
-      memoLastX = pos.x; memoLastY = pos.y;
-      // 클릭(터치)만 해도 점이 찍히도록
-      if (memoTool !== 'eraser') {
-        memoCtx.globalCompositeOperation = 'source-over';
-        memoCtx.beginPath();
-        memoCtx.arc(pos.x, pos.y, 1.5, 0, Math.PI * 2);
-        memoCtx.fillStyle = '#1e293b';
-        memoCtx.fill();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(window.innerWidth * dpr);
+      canvas.height = Math.round(window.innerHeight * dpr);
+      memoRedraw();
+    }
+    function memoRequestRedraw() {
+      if (memoRaf || document.getElementById('memoCanvas').style.display !== 'block') return;
+      memoRaf = requestAnimationFrame(function () { memoRaf = 0; memoRedraw(); });
+    }
+
+    function memoStrokeStyle(tool) {
+      memoCtx.lineCap = 'round'; memoCtx.lineJoin = 'round';
+      memoCtx.globalCompositeOperation = (tool === 'eraser') ? 'destination-out' : 'source-over';
+      memoCtx.strokeStyle = MEMO_PEN.color; memoCtx.fillStyle = MEMO_PEN.color;
+      memoCtx.lineWidth = (tool === 'eraser') ? MEMO_ERASER_WIDTH : MEMO_PEN.width;
+    }
+    function memoDrawStroke(st) {
+      memoStrokeStyle(st.tool);
+      const p = st.pts;
+      if (p.length === 1) {            // 콕 찍은 점
+        if (st.tool === 'eraser') return;
+        memoCtx.beginPath(); memoCtx.arc(p[0].x, p[0].y, MEMO_PEN.width / 2 + 0.5, 0, Math.PI * 2); memoCtx.fill();
+        return;
       }
+      memoCtx.beginPath(); memoCtx.moveTo(p[0].x, p[0].y);
+      for (let i = 1; i < p.length; i++) memoCtx.lineTo(p[i].x, p[i].y);
+      memoCtx.stroke();
+    }
+    // 화면 전체를 다시 그리기 — 지금 스크롤 위치만큼 옮겨서 그리므로 글씨가 문제에 붙어 다닙니다.
+    function memoRedraw() {
+      if (!memoCtx) return;
+      const canvas = document.getElementById('memoCanvas');
+      const dpr = window.devicePixelRatio || 1;
+      memoCtx.setTransform(1, 0, 0, 1, 0, 0);
+      memoCtx.clearRect(0, 0, canvas.width, canvas.height);
+      memoCtx.setTransform(dpr, 0, 0, dpr, -window.scrollX * dpr, -window.scrollY * dpr);
+      memoStrokes.forEach(memoDrawStroke);
+      memoCtx.globalCompositeOperation = 'source-over';
+    }
+
+    function memoPagePos(e) { return { x: e.clientX + window.scrollX, y: e.clientY + window.scrollY }; }
+    function memoPointerDown(e) {
+      if (memoMode !== 'draw') return;
+      e.preventDefault();
+      memoCur = { tool: memoTool, pts: [memoPagePos(e)] };
+      memoStrokes.push(memoCur);
+      memoRedraw();
     }
     function memoPointerMove(e) {
-      if (!memoDrawing) return;
-      const canvas = document.getElementById('memoCanvas');
-      const pos = memoGetPos(e, canvas);
-      const isEraser = (memoTool === 'eraser');
-      memoCtx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over';
-      memoCtx.strokeStyle = '#1e293b';
-      memoCtx.lineWidth = isEraser ? 20 : 3;
-      memoCtx.beginPath();
-      memoCtx.moveTo(memoLastX, memoLastY);
-      memoCtx.lineTo(pos.x, pos.y);
-      memoCtx.stroke();
-      memoLastX = pos.x; memoLastY = pos.y;
+      if (!memoCur) return;
+      const pos = memoPagePos(e), last = memoCur.pts[memoCur.pts.length - 1];
+      memoCur.pts.push(pos);
+      // 마지막 구간만 이어 그리기 (빠름)
+      memoStrokeStyle(memoCur.tool);
+      memoCtx.beginPath(); memoCtx.moveTo(last.x, last.y); memoCtx.lineTo(pos.x, pos.y); memoCtx.stroke();
+      memoCtx.globalCompositeOperation = 'source-over';
     }
-    function memoPointerUp() { memoDrawing = false; }
+    function memoPointerUp() { memoCur = null; }
 
     function setMemoTool(tool) {
       memoTool = tool;
-      const penBtn = document.getElementById('memoPenBtn'), eraserBtn = document.getElementById('memoEraserBtn');
-      penBtn.style.background = (tool === 'pen') ? '#e0f2fe' : '#fff';
-      penBtn.style.borderColor = (tool === 'pen') ? '#0ea5e9' : '#cbd5e1';
-      eraserBtn.style.background = (tool === 'eraser') ? '#fee2e2' : '#fff';
-      eraserBtn.style.borderColor = (tool === 'eraser') ? '#ef4444' : '#cbd5e1';
+      document.getElementById('memoPenBtn').classList.toggle('on', tool === 'pen');
+      document.getElementById('memoEraserBtn').classList.toggle('on', tool === 'eraser');
     }
-    function clearMemoCanvas() {
-      if (!memoCtx) return;
-      const canvas = document.getElementById('memoCanvas');
-      memoCtx.clearRect(0, 0, canvas.width, canvas.height);
-    }
+    function clearMemoCanvas() { memoStrokes = []; memoCur = null; memoRedraw(); }
   </script>
 </body>
 </html>
