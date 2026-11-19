@@ -92,7 +92,11 @@
   .att-day[open] > summary { border-bottom: 1px solid var(--line); }
   .att-lv { padding: 10px 14px; border-bottom: 1px dashed #e0eef6; }
   .att-lv:last-child { border-bottom: none; }
-  .att-lvname { margin-bottom: 6px; color: #2f6f96; font-size: 14px; }
+  .att-lvname { margin-bottom: 6px; color: #2f6f96; font-size: 14px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; }
+  .att-cls { font-size: 13px; color: var(--sub); background: #f1f7fb; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+  .att-cls b { color: var(--ink); }
+  .att-cls small { color: var(--muted); margin-left: 2px; }
+  .att-cls.none { background: none; color: var(--muted); font-size: 12px; }
   .att-lvname small { color: var(--muted); font-size: 12px; margin-left: 6px; }
   .att-try { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 5px 0; font-size: 14px; font-variant-numeric: tabular-nums; }
   .att-n { color: var(--muted); font-size: 12px; width: 28px; }
@@ -109,7 +113,6 @@
   .att-qs .q.o { background: var(--reach-soft); color: #006300; }
   .att-qs .q.x { background: #fbe5e5; color: var(--support); }
   .att-qs .q.e { background: #eef2f6; color: var(--muted); }
-  .att-wrong { font-size: 12px; color: var(--support); }
   .att-method { font-size: 12px; color: var(--sub); }
 
   /* 선생님 */
@@ -381,7 +384,7 @@ function renderStudent(d, teacher) {
   </div>
 
   <div class="card" id="attCard">
-    <h3>🧾 내 풀이 기록 <small>제출한 기록을 날짜별로 다시 봐요 · 문항마다 맞으면 O, 틀리면 X</small></h3>
+    <h3>🧾 내 풀이 기록 <small>제출한 기록을 날짜별로 다시 봐요 · 문항마다 맞으면 O, 틀리면 X · 단계마다 그날 반 평균과 비교</small></h3>
     <div id="attBox"><p class="muted">불러오는 중…</p></div>
   </div>
 
@@ -446,6 +449,7 @@ function dayLabel(day) {
   const w = WEEK[new Date(Date.UTC(y, m - 1, dd)).getUTCDay()];
   return `${m}월 ${dd}일 (${w})` + (day === window.liveToday() ? ' · 오늘' : '');
 }
+const secText = (n) => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
 const scoreCls = (s) => s >= 100 ? 'full' : s >= 80 ? 'ok' : s >= 60 ? 'mid' : 'low';
 
 async function loadAttempts(d, teacher, days) {
@@ -468,14 +472,15 @@ async function loadAttempts(d, teacher, days) {
     r.days.map((dy, k) => `<details class="att-day" ${k === 0 ? 'open' : ''}>
       <summary><b>${esc(dayLabel(dy.day))}</b> <span class="muted">${dy.count}번 제출 · ${dy.levels.length}개 단계</span></summary>
       ${dy.levels.map((l) => `<div class="att-lv">
-        <div class="att-lvname"><b>${esc(l.op)} ${l.no ? l.no + '단계' : esc(l.level)}${l.code ? ' (' + esc(l.code) + ')' : ''}</b>${l.name ? `<small>${esc(l.name)}</small>` : ''}</div>
+        <div class="att-lvname"><span><b>${esc(l.op)} ${l.no ? l.no + '단계' : esc(l.level)}${l.code ? ' (' + esc(l.code) + ')' : ''}</b>${l.name ? `<small>${esc(l.name)}</small>` : ''}</span>
+          ${l.cls ? `<span class="att-cls" title="그날 이 단계를 푼 친구마다 평균을 내고 다시 평균 (${l.cls.n}명)">👥 그날 반 평균 <b>${l.cls.score}점</b> · ⏱ <b>${secText(l.cls.sec)}</b> <small>${l.cls.n}명</small></span>`
+            : '<span class="att-cls none">👥 그날 이 단계를 푼 친구가 없어요</span>'}</div>
         ${l.tries.map((t, i) => `<div class="att-try">
           <span class="att-n">${i + 1}회</span>
           <span class="att-time">${esc(t.time)}</span>
           <span class="att-score ${scoreCls(t.score)}">${t.score}점</span>
           <span class="att-sec">⏱ ${esc(t.timeText || '—')}</span>
           <span class="att-qs">${t.qs.map((m, q) => `<span class="q ${m === 'O' ? 'o' : m === 'X' ? 'x' : 'e'}" title="${q + 1}번 ${m === 'O' ? '맞음' : m === 'X' ? '틀림' : '기록 없음'}"><i>${q + 1}</i>${m || '·'}</span>`).join('')}</span>
-          ${t.qs.includes('X') ? `<span class="att-wrong">틀린 문항: ${t.qs.map((m, q) => m === 'X' ? q + 1 : 0).filter(Boolean).join(', ')}번</span>` : ''}
           ${t.method ? `<span class="att-method">${esc(t.method)}</span>` : ''}
         </div>`).join('')}
       </div>`).join('')}
