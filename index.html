@@ -1306,10 +1306,12 @@ function startMulQuiz() {
         const carryTd = (row, c, cls, title) => `<td class="carry-cell"><input type="text" maxlength="1" inputmode="numeric" id="mul_q${i}_${row}_${c}" class="carry-input ${cls}" title="${title}" data-q="${i}" data-row="${row}" data-col="${c}" onfocus="this.select()" oninput="onMulCellInput(this)" onkeydown="onMulCellKeydown(this, event)"></td>`;
         const emptyTd = '<td class="carry-cell"></td>';
         if (isFB) {
-          // 받아올림칸은 곱해지는 수의 일의 자리를 뺀 각 자리 위 (위 줄=십의 자리 곱 파랑, 아래 줄=일의 자리 곱 빨강)
-          const n1Len = String(p.n1).length, boxCols = [];
-          for (let c = 5 - n1Len; c < 4; c++) boxCols.push(c);
-          html += `<tr>${[0, 1, 2, 3, 4].map(c => boxCols.includes(c) ? carryTd('carry2', c, 'carry-tens', '십의 자리 곱(파랑 숫자로 곱할 때)의 받아올림') : emptyTd).join('')}</tr>`;
+          // 받아올림칸 (위 줄=십의 자리 곱 파랑, 아래 줄=일의 자리 곱 빨강)
+          //  - 빨강: 곱해지는 수의 일의 자리를 뺀 각 자리 위
+          //  - 파랑: 자릿값에 맞춰 빨강보다 한 칸 왼쪽 (십의 자리 곱은 한 칸 밀려 쓰므로, 그 받아올림이 더해지는 답의 칸 위) — 2026-11-19
+          const n1Len = String(p.n1).length, boxCols = [], boxCols2 = [];
+          for (let c = 5 - n1Len; c < 4; c++) { boxCols.push(c); boxCols2.push(c - 1); }
+          html += `<tr>${[0, 1, 2, 3, 4].map(c => boxCols2.includes(c) ? carryTd('carry2', c, 'carry-tens', '십의 자리 곱(파랑 숫자로 곱할 때)의 받아올림 — 바로 아래 칸 답에 더함') : emptyTd).join('')}</tr>`;
           html += `<tr>${[0, 1, 2, 3, 4].map(c => boxCols.includes(c) ? carryTd('carry', c, 'carry-ones', '일의 자리 곱(빨강 숫자로 곱할 때)의 받아올림') : emptyTd).join('')}</tr>`;
         } else {
           html += `<tr>${[0, 1, 2, 3, 4].map(c => { if (showCarryRow && c < 4 && (strN1[c] !== ' ' || (strN2[c] !== ' ' && strN2[c] !== '×') || (lv === 3 && c === 2))) { return `<td class="carry-cell"><input type="text" maxlength="1" id="mul_q${i}_carry_${c}" class="carry-input" data-q="${i}" data-row="carry" data-col="${c}" onfocus="this.select()" oninput="onMulCellInput(this)" onkeydown="onMulCellKeydown(this, event)"></td>`; } return `<td class="carry-cell"></td>`; }).join('')}</tr>`;
@@ -1449,7 +1451,7 @@ function createMulProblem(levelText, forcedParam) {
     function onMulCellKeydown(el, e) { if (e.key === 'Backspace' && el.value === '') { e.preventDefault(); mulAutoFocus(el, 'prev'); } else if (e.key === 'ArrowLeft') { e.preventDefault(); mulAutoFocus(el, 'left'); } else if (e.key === 'ArrowRight') { e.preventDefault(); mulAutoFocus(el, 'right'); } }
     
     // 입력 순서 (2026-11-19 바꿈): 종이에 계산하는 순서대로 "그 자리 답 → 그 계산에서 생긴 받아올림 → 다음 자리"
-    //   예) 29×79: 261의 1 → 빨강 8 → 6 → 2 → 2030의 0 → 3 → 파랑 6 → 0 → 2 → 합계 1 → 9 → (초록) → 2 → 2
+    //   예) 29×79: 261의 1 → 빨강 8 → 6 → 2 → 2030의 0 → 3 → 파랑 6(백의 자리 위) → 0 → 2 → 합계 1 → 9 → (초록) → 2 → 2
     function getMulFocusSequence(q) {
       const dir = document.getElementById('mul-inputDir').value;
       const lvSel = document.getElementById('mul-subLevel');
@@ -1471,7 +1473,7 @@ function createMulProblem(levelText, forcedParam) {
       };
       const p1 = cellsOf('p1'), p2 = cellsOf('p2'), total = cellsOf('total');
       if (p1.length || p2.length) {
-        return [...weave(p1, cellsOf('carry'), 1), ...weave(p2, cellsOf('carry2'), 0), ...weave(total, cellsOf('addc'), 1)];
+        return [...weave(p1, cellsOf('carry'), 1), ...weave(p2, cellsOf('carry2'), 1), ...weave(total, cellsOf('addc'), 1)];
       }
       return weave(total, cellsOf('carry'), (lv === 7 || lv === 11) ? 0 : 1);
     }
@@ -1516,6 +1518,8 @@ function createMulProblem(levelText, forcedParam) {
       for (let k = s.length - 1; k >= 0; k--) { const col = 5 - s.length + k; carry = Math.floor((Number(s[k]) * m + carry) / 10); out[col - 1] = carry; }
       return out;
     }
+    // 칸번호를 한 칸 왼쪽으로 옮김 (십의 자리 곱의 받아올림: 자릿값에 맞춰 답의 칸 위)
+    function mulShiftLeft(m) { const out = {}; Object.keys(m).forEach(k => { out[Number(k) - 1] = m[k]; }); return out; }
     // 부분곱 두 개를 더할 때의 받아올림 { 칸번호: 값 }
     function mulAddCarries(a, b) {
       const out = {}; let carry = 0;
@@ -1538,7 +1542,7 @@ function createMulProblem(levelText, forcedParam) {
       const p = mulProblems[i];
       if (isFB) {
         return [gradeMulCarryRow(i, 'carry', mulCarriesAbove(p.n1, p.n2 % 10)),
-          gradeMulCarryRow(i, 'carry2', mulCarriesAbove(p.n1, Math.floor(p.n2 / 10))),
+          gradeMulCarryRow(i, 'carry2', mulShiftLeft(mulCarriesAbove(p.n1, Math.floor(p.n2 / 10)))),   // 파랑 칸은 한 칸 왼쪽
           gradeMulCarryRow(i, 'addc', mulAddCarries(p.p1, p.p2))].every(Boolean);
       }
       if (lv === 8) return gradeMulCarryRow(i, 'carry', mulCarriesAbove(p.n2, p.n1));   // (한자리수)×(몇십몇): 몇십몇의 자리 위
