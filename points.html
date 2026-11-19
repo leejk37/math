@@ -8,7 +8,7 @@
 <script src="config.js"></script>
 <script src="api.js"></script>
 <style>
-  /* 연산진단 포인트 — 학생: 내 포인트·뱃지·단계별 기록 / 선생님: 반 목록·선물 주기 (서버: 포인트.gs) */
+  /* 연산진단 포인트 — 학생: 내 포인트·뱃지·단계별 기록·🧾 풀이 기록(풀이기록.gs) / 선생님: 반 목록·선물 주기 (서버: 포인트.gs) */
   :root {
     --bg: #eef8fd; --panel: #fff; --line: #d9ecf6; --ink: #12324a; --sub: #5b7489; --muted: #93a9ba;
     --accent: #0b8fd8; --accent-2: #14b8a6; --accent-soft: #e3f4fd; --mint-soft: #e6f8f5;
@@ -83,6 +83,34 @@
   .gift.can .p { color: #006300; }
   .muted { color: var(--sub); }
   .note { font-size: 12px; color: var(--sub); margin-top: 8px; }
+
+  /* 🧾 내 풀이 기록 */
+  .att-sum { margin: 0 0 8px; font-size: 13px; }
+  .att-day { border: 1px solid var(--line); border-radius: 14px; margin-top: 10px; background: #fbfeff; }
+  .att-day > summary { cursor: pointer; padding: 11px 14px; font-size: 15px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .att-day > summary .muted { font-size: 13px; }
+  .att-day[open] > summary { border-bottom: 1px solid var(--line); }
+  .att-lv { padding: 10px 14px; border-bottom: 1px dashed #e0eef6; }
+  .att-lv:last-child { border-bottom: none; }
+  .att-lvname { margin-bottom: 6px; color: #2f6f96; font-size: 14px; }
+  .att-lvname small { color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .att-try { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 5px 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .att-n { color: var(--muted); font-size: 12px; width: 28px; }
+  .att-time { color: var(--sub); width: 44px; }
+  .att-score { font-weight: 800; min-width: 52px; text-align: center; padding: 1px 8px; border-radius: 999px; }
+  .att-score.full { background: var(--reach-soft); color: #006300; }
+  .att-score.ok { background: #eaf7ee; color: #1b7a3a; }
+  .att-score.mid { background: var(--effort-soft); color: #7a5300; }
+  .att-score.low { background: #fbe5e5; color: var(--support); }
+  .att-sec { color: var(--sub); min-width: 58px; }
+  .att-qs { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .att-qs .q { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 28px; height: 34px; border-radius: 7px; font-weight: 800; font-size: 14px; line-height: 1; }
+  .att-qs .q i { font-style: normal; font-size: 9px; font-weight: 600; opacity: .75; margin-bottom: 2px; }
+  .att-qs .q.o { background: var(--reach-soft); color: #006300; }
+  .att-qs .q.x { background: #fbe5e5; color: var(--support); }
+  .att-qs .q.e { background: #eef2f6; color: var(--muted); }
+  .att-wrong { font-size: 12px; color: var(--support); }
+  .att-method { font-size: 12px; color: var(--sub); }
 
   /* 선생님 */
   .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
@@ -175,7 +203,7 @@ async function boot() {
     $('logoutBtn').classList.toggle('hidden', !user);
     $('teacher').classList.add('hidden'); $('student').classList.add('hidden');
     if (user) start();
-    else msg('<b>학교 구글 계정으로 로그인해 주세요.</b><br>학생은 내 포인트·뱃지·단계별 기록을, 선생님은 맡은 반의 포인트를 볼 수 있습니다.');
+    else msg('<b>학교 구글 계정으로 로그인해 주세요.</b><br>학생은 내 포인트·뱃지·단계별 기록·풀이 기록을, 선생님은 맡은 반의 포인트를 볼 수 있습니다.');
   });
   $('loginBtn').onclick = () => {
     const p = new am.GoogleAuthProvider();
@@ -352,6 +380,11 @@ function renderStudent(d, teacher) {
       : '<p class="muted">아직 진단 기록이 없어요. 진단을 풀면 포인트가 쌓여요.</p>'}
   </div>
 
+  <div class="card" id="attCard">
+    <h3>🧾 내 풀이 기록 <small>제출한 기록을 날짜별로 다시 봐요 · 문항마다 맞으면 O, 틀리면 X</small></h3>
+    <div id="attBox"><p class="muted">불러오는 중…</p></div>
+  </div>
+
   ${(() => { const dl = d.daily || { days: 0, streak: 0, maxStreak: 0 }; return `<div class="card">
     <h3>✅ 매일 훈련 <small>하루에 정한 훈련을 모두 통과하면 '오늘의 훈련 완료' · 토·일은 건너뛰고 이어져요</small></h3>
     <div class="tiles">
@@ -398,10 +431,59 @@ function renderStudent(d, teacher) {
     </div>
   </div>`;
 
+  loadAttempts(d, teacher, 7);
   if (teacher) {
     box.querySelectorAll('[data-gift]').forEach((b) => b.onclick = () => giveGift(d, d.gifts[+b.dataset.gift]));
     box.querySelectorAll('[data-cancel]').forEach((b) => b.onclick = () => cancelGift(d, d.giftLog[+b.dataset.cancel]));
   }
+}
+
+/* ---------- 🧾 내 풀이 기록 (서버: 풀이기록.gs) ---------- */
+// 학생은 getMyAttempts(로그인한 본인 기록만), 선생님은 getStudentAttempts(볼 수 있는 반의 학생만)
+const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
+function dayLabel(day) {
+  const [y, m, dd] = day.split('-').map(Number);
+  const w = WEEK[new Date(Date.UTC(y, m - 1, dd)).getUTCDay()];
+  return `${m}월 ${dd}일 (${w})` + (day === window.liveToday() ? ' · 오늘' : '');
+}
+const scoreCls = (s) => s >= 100 ? 'full' : s >= 80 ? 'ok' : s >= 60 ? 'mid' : 'low';
+
+async function loadAttempts(d, teacher, days) {
+  const box = $('attBox');
+  if (!box) return;
+  const who = `${d.grade}|${d.classNum}|${d.num}`;
+  box.dataset.who = who;
+  let r;
+  try {
+    r = teacher ? await call('getStudentAttempts', d.grade, d.classNum, d.num, { days })
+      : await call('getMyAttempts', { days });
+  } catch (e) {
+    if (box.dataset.who === who) box.innerHTML = `<p class="muted">${esc(e.message)}</p>`;
+    return;
+  }
+  if (box.dataset.who !== who) return;   // 그사이 다른 학생을 골랐으면 그리지 않음
+  if (!r.days || !r.days.length) { box.innerHTML = '<p class="muted">아직 제출한 진단 기록이 없어요.</p>'; return; }
+
+  box.innerHTML = `<p class="muted att-sum">모두 ${r.total}번 제출 · ${r.totalDays}일 공부함${r.more ? ` · 최근 ${r.days.length}일을 보여 줘요` : ''}</p>` +
+    r.days.map((dy, k) => `<details class="att-day" ${k === 0 ? 'open' : ''}>
+      <summary><b>${esc(dayLabel(dy.day))}</b> <span class="muted">${dy.count}번 제출 · ${dy.levels.length}개 단계</span></summary>
+      ${dy.levels.map((l) => `<div class="att-lv">
+        <div class="att-lvname"><b>${esc(l.op)} ${l.no ? l.no + '단계' : esc(l.level)}${l.code ? ' (' + esc(l.code) + ')' : ''}</b>${l.name ? `<small>${esc(l.name)}</small>` : ''}</div>
+        ${l.tries.map((t, i) => `<div class="att-try">
+          <span class="att-n">${i + 1}회</span>
+          <span class="att-time">${esc(t.time)}</span>
+          <span class="att-score ${scoreCls(t.score)}">${t.score}점</span>
+          <span class="att-sec">⏱ ${esc(t.timeText || '—')}</span>
+          <span class="att-qs">${t.qs.map((m, q) => `<span class="q ${m === 'O' ? 'o' : m === 'X' ? 'x' : 'e'}" title="${q + 1}번 ${m === 'O' ? '맞음' : m === 'X' ? '틀림' : '기록 없음'}"><i>${q + 1}</i>${m || '·'}</span>`).join('')}</span>
+          ${t.qs.includes('X') ? `<span class="att-wrong">틀린 문항: ${t.qs.map((m, q) => m === 'X' ? q + 1 : 0).filter(Boolean).join(', ')}번</span>` : ''}
+          ${t.method ? `<span class="att-method">${esc(t.method)}</span>` : ''}
+        </div>`).join('')}
+      </div>`).join('')}
+    </details>`).join('') +
+    (r.more ? '<div style="margin-top:10px"><button id="attMore">↓ 이전 기록 더 보기</button></div>' : '') +
+    '<div class="note">문제와 내가 쓴 답은 저장되지 않아서, 문항마다 맞았는지(O)·틀렸는지(X)만 보여요.</div>';
+  const more = $('attMore');
+  if (more) more.onclick = () => { more.disabled = true; more.textContent = '불러오는 중…'; loadAttempts(d, teacher, days + 14); };
 }
 
 boot().catch((e) => msg('<b>화면을 준비하지 못했습니다.</b><br>' + esc(e.message)));
