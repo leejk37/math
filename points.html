@@ -88,6 +88,11 @@
   .note { font-size: 12px; color: var(--sub); margin-top: 8px; }
 
   /* 🧾 내 풀이 기록 */
+  .att-search { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; padding: 10px 12px; background: #f4f9fc; border: 1px solid var(--line); border-radius: 14px; }
+  .att-search input[type=date], .att-search select { font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+  .att-search select { max-width: 220px; }
+  .att-quick { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .att-quick button { font-size: 13px; padding: 5px 10px; }
   .att-sum { margin: 0 0 8px; font-size: 13px; }
   .att-day { border: 1px solid var(--line); border-radius: 14px; margin-top: 10px; background: #fbfeff; }
   .att-day > summary { cursor: pointer; padding: 11px 14px; font-size: 15px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
@@ -95,28 +100,35 @@
   .att-day[open] > summary { border-bottom: 1px solid var(--line); }
   .att-lv { padding: 10px 14px; border-bottom: 1px dashed #e0eef6; }
   .att-lv:last-child { border-bottom: none; }
-  .att-lvname { margin-bottom: 6px; color: #2f6f96; font-size: 14px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; }
-  .att-cls { font-size: 13px; color: var(--sub); background: #f1f7fb; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
-  .att-cls b { color: var(--ink); }
-  .att-cls small { color: var(--muted); margin-left: 2px; }
-  .att-cls.none { background: none; color: var(--muted); font-size: 12px; }
+  .att-lvname { margin-bottom: 6px; color: #2f6f96; font-size: 14px; }
   .att-lvname small { color: var(--muted); font-size: 12px; margin-left: 6px; }
-  .att-try { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 5px 0; font-size: 14px; font-variant-numeric: tabular-nums; }
-  .att-n { color: var(--muted); font-size: 12px; width: 28px; }
-  .att-time { color: var(--sub); width: 44px; }
-  .att-score { font-weight: 800; min-width: 52px; text-align: center; padding: 1px 8px; border-radius: 999px; }
+  /* 반 평균 줄과 내 기록 줄이 같은 칸(점수·시간)에 오도록 격자로 맞춤 */
+  .att-row { display: grid; grid-template-columns: 112px 66px 66px 1fr; align-items: center; gap: 4px 10px; padding: 4px 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .att-lbl { color: var(--sub); white-space: nowrap; }
+  .att-lbl i { font-style: normal; color: var(--muted); font-size: 12px; display: inline-block; width: 28px; }
+  .att-avg { background: #f1f5fb; border-radius: 10px; padding: 5px 0; margin-bottom: 2px; }
+  .att-avg .att-lbl { padding-left: 8px; color: #4a5f78; font-size: 13px; font-weight: 700; }
+  .att-avg .att-sec { color: #4a5f78; font-weight: 700; }
+  .att-note { color: var(--muted); font-size: 12px; }
+  .att-score { font-weight: 800; text-align: center; padding: 1px 6px; border-radius: 999px; }
+  .att-score.avg { background: #dde6f2; color: #34495e; }
   .att-score.full { background: var(--reach-soft); color: #006300; }
   .att-score.ok { background: #eaf7ee; color: #1b7a3a; }
   .att-score.mid { background: var(--effort-soft); color: #7a5300; }
   .att-score.low { background: #fbe5e5; color: var(--support); }
-  .att-sec { color: var(--sub); min-width: 58px; }
-  .att-qs { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .att-sec { color: var(--sub); white-space: nowrap; }
+  .att-qs { display: inline-flex; gap: 4px; flex-wrap: wrap; align-items: center; }
   .att-qs .q { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 28px; height: 34px; border-radius: 7px; font-weight: 800; font-size: 14px; line-height: 1; }
   .att-qs .q i { font-style: normal; font-size: 9px; font-weight: 600; opacity: .75; margin-bottom: 2px; }
   .att-qs .q.o { background: var(--reach-soft); color: #006300; }
   .att-qs .q.x { background: #fbe5e5; color: var(--support); }
   .att-qs .q.e { background: #eef2f6; color: var(--muted); }
-  .att-method { font-size: 12px; color: var(--sub); }
+  .att-method { font-size: 12px; color: var(--sub); margin-left: 6px; }
+  @media (max-width: 560px) {
+    .att-row { grid-template-columns: 96px 60px 1fr; }
+    .att-row .att-qs, .att-avg .att-note { grid-column: 1 / -1; }
+    .att-avg .att-note { padding-left: 8px; }
+  }
 
   /* 선생님 */
   .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
@@ -373,7 +385,14 @@ function renderStudent(d, teacher) {
   </div>` : ''}
 
   <div class="card" id="attCard">
-    <h3>🧾 내 풀이 기록 <small>제출한 기록을 날짜별로 다시 봐요 · 문항마다 맞으면 O, 틀리면 X · 단계마다 그날 반 평균과 비교</small></h3>
+    <h3>🧾 내 풀이 기록 <small>날짜·영역·단계를 골라 찾아요 · 문항마다 맞으면 O, 틀리면 X · 단계마다 그날 반 평균과 비교</small></h3>
+    <div class="att-search">
+      <span class="att-dates"><input type="date" id="attFrom" aria-label="시작 날짜"> ~ <input type="date" id="attTo" aria-label="끝 날짜"></span>
+      <span class="att-quick"><button data-range="1">오늘</button><button data-range="-1">어제</button><button data-range="7">최근 7일</button><button data-range="30">최근 30일</button></span>
+      <select id="attOp" aria-label="영역"></select>
+      <select id="attLv" aria-label="단계"></select>
+      <button id="attGo" class="primary">🔍 찾기</button>
+    </div>
     <div id="attBox"><p class="muted">불러오는 중…</p></div>
   </div>
 
@@ -439,7 +458,7 @@ function renderStudent(d, teacher) {
     </div>
   </div>`;
 
-  loadAttempts(d, teacher, 7);
+  loadAttempts(d, teacher);
   if (teacher) {
     box.querySelectorAll('[data-gift]').forEach((b) => b.onclick = () => giveGift(d, d.gifts[+b.dataset.gift]));
     box.querySelectorAll('[data-cancel]').forEach((b) => b.onclick = () => cancelGift(d, d.giftLog[+b.dataset.cancel]));
@@ -457,43 +476,94 @@ function dayLabel(day) {
 const secText = (n) => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
 const scoreCls = (s) => s >= 100 ? 'full' : s >= 80 ? 'ok' : s >= 60 ? 'mid' : 'low';
 
-async function loadAttempts(d, teacher, days) {
-  const box = $('attBox');
-  if (!box) return;
-  const who = `${d.grade}|${d.classNum}|${d.num}`;
-  box.dataset.who = who;
+/* 기간을 바꾸면 서버에서 다시 받고, 영역·단계는 받은 기록 안에서 바로 거름 */
+const att = { d: null, teacher: false, data: null, seq: 0 };
+const shiftDay = (day, n) => { const t = new Date(day + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+
+function loadAttempts(d, teacher) {
+  att.d = d; att.teacher = teacher; att.data = null;
+  const today = window.liveToday();
+  $('attFrom').value = today; $('attTo').value = today; $('attFrom').max = today; $('attTo').max = today;
+  $('attOp').innerHTML = '<option value="">영역 전체</option>'; $('attLv').innerHTML = '<option value="">단계 전체</option>';
+  document.querySelectorAll('#attCard [data-range]').forEach((b) => b.onclick = () => {
+    const n = Number(b.dataset.range), t = window.liveToday();
+    $('attTo').value = n === -1 ? shiftDay(t, -1) : t;
+    $('attFrom').value = n === -1 ? shiftDay(t, -1) : shiftDay(t, -(n - 1));
+    fetchAttempts();
+  });
+  $('attGo').onclick = fetchAttempts;
+  $('attOp').onchange = () => { fillLevels(); drawAttempts(); };
+  $('attLv').onchange = drawAttempts;
+  fetchAttempts();
+}
+
+async function fetchAttempts() {
+  const box = $('attBox'), d = att.d, my = ++att.seq;
+  const opt = { from: $('attFrom').value, to: $('attTo').value };
+  box.innerHTML = '<p class="muted">찾는 중…</p>';
+  $('attGo').disabled = true;
   let r;
   try {
-    r = teacher ? await call('getStudentAttempts', d.grade, d.classNum, d.num, { days })
-      : await call('getMyAttempts', { days });
+    r = att.teacher ? await call('getStudentAttempts', d.grade, d.classNum, d.num, opt) : await call('getMyAttempts', opt);
   } catch (e) {
-    if (box.dataset.who === who) box.innerHTML = `<p class="muted">${esc(e.message)}</p>`;
+    if (my === att.seq) { box.innerHTML = `<p class="muted">${esc(e.message)}</p>`; $('attGo').disabled = false; }
     return;
   }
-  if (box.dataset.who !== who) return;   // 그사이 다른 학생을 골랐으면 그리지 않음
-  if (!r.days || !r.days.length) { box.innerHTML = '<p class="muted">아직 제출한 진단 기록이 없어요.</p>'; return; }
+  if (my !== att.seq) return;   // 그사이 다시 찾았거나 다른 학생을 골랐으면 그리지 않음
+  $('attGo').disabled = false;
+  att.data = r;
+  if (r.from) { $('attFrom').value = r.from; $('attTo').value = r.to; }
+  // 영역 목록: 이 기간에 푼 영역 (고른 값이 그대로 있으면 유지)
+  const keepOp = $('attOp').value;
+  $('attOp').innerHTML = '<option value="">영역 전체</option>' +
+    (r.options || []).map((o) => `<option value="${esc(o.op)}">${esc(o.op)}</option>`).join('');
+  if ((r.options || []).some((o) => o.op === keepOp)) $('attOp').value = keepOp;
+  fillLevels();
+  drawAttempts();
+}
 
-  box.innerHTML = `<p class="muted att-sum">모두 ${r.total}번 제출 · ${r.totalDays}일 공부함${r.more ? ` · 최근 ${r.days.length}일을 보여 줘요` : ''}</p>` +
-    r.days.map((dy, k) => `<details class="att-day" ${k === 0 ? 'open' : ''}>
+function fillLevels() {
+  const r = att.data || {}, op = $('attOp').value, keep = $('attLv').value;
+  const list = (r.options || []).filter((o) => !op || o.op === op)
+    .flatMap((o) => o.levels.map((l) => ({ v: o.op + '|' + l.level, t: (op ? '' : o.op + ' ') + (l.no ? l.no + '단계' : l.level) + (l.code ? ' (' + l.code + ')' : '') })));
+  $('attLv').innerHTML = '<option value="">단계 전체</option>' + list.map((x) => `<option value="${esc(x.v)}">${esc(x.t)}</option>`).join('');
+  if (list.some((x) => x.v === keep)) $('attLv').value = keep;
+}
+
+function drawAttempts() {
+  const box = $('attBox'), r = att.data;
+  if (!r) return;
+  const op = $('attOp').value, lv = $('attLv').value;
+  const range = r.from === r.to ? dayLabel(r.from) : `${dayLabel(r.from)} ~ ${dayLabel(r.to)}`;
+  const days = (r.days || []).map((dy) => {
+    const levels = dy.levels.filter((l) => (!op || l.op === op) && (!lv || l.op + '|' + l.level === lv));
+    return { day: dy.day, levels, count: levels.reduce((s, l) => s + l.tries.length, 0) };
+  }).filter((dy) => dy.levels.length);
+  if (!days.length) {
+    box.innerHTML = `<p class="muted">${esc(range)}에 ${op || lv ? '고른 영역·단계의 ' : ''}제출한 기록이 없어요.</p>` +
+      (r.from === r.to ? '<p class="muted" style="font-size:13px">위의 <b>최근 7일</b>이나 <b>최근 30일</b>을 눌러 보세요.</p>' : '');
+    return;
+  }
+  const total = days.reduce((s, x) => s + x.count, 0);
+  box.innerHTML = `<p class="muted att-sum">${esc(range)} · ${total}번 제출 · ${days.length}일${r.clamped ? ' · 한 번에 31일까지만 찾아요' : ''}</p>` +
+    days.map((dy, k) => `<details class="att-day" ${k < 3 ? 'open' : ''}>
       <summary><b>${esc(dayLabel(dy.day))}</b> <span class="muted">${dy.count}번 제출 · ${dy.levels.length}개 단계</span></summary>
       ${dy.levels.map((l) => `<div class="att-lv">
-        <div class="att-lvname"><span><b>${esc(l.op)} ${l.no ? l.no + '단계' : esc(l.level)}${l.code ? ' (' + esc(l.code) + ')' : ''}</b>${l.name ? `<small>${esc(l.name)}</small>` : ''}</span>
-          ${l.cls ? `<span class="att-cls" title="그날 이 단계를 푼 친구마다 평균을 내고 다시 평균 (${l.cls.n}명)">👥 그날 반 평균 <b>${l.cls.score}점</b> · ⏱ <b>${secText(l.cls.sec)}</b> <small>${l.cls.n}명</small></span>`
-            : '<span class="att-cls none">👥 그날 이 단계를 푼 친구가 없어요</span>'}</div>
-        ${l.tries.map((t, i) => `<div class="att-try">
-          <span class="att-n">${i + 1}회</span>
-          <span class="att-time">${esc(t.time)}</span>
+        <div class="att-lvname"><b>${esc(l.op)} ${l.no ? l.no + '단계' : esc(l.level)}${l.code ? ' (' + esc(l.code) + ')' : ''}</b>${l.name ? `<small>${esc(l.name)}</small>` : ''}</div>
+        <div class="att-row att-avg">
+          <span class="att-lbl">👥 반 평균</span>
+          ${l.cls ? `<span class="att-score avg">${l.cls.score}점</span><span class="att-sec">⏱ ${secText(l.cls.sec)}</span><span class="att-note">그날 ${l.cls.n}명</span>`
+            : '<span class="att-note" style="grid-column: 2 / -1">그날 이 단계를 푼 친구가 없어요</span>'}
+        </div>
+        ${l.tries.map((t, i) => `<div class="att-row">
+          <span class="att-lbl"><i>${i + 1}회</i> ${esc(t.time)}</span>
           <span class="att-score ${scoreCls(t.score)}">${t.score}점</span>
           <span class="att-sec">⏱ ${esc(t.timeText || '—')}</span>
-          <span class="att-qs">${t.qs.map((m, q) => `<span class="q ${m === 'O' ? 'o' : m === 'X' ? 'x' : 'e'}" title="${q + 1}번 ${m === 'O' ? '맞음' : m === 'X' ? '틀림' : '기록 없음'}"><i>${q + 1}</i>${m || '·'}</span>`).join('')}</span>
-          ${t.method ? `<span class="att-method">${esc(t.method)}</span>` : ''}
+          <span class="att-qs">${t.qs.map((m, q) => `<span class="q ${m === 'O' ? 'o' : m === 'X' ? 'x' : 'e'}" title="${q + 1}번 ${m === 'O' ? '맞음' : m === 'X' ? '틀림' : '기록 없음'}"><i>${q + 1}</i>${m || '·'}</span>`).join('')}${t.method ? `<span class="att-method">${esc(t.method)}</span>` : ''}</span>
         </div>`).join('')}
       </div>`).join('')}
     </details>`).join('') +
-    (r.more ? '<div style="margin-top:10px"><button id="attMore">↓ 이전 기록 더 보기</button></div>' : '') +
-    '<div class="note">문제와 내가 쓴 답은 저장되지 않아서, 문항마다 맞았는지(O)·틀렸는지(X)만 보여요.</div>';
-  const more = $('attMore');
-  if (more) more.onclick = () => { more.disabled = true; more.textContent = '불러오는 중…'; loadAttempts(d, teacher, days + 14); };
+    '<div class="note">문제와 내가 쓴 답은 저장되지 않아서, 문항마다 맞았는지(O)·틀렸는지(X)만 보여요. 반 평균은 그날 그 단계를 푼 친구마다 평균을 낸 뒤 다시 평균한 값이에요.</div>';
 }
 
 boot().catch((e) => msg('<b>화면을 준비하지 못했습니다.</b><br>' + esc(e.message)));
