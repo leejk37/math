@@ -70,6 +70,7 @@
     .carry-input.carry-add { color: #15803d; border-color: #86efac !important; }
     .carry-input.carry-add:focus { border: 1px solid #15803d !important; background-color: #f0fdf4 !important; }
     .carry-input::placeholder { color: #dc2626; opacity: .9; }
+    .carry-row-tight .carry-cell { height: 20px !important; padding-bottom: 0 !important; }
     .mul-d-ones { color: #e11d48; font-weight: 800; } .mul-d-tens { color: #1d4ed8; font-weight: 800; }
     .mul-legend { font-size: 12px; color: #475569; margin-top: 6px; line-height: 1.5; }
     .mul-legend b.r { color: #e11d48; } .mul-legend b.b { color: #1d4ed8; } .mul-legend b.g { color: #15803d; }
@@ -1311,8 +1312,16 @@ function startMulQuiz() {
           //  - 파랑: 자릿값에 맞춰 빨강보다 한 칸 왼쪽 (십의 자리 곱은 한 칸 밀려 쓰므로, 그 받아올림이 더해지는 답의 칸 위) — 2026-11-19
           const n1Len = String(p.n1).length, boxCols = [], boxCols2 = [];
           for (let c = 5 - n1Len; c < 4; c++) { boxCols.push(c); boxCols2.push(c - 1); }
-          html += `<tr>${[0, 1, 2, 3, 4].map(c => boxCols2.includes(c) ? carryTd('carry2', c, 'carry-tens', '십의 자리 곱(파랑 숫자로 곱할 때)의 받아올림 — 바로 아래 칸 답에 더함') : emptyTd).join('')}</tr>`;
-          html += `<tr>${[0, 1, 2, 3, 4].map(c => boxCols.includes(c) ? carryTd('carry', c, 'carry-ones', '일의 자리 곱(빨강 숫자로 곱할 때)의 받아올림') : emptyTd).join('')}</tr>`;
+          const blueTd = (c) => carryTd('carry2', c, 'carry-tens', '십의 자리 곱(파랑 숫자로 곱할 때)의 받아올림 — 바로 아래 칸 답에 더함');
+          const redTd = (c) => carryTd('carry', c, 'carry-ones', '일의 자리 곱(빨강 숫자로 곱할 때)의 받아올림');
+          if (boxCols2.some(c => boxCols.includes(c))) {
+            // 12단계(세자리수): 빨강·파랑이 같은 칸(백의 자리)에 겹치므로 두 줄 — 파랑 줄은 바짝 붙임
+            html += `<tr class="carry-row-tight">${[0, 1, 2, 3, 4].map(c => boxCols2.includes(c) ? blueTd(c) : emptyTd).join('')}</tr>`;
+            html += `<tr>${[0, 1, 2, 3, 4].map(c => boxCols.includes(c) ? redTd(c) : emptyTd).join('')}</tr>`;
+          } else {
+            // 9·10단계(두자리수): 겹치지 않으므로 한 줄 — 파랑(백의 자리 위)·빨강(십의 자리 위)
+            html += `<tr>${[0, 1, 2, 3, 4].map(c => boxCols2.includes(c) ? blueTd(c) : (boxCols.includes(c) ? redTd(c) : emptyTd)).join('')}</tr>`;
+          }
         } else {
           html += `<tr>${[0, 1, 2, 3, 4].map(c => { if (showCarryRow && c < 4 && (strN1[c] !== ' ' || (strN2[c] !== ' ' && strN2[c] !== '×') || (lv === 3 && c === 2))) { return `<td class="carry-cell"><input type="text" maxlength="1" id="mul_q${i}_carry_${c}" class="carry-input" data-q="${i}" data-row="carry" data-col="${c}" onfocus="this.select()" oninput="onMulCellInput(this)" onkeydown="onMulCellKeydown(this, event)"></td>`; } return `<td class="carry-cell"></td>`; }).join('')}</tr>`;
         }
