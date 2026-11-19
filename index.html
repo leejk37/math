@@ -64,6 +64,15 @@
     .carry-cell { border: none !important; height: 26px !important; vertical-align: bottom !important; padding-bottom: 2px; }
     .carry-input { width: 18px !important; height: 18px !important; font-size: 13px; color: #e11d48; border: 1px dashed #fda4af !important; border-radius: 3px !important; background-color: transparent !important; text-align: center; margin: 0 auto; display: block; padding: 0 !important; font-family: 'Courier New', Courier, monospace; font-weight: bold; box-sizing: border-box; }
     .carry-input:focus { border: 1px solid #e11d48 !important; background-color: #fff1f2 !important; }
+    /* 2026-11-19 두 자리 곱셈(9·10·12단계): 받아올림 줄을 곱마다 따로 — 빨강=일의 자리 곱, 파랑=십의 자리 곱, 초록=부분곱 더하기 */
+    .carry-input.carry-tens { color: #1d4ed8; border-color: #93c5fd !important; }
+    .carry-input.carry-tens:focus { border: 1px solid #1d4ed8 !important; background-color: #eff6ff !important; }
+    .carry-input.carry-add { color: #15803d; border-color: #86efac !important; }
+    .carry-input.carry-add:focus { border: 1px solid #15803d !important; background-color: #f0fdf4 !important; }
+    .carry-input::placeholder { color: #dc2626; opacity: .9; }
+    .mul-d-ones { color: #e11d48; font-weight: 800; } .mul-d-tens { color: #1d4ed8; font-weight: 800; }
+    .mul-legend { font-size: 12px; color: #475569; margin-top: 6px; line-height: 1.5; }
+    .mul-legend b.r { color: #e11d48; } .mul-legend b.b { color: #1d4ed8; } .mul-legend b.g { color: #15803d; }
 
     /* 나눗셈 세로셈 전용 테이블 및 점선 격자 */
     .div-math-grid-table {
@@ -1293,9 +1302,20 @@ function startMulQuiz() {
         let html = `<div class="math-card"><div class="question-num">문제 ${i + 1}</div><table class="math-grid-table">`;
         const isScaffold = (lv === 1 && i < 3) || (lv === 2 && i < 3) || (lv === 3 && i < 3); // 💡 1~3단계 1~3번: 부분곱 단계별 표시 형식
         const showCarryRow = (lv !== 1) && !isScaffold; // 1단계, 부분곱 형식은 받아올림칸 없음
-        html += `<tr>${[0, 1, 2, 3, 4].map(c => { if (showCarryRow && c < 4 && (strN1[c] !== ' ' || (strN2[c] !== ' ' && strN2[c] !== '×') || (lv === 3 && c === 2))) { return `<td class="carry-cell"><input type="text" maxlength="1" id="mul_q${i}_carry_${c}" class="carry-input" data-q="${i}" data-row="carry" data-col="${c}" onfocus="this.select()" oninput="onMulCellInput(this)" onkeydown="onMulCellKeydown(this, event)"></td>`; } return `<td class="carry-cell"></td>`; }).join('')}</tr>`;
+        const isFB = isFormatB && !isScaffold; // 9·10·12단계: 부분곱 두 줄 + 받아올림 줄을 곱마다 따로
+        const carryTd = (row, c, cls, title) => `<td class="carry-cell"><input type="text" maxlength="1" inputmode="numeric" id="mul_q${i}_${row}_${c}" class="carry-input ${cls}" title="${title}" data-q="${i}" data-row="${row}" data-col="${c}" onfocus="this.select()" oninput="onMulCellInput(this)" onkeydown="onMulCellKeydown(this, event)"></td>`;
+        const emptyTd = '<td class="carry-cell"></td>';
+        if (isFB) {
+          // 받아올림칸은 곱해지는 수의 일의 자리를 뺀 각 자리 위 (위 줄=십의 자리 곱 파랑, 아래 줄=일의 자리 곱 빨강)
+          const n1Len = String(p.n1).length, boxCols = [];
+          for (let c = 5 - n1Len; c < 4; c++) boxCols.push(c);
+          html += `<tr>${[0, 1, 2, 3, 4].map(c => boxCols.includes(c) ? carryTd('carry2', c, 'carry-tens', '십의 자리 곱(파랑 숫자로 곱할 때)의 받아올림') : emptyTd).join('')}</tr>`;
+          html += `<tr>${[0, 1, 2, 3, 4].map(c => boxCols.includes(c) ? carryTd('carry', c, 'carry-ones', '일의 자리 곱(빨강 숫자로 곱할 때)의 받아올림') : emptyTd).join('')}</tr>`;
+        } else {
+          html += `<tr>${[0, 1, 2, 3, 4].map(c => { if (showCarryRow && c < 4 && (strN1[c] !== ' ' || (strN2[c] !== ' ' && strN2[c] !== '×') || (lv === 3 && c === 2))) { return `<td class="carry-cell"><input type="text" maxlength="1" id="mul_q${i}_carry_${c}" class="carry-input" data-q="${i}" data-row="carry" data-col="${c}" onfocus="this.select()" oninput="onMulCellInput(this)" onkeydown="onMulCellKeydown(this, event)"></td>`; } return `<td class="carry-cell"></td>`; }).join('')}</tr>`;
+        }
         html += `<tr>${[...strN1].map(c => `<td style="${c === ' ' ? 'border: none;' : ''}">${c.trim()}</td>`).join('')}</tr>`;
-        html += `<tr>${arrN2.map((c, idx) => { let style = c === ' ' ? 'border: none;' : ''; if (idx >= startCol) style += ' border-bottom: 2px solid #000;'; return `<td style="${style}">${c.trim()}</td>`; }).join('')}</tr>`;
+        html += `<tr>${arrN2.map((c, idx) => { let style = c === ' ' ? 'border: none;' : ''; if (idx >= startCol) style += ' border-bottom: 2px solid #000;'; const dc = isFB ? (idx === 4 ? ' class="mul-d-ones"' : (idx === 3 ? ' class="mul-d-tens"' : '')) : ''; return `<td style="${style}"${dc}>${c.trim()}</td>`; }).join('')}</tr>`;
 
         const createInputRow = (rowName, isSolidBottom, expectedVal) => {
           let rowHtml = `<tr>`; let vLen = String(expectedVal).length; 
@@ -1306,8 +1326,15 @@ function startMulQuiz() {
           return rowHtml + `</tr>`;
         };
 
+        if (isFB) {
+          // 부분곱을 더할 때의 받아올림칸 (초록) — 합계의 십의 자리 왼쪽 자리들 위
+          const totLen = String(p.total).length, addCols = [];
+          for (let c = 5 - totLen; c <= 2; c++) addCols.push(c);
+          html += `<tr>${[0, 1, 2, 3, 4].map(c => addCols.includes(c) ? carryTd('addc', c, 'carry-add', '부분곱을 더할 때의 받아올림') : emptyTd).join('')}</tr>`;
+        }
         if (isScaffold || isFormatB) { html += createInputRow('p1', false, p.p1) + createInputRow('p2', true, p.p2) + createInputRow('total', false, p.total); } else { html += createInputRow('total', false, p.total); }
-        grid.insertAdjacentHTML('beforeend', html + `</table></div>`);
+        const legend = isFB ? '<div class="mul-legend">받아올림: <b class="r">빨강</b> 일의 자리 곱 · <b class="b">파랑</b> 십의 자리 곱 · <b class="g">초록</b> 더할 때</div>' : '';
+        grid.insertAdjacentHTML('beforeend', html + `</table>${legend}</div>`);
       }
     }
 
@@ -1421,39 +1448,32 @@ function createMulProblem(levelText, forcedParam) {
     function onMulCellInput(el) { const val = el.value.replace(/[^0-9]/g, ''); el.value = val; if (!mulTimerStarted && val.length > 0) { startMulTimer(); mulTimerStarted = true; } if (val.length > 0) mulAutoFocus(el, 'next'); }
     function onMulCellKeydown(el, e) { if (e.key === 'Backspace' && el.value === '') { e.preventDefault(); mulAutoFocus(el, 'prev'); } else if (e.key === 'ArrowLeft') { e.preventDefault(); mulAutoFocus(el, 'left'); } else if (e.key === 'ArrowRight') { e.preventDefault(); mulAutoFocus(el, 'right'); } }
     
-    // [추가] 받아올림칸 → 부분곱/정답칸 순서로 이어지는 전체 입력 순서를 만들어주는 함수
+    // 입력 순서 (2026-11-19 바꿈): 종이에 계산하는 순서대로 "그 자리 답 → 그 계산에서 생긴 받아올림 → 다음 자리"
+    //   예) 29×79: 261의 1 → 빨강 8 → 6 → 2 → 2030의 0 → 3 → 파랑 6 → 0 → 2 → 합계 1 → 9 → (초록) → 2 → 2
     function getMulFocusSequence(q) {
       const dir = document.getElementById('mul-inputDir').value;
-      const orderCols = (row) => {
-        const cells = Array.from(document.querySelectorAll(`input[data-q="${q}"][data-row="${row}"]`));
-        cells.sort((a, b) => parseInt(a.dataset.col) - parseInt(b.dataset.col));
-        if (dir === 'rtl') cells.reverse();
-        return cells;
-      };
-      const carryCells = orderCols('carry');
-      const p1Cells = orderCols('p1');
-      const p2Cells = orderCols('p2');
-      const totalCells = orderCols('total');
-
-      const seq = [];
-      if (p1Cells.length > 0 || p2Cells.length > 0) {
-        // 부분곱(p1,p2) 형식: 받아올림 → 일의자리곱 → 십의자리곱 → 합계 순서
-        seq.push(...carryCells, ...p1Cells, ...p2Cells, ...totalCells);
-      } else if (carryCells.length > 0) {
-        // 💡 받아올림칸 + 합계 한 줄 형식: 그 자리 받아올림칸 → 그 자리 정답칸 순으로 교차 배치
-        //   예) 일의자리곱 받아올림(십의자리 칸) → 정답 일의자리 → 십의자리곱 받아올림(백의자리 칸) → 정답 십의자리 → 정답 백의자리
-        const carryByCol = {}; carryCells.forEach(el => { carryByCol[el.dataset.col] = el; });
-        totalCells.forEach(totalEl => {
-          const tc = parseInt(totalEl.dataset.col);
-          const carryCol = tc - 1; // 받아올림칸은 항상 그 정답칸보다 한 자리 왼쪽(윗자리)에 위치
-          if (carryByCol[carryCol]) { seq.push(carryByCol[carryCol]); delete carryByCol[carryCol]; }
-          seq.push(totalEl);
+      const lvSel = document.getElementById('mul-subLevel');
+      const lv = parseInt(lvSel.options[lvSel.selectedIndex].text.split('단계')[0]);
+      const cellsOf = (row) => Array.from(document.querySelectorAll(`input[data-q="${q}"][data-row="${row}"]`))
+        .sort((a, b) => parseInt(a.dataset.col) - parseInt(b.dataset.col));
+      // shift: 답칸에서 몇 칸 왼쪽에 그 받아올림칸이 있는지 (보통 1, 몇십을 곱하는 줄은 0)
+      const weave = (cells, carries, shift) => {
+        if (dir !== 'rtl') return [...cells, ...carries];   // 앞에서부터: 답을 먼저 쓰고 받아올림은 기록으로
+        const map = {}; carries.forEach(el => { map[el.dataset.col] = el; });
+        const out = [];
+        cells.slice().reverse().forEach(el => {
+          out.push(el);
+          const k = parseInt(el.dataset.col) - shift;
+          if (map[k]) { out.push(map[k]); delete map[k]; }
         });
-        Object.values(carryByCol).forEach(el => seq.unshift(el)); // 혹시 못 짝지어진 받아올림칸은 맨 앞으로(안전장치)
-      } else {
-        seq.push(...totalCells);
+        Object.values(map).forEach(el => out.push(el));   // 짝이 없는 칸은 맨 뒤(안전장치)
+        return out;
+      };
+      const p1 = cellsOf('p1'), p2 = cellsOf('p2'), total = cellsOf('total');
+      if (p1.length || p2.length) {
+        return [...weave(p1, cellsOf('carry'), 1), ...weave(p2, cellsOf('carry2'), 0), ...weave(total, cellsOf('addc'), 1)];
       }
-      return seq;
+      return weave(total, cellsOf('carry'), (lv === 7 || lv === 11) ? 0 : 1);
     }
 
     function mulAutoFocus(el, action) {
@@ -1490,6 +1510,41 @@ function createMulProblem(levelText, forcedParam) {
       return isCorrect ? 1 : 0;
     }
 
+    // 받아올림 기대값 (2026-11-19): 곱해지는 수(mc)의 각 자리 위 칸에 들어갈 값 { 칸번호: 값 } — 칸은 5칸 표의 0~4
+    function mulCarriesAbove(mc, m) {
+      const s = String(mc), out = {}; let carry = 0;
+      for (let k = s.length - 1; k >= 0; k--) { const col = 5 - s.length + k; carry = Math.floor((Number(s[k]) * m + carry) / 10); out[col - 1] = carry; }
+      return out;
+    }
+    // 부분곱 두 개를 더할 때의 받아올림 { 칸번호: 값 }
+    function mulAddCarries(a, b) {
+      const out = {}; let carry = 0;
+      for (let col = 4; col >= 0; col--) { const pw = Math.pow(10, 4 - col); carry = Math.floor((Math.floor(a / pw) % 10 + Math.floor(b / pw) % 10 + carry) / 10); out[col - 1] = carry; }
+      return out;
+    }
+    // 받아올림 줄 채점: 비워 둔 칸은 0으로 봄. 틀리거나 빠뜨린 칸에는 맞는 값을 흐리게 보여 줌
+    function gradeMulCarryRow(q, row, expMap) {
+      let ok = true;
+      document.querySelectorAll(`input[data-q="${q}"][data-row="${row}"]`).forEach(el => {
+        const exp = expMap[el.dataset.col] || 0, v = el.value.trim();
+        const good = v === '' ? exp === 0 : Number(v) === exp;
+        if (!good) { ok = false; el.classList.add('incorrect'); if (v === '') el.placeholder = String(exp); }
+        else if (v !== '') el.classList.add('correct');
+        el.readOnly = true;
+      });
+      return ok;
+    }
+    function mulCarryOk(i, lv, isFB) {
+      const p = mulProblems[i];
+      if (isFB) {
+        return [gradeMulCarryRow(i, 'carry', mulCarriesAbove(p.n1, p.n2 % 10)),
+          gradeMulCarryRow(i, 'carry2', mulCarriesAbove(p.n1, Math.floor(p.n2 / 10))),
+          gradeMulCarryRow(i, 'addc', mulAddCarries(p.p1, p.p2))].every(Boolean);
+      }
+      if (lv === 8) return gradeMulCarryRow(i, 'carry', mulCarriesAbove(p.n2, p.n1));   // (한자리수)×(몇십몇): 몇십몇의 자리 위
+      return gradeMulCarryRow(i, 'carry', mulCarriesAbove(p.n1, p.n2 % 10 === 0 ? p.n2 / 10 : p.n2));
+    }
+
     async function gradeAndSubmitMul() {
       if (!mulTimerStarted) return alert("아직 풀이를 시작하지 않았습니다.");
       const allInputs = document.querySelectorAll('#mul-quizGrid .cell-input'); for (let i = 0; i < allInputs.length; i++) { if (allInputs[i].value === '') { alert("모든 빈칸을 다 풀어야 제출됩니다!"); allInputs[i].focus(); return; } }
@@ -1501,8 +1556,10 @@ function createMulProblem(levelText, forcedParam) {
       for (let i = 0; i < 5; i++) {
         let qScore = 0;
         const isScaffold = (lv === 1 && i < 3) || (lv === 2 && i < 3) || (lv === 3 && i < 3);
-        if (isFormatB || isScaffold) { qScore += gradeMulRow(i, 'p1', mulProblems[i].p1); qScore += gradeMulRow(i, 'p2', mulProblems[i].p2); qScore += gradeMulRow(i, 'total', mulProblems[i].total); if (qScore === 3) { score += 20; results.push('O'); } else { results.push('X'); } }
-        else { qScore += gradeMulRow(i, 'total', mulProblems[i].total); if (qScore === 1) { score += 20; results.push('O'); } else { results.push('X'); } }
+        // 2026-11-19: 받아올림칸도 채점 — 답이 맞고 받아올림도 모두 맞아야 O (1~3단계 1~3번 부분곱 연습 형식은 받아올림칸 없음)
+        const carryOk = isScaffold ? true : mulCarryOk(i, lv, isFormatB);
+        if (isFormatB || isScaffold) { qScore += gradeMulRow(i, 'p1', mulProblems[i].p1); qScore += gradeMulRow(i, 'p2', mulProblems[i].p2); qScore += gradeMulRow(i, 'total', mulProblems[i].total); if (qScore === 3 && carryOk) { score += 20; results.push('O'); } else { results.push('X'); } }
+        else { qScore += gradeMulRow(i, 'total', mulProblems[i].total); if (qScore === 1 && carryOk) { score += 20; results.push('O'); } else { results.push('X'); } }
       }
 
       const submitBtn = document.getElementById('mul-submitBtn'); submitBtn.innerText = "채점 및 저장 중...⏳"; submitBtn.disabled = true; submitBtn.style.backgroundColor = "#94a3b8"; 
