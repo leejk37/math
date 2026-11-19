@@ -242,17 +242,20 @@ async function call(action, ...args) {
 async function start() {
   msg('포인트를 계산하는 중입니다…');
   // 1) '교사학급' 탭에 있는 선생님이면 담임 화면 (담임 계정이 학생명부 0번으로도 있어도 선생님이 먼저)
-  let sc = null;
-  try { sc = await call('getReportScope'); } catch (e) { sc = null; }   // 선생님이 아니면 오류 → 학생으로 진행
+  // 2026-11-19: 두 물음을 동시에 보냄 (학생이 서버를 두 번 차례로 기다리지 않게)
+  const scP = call('getReportScope').catch(() => null);   // 선생님이 아니면 오류 → 학생으로 진행
+  const meP = call('getMyMathPoints').then((r) => ({ r }), (e) => ({ e }));
+  const sc = await scP;
   if (sc && sc.classes && sc.classes.length) return startTeacher(sc);
   // 2) 학생
-  showMine();
+  showMine(false, meP);
 }
 
 /** 로그인한 계정의 학생 화면 (학생 본인, 또는 선생님의 0번 테스트 계정) */
-async function showMine(fromTeacher) {
+async function showMine(fromTeacher, pending) {
   let me;
-  try { me = await call('getMyMathPoints'); } catch (e) { msg('<b>' + esc(e.message) + '</b>'); return; }
+  if (pending) { const x = await pending; if (x.e) { msg('<b>' + esc(x.e.message) + '</b>'); return; } me = x.r; }
+  else { try { me = await call('getMyMathPoints'); } catch (e) { msg('<b>' + esc(e.message) + '</b>'); return; } }
   if (me.role === 'teacher') { if (!fromTeacher) return startTeacher(); msg('<b>학생명부에 이 계정의 0번이 없습니다.</b>'); return; }
   $('msg').classList.add('hidden');
   $('teacher').classList.add('hidden');
