@@ -44,7 +44,10 @@
   .hero .who2 { color: var(--sub); font-weight: 600; }
   .hero .big { font-size: 64px; font-weight: 900; line-height: 1; color: var(--ink); letter-spacing: -2px; }
   .hero .big small { font-size: 20px; font-weight: 700; color: var(--sub); margin-left: 4px; letter-spacing: 0; }
-  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .tile.today { background: linear-gradient(160deg, #fff7d6, #ffefc2); }
+  .tile.today .k { color: #a16207; }
+  .tile.today .v { color: #b45309; }
   .tile { border-radius: 14px; padding: 12px 14px; background: linear-gradient(160deg, #f0f9ff, #effbf8); }
   .tile .k { font-size: 13px; color: #3c7fa6; font-weight: 600; }
   .tile .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -132,6 +135,7 @@
   @media (max-width: 720px) {
     .hero, .two { grid-template-columns: 1fr; }
     .hero .big { font-size: 52px; }
+    .tiles { grid-template-columns: repeat(2, 1fr); }
     .lvrow { grid-template-columns: 1fr auto; }
     .lvrow .sc { grid-column: 1 / -1; order: 3; }
     header.bar { padding: 12px 16px; }
@@ -352,6 +356,7 @@ function renderStudent(d, teacher) {
       </div>
       <div>
         <div class="tiles">
+          <div class="tile today"><div class="k">오늘 모은</div><div class="v">${d.today == null ? '—' : (d.today > 0 ? '+' : '') + d.today}</div></div>
           <div class="tile"><div class="k">모은 포인트</div><div class="v">${d.earned}</div></div>
           <div class="tile"><div class="k">선물로 쓴</div><div class="v">${d.spent}</div></div>
           <div class="tile"><div class="k">이번 달</div><div class="v">${d.month}</div></div>
@@ -367,6 +372,11 @@ function renderStudent(d, teacher) {
       <span>${x.cancelled ? '' : `<span class="p minus">−${x.pts}</span> <button data-cancel="${i}" style="font-size:12px;padding:3px 8px">취소</button>`}</span></li>`).join('')}</ul>` : ''}
   </div>` : ''}
 
+  <div class="card" id="attCard">
+    <h3>🧾 내 풀이 기록 <small>제출한 기록을 날짜별로 다시 봐요 · 문항마다 맞으면 O, 틀리면 X · 단계마다 그날 반 평균과 비교</small></h3>
+    <div id="attBox"><p class="muted">불러오는 중…</p></div>
+  </div>
+
   <div class="card">
     <h3>🏅 뱃지 <small>${d.badges.filter((b) => b.got).length} / ${d.badges.length}개 · 선물을 받아도 사라지지 않아요</small></h3>
     <div class="badges">${d.badges.map((b) => `<div class="badge ${b.got ? 'on' : 'off'}" title="${esc(b.desc)}">
@@ -381,11 +391,6 @@ function renderStudent(d, teacher) {
         <div class="sc">${l.tries}번 · 점수 ${l.scores.join(' → ')} · 평균 ${l.avg}점</div>
         <div class="pt">+${l.pts}</div></div>`).join('')}</div>`).join('')
       : '<p class="muted">아직 진단 기록이 없어요. 진단을 풀면 포인트가 쌓여요.</p>'}
-  </div>
-
-  <div class="card" id="attCard">
-    <h3>🧾 내 풀이 기록 <small>제출한 기록을 날짜별로 다시 봐요 · 문항마다 맞으면 O, 틀리면 X · 단계마다 그날 반 평균과 비교</small></h3>
-    <div id="attBox"><p class="muted">불러오는 중…</p></div>
   </div>
 
   ${(() => { const dl = d.daily || { days: 0, streak: 0, maxStreak: 0 }; return `<div class="card">
