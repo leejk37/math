@@ -147,6 +147,8 @@
   .tasklist th, .tasklist td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
   .tasklist th { background: #f8fafc; color: var(--sub); font-weight: 600; font-size: 13px; }
   .tasklist .gap { color: var(--x); font-weight: 700; }
+  .tasklist .tdet { font-size: 12px; color: var(--sub); margin-top: 2px; }
+  .tasklist .tdet b { color: var(--ink, #1d2939); font-weight: 600; }
   .tasklist tr.tfirst td { border-top: 2px solid var(--line); }
   .taskform label small { font-weight: 400; }
   .tasklist small { color: var(--sub); }
@@ -889,6 +891,21 @@ const TASK_DEF_BODY = `{이름} 학생, 안녕하세요.
 const TK = { subject: 'taskSubject2', body: 'taskBody2', line: 'taskLine', link: 'taskLink' };
 let taskState = null;
 
+// 메일에 넣을 셈 (100칸·구구단만): redo = 다시 풀어 볼 틀린 셈(답은 빼고 문제만), faster = 맞았지만 기준 시간을 넘긴 구구단 셈
+function taskDetail(r) {
+  const out = { redo: [], faster: [] };
+  if (r.op === '100칸 계산') {
+    const w = String(r.level || '').split(' · ').slice(2).join(' · ').replace(/^틀린 셈\s*/, '');
+    if (w) w.split(/,\s*/).forEach((x) => { const q = x.replace(/=.*$/, '').trim(); if (q) out.redo.push(q); });
+  } else if (r.op === '구구단') {
+    const g = guTimes(r), dan = parseInt(shortLevel(r.level), 10), res = String(r.results || '');
+    if (g && dan) g.list.forEach((x, i) => {
+      if (res[i] === 'X') out.redo.push(dan + '×' + x.b);
+      else if (res[i] === 'O' && x.t > g.thr) out.faster.push(dan + '×' + x.b);
+    });
+  }
+  return out;
+}
 function slowCandidates(gapSec, minN) {
   const groups = {};   // 영역|단계 -> { op, stage, by: { 번호: 최근 기록 } }
   Object.keys(data).filter((n) => String(n) !== '0').forEach((n) => attemptsOf(n).forEach((r) => {
@@ -902,7 +919,7 @@ function slowCandidates(gapSec, minN) {
     const avg = Math.round(recs.reduce((a, [, r]) => a + (Number(r.sec) || 0), 0) / recs.length);
     recs.forEach(([n, r]) => {
       const sec = Number(r.sec) || 0;
-      if (sec - avg >= gapSec) out.push({ num: n, op: g.op, stage: g.stage, sec, avg, gap: sec - avg, n: recs.length, score: r.score });
+      if (sec - avg >= gapSec) out.push({ num: n, op: g.op, stage: g.stage, sec, avg, gap: sec - avg, n: recs.length, score: r.score, ...taskDetail(r) });
     });
   });
   return out.sort((a, b) => Number(a.num) - Number(b.num) || b.gap - a.gap);   // 학생 안에서는 격차가 큰 단계 먼저
@@ -911,7 +928,8 @@ function taskReq(dryRun, picked) {
   return { grade: $('grade').value, classNum: $('classNum').value, day: $('day').value, dryRun,
     subject: store.get(TK.subject, TASK_DEF_SUBJECT), body: store.get(TK.body, TASK_DEF_BODY),
     line: store.get(TK.line, TASK_DEF_LINE), link: store.get(TK.link, ''),
-    items: (picked || taskState.items).map((x) => ({ num: x.num, name: x.name, op: x.op, stage: x.stage, sec: x.sec, avg: x.avg, n: x.n })) };
+    items: (picked || taskState.items).map((x) => ({ num: x.num, name: x.name, op: x.op, stage: x.stage, sec: x.sec, avg: x.avg, n: x.n,
+      redo: x.redo || [], faster: x.faster || [] })) };
 }
 async function openTasks() {
   if (!user || $('board').classList.contains('hidden')) return;
@@ -945,7 +963,7 @@ function renderTasks() {
     const span = cnt[x.num] > 1 ? ` rowspan="${cnt[x.num]}"` : '';
     return `<tr class="${first ? 'tfirst' : ''}"><td><input type="checkbox" data-i="${i}" ${can ? 'checked' : 'disabled'}></td>
       ${first ? `<td${span}><b>${esc(x.num)}번</b> ${showNames ? esc(x.name) : ''}${cnt[x.num] > 1 ? `<br><small>메일 1통 · ${cnt[x.num]}개 단계</small>` : ''}</td>` : ''}
-      <td>${esc(x.op)} · ${esc(x.stage)} <small>(${x.score}점)</small></td>
+      <td>${esc(x.op)} · ${esc(x.stage)} <small>(${x.score}점)</small>${taskDetailHtml(x)}</td>
       <td><b>${mmss(x.sec)}</b> <small>/ 반평균 ${mmss(x.avg)} (${x.n}명)</small> <span class="gap">+${mmss(x.gap)}</span></td>
       ${first ? `<td${span}>${st}</td>` : ''}</tr>`;
   }).join('');
@@ -960,7 +978,7 @@ function renderTasks() {
       <label>과제 한 줄 <small>(체크한 단계마다 한 줄씩 만들어 내용의 {과제목록} 자리에 들어감)</small></label><input type="text" id="tLine" value="${esc(store.get(TK.line, TASK_DEF_LINE))}">
       <label>연습 화면 주소 (메일의 {링크} 자리에 들어감, 비우면 그 줄을 뺌)</label><input type="text" id="tLink" placeholder="https://..." value="${esc(store.get(TK.link, ''))}">
       <label>내용</label><textarea id="tBody">${esc(store.get(TK.body, TASK_DEF_BODY))}</textarea>
-      <div class="hint">바뀌는 글자 — 내용·제목: {이름} {번호} {과제목록} {단계} {개수} {링크} · 과제 한 줄: {영역} {단계} {시간} {반평균} · <a href="#" id="tDefault">기본 문구로</a>${s.quota != null ? ` · 오늘 남은 메일 ${s.quota}통` : ''}</div>
+      <div class="hint">바뀌는 글자 — 내용·제목: {이름} {번호} {과제목록} {단계} {개수} {링크} · 과제 한 줄: {영역} {단계} {시간} {반평균} {다시풀기} {더빨리} (과제 한 줄에 이 두 글자를 안 쓰면 100칸·구구단의 틀린 셈·느린 셈이 과제 줄 아래에 저절로 붙음) · <a href="#" id="tDefault">기본 문구로</a>${s.quota != null ? ` · 오늘 남은 메일 ${s.quota}통` : ''}</div>
     </div>` : ''}
     <div class="foot">${s.items.length ? `<button class="primary" id="tSend" ${s.info && !s.err ? '' : 'disabled'}>선택한 학생에게 보내기</button>` : ''}
       <button id="tClose">닫기</button></div>`;
@@ -981,6 +999,12 @@ function renderTasks() {
   ['tSubject', 'tLine', 'tLink', 'tBody'].forEach((id) => { $(id).onchange = saveTaskForm; });
   $('tDefault').onclick = (e) => { e.preventDefault(); $('tSubject').value = TASK_DEF_SUBJECT; $('tLine').value = TASK_DEF_LINE; $('tBody').value = TASK_DEF_BODY; saveTaskForm(); };
   $('tSend').onclick = sendTasks;
+}
+function taskDetailHtml(x) {
+  const a = [];
+  if (x.redo && x.redo.length) a.push(`<div class="tdet">다시 풀기: <b>${esc(x.redo.join(', '))}</b></div>`);
+  if (x.faster && x.faster.length) a.push(`<div class="tdet">더 빨리: <b>${esc(x.faster.join(', '))}</b></div>`);
+  return a.join('');
 }
 function pickedTasks() {
   return taskState.items.filter((x, i) => { const cb = $('modal').querySelector(`#taskRows input[data-i="${i}"]`); return cb && cb.checked; });
