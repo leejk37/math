@@ -229,7 +229,7 @@
     <span class="dot" id="conn" title="연결 상태"></span>
     <span id="who"></span>
     <button id="resetBtn" title="지금 이 시각부터 새로 보이게 화면을 비웁니다. 기록은 지워지지 않습니다.">↺ 화면 초기화</button>
-    <button id="taskBtn" title="반평균보다 많이 느린 학생을 찾아, 확인한 뒤 과제 메일을 보냅니다">📧 과제 보내기</button>
+    <button id="taskBtn" title="통과 기준(100칸 등: 반평균+30초, 구구단: 정확도 100%)에 못 미친 학생을 찾아, 확인한 뒤 과제 메일을 보냅니다">📧 과제 보내기</button>
     <button id="fsBtn" title="큰 화면용: 학생 카드를 가로 5 × 세로 4로 크게 보여 줍니다">⛶ 전체화면</button>
     <button id="loginBtn" class="primary">선생님 로그인</button>
     <button id="logoutBtn" class="hidden">로그아웃</button>
@@ -841,12 +841,12 @@ function classAvgSec() {
   return out;
 }
 // 걸린 시간 칸: 첫째 줄 본인 시간 · 반평균, 둘째 줄 격차
-// 격차 색: 반평균 이하=초록, 30초 안으로 늦음=주황, 30초 이상 늦음=빨강
+// 격차 색: 반평균 이하=초록, 30초 안으로 늦음=주황(통과), 30초 넘게 늦음=빨강(통과 기준 밖)
 function timeVsAvg(r, avgs) {
   const my = Number(r.sec) || 0, a = avgs[r.op + '|' + shortLevel(r.level)];
   if (!a) return `<b>${mmss(my)}</b>`;
   const avg = Math.round(a.sec), diff = my - avg;
-  const cls = diff >= 30 ? 'late' : diff > 0 ? 'near' : 'fast';
+  const cls = diff > 30 ? 'late' : diff > 0 ? 'near' : 'fast';
   const gap = diff > 0 ? '+' + mmss(diff) : diff < 0 ? '−' + mmss(-diff) : '±0:00';
   return `<div class="tva ${cls}" title="반 ${a.n}명(학생마다 최근 기록)의 평균과 비교">
     <div><b>${mmss(my)}</b><span class="tva-avg">반평균 ${mmss(avg)}</span></div><span class="tva-gap">${gap}</span></div>`;
@@ -869,9 +869,11 @@ function openStudent(num, name) {
   $('dim').classList.add('show');
 }
 
-/* ---------- 느린 학생 과제 메일 (선생님 확인 후 보내기) ----------
-   대상: 같은 날·같은 영역·단계를 푼 학생마다 가장 최근 기록 1개씩으로 반평균을 내고(기록 창의 반평균과 같은 기준),
-         그 단계를 '최소 인원' 이상 풀었을 때만, 반평균보다 '기준 초' 이상 느린 학생
+/* ---------- 과제 메일 (선생님 확인 후 보내기) ----------
+   대상 (2026-11-28 통과 기준):
+   ① 유창성 (100칸 계산 등 구구단 밖의 영역): 같은 날·같은 영역·단계를 푼 학생마다 가장 최근 기록 1개씩으로 반평균을 내고
+      (기록 창의 반평균과 같은 기준), 그 단계를 '최소 인원' 이상 풀었을 때, 통과 기준 '반평균 + 기준 초'보다 느린 학생
+   ② 정확성 (구구단): 단마다 가장 최근 기록이 100%가 아닌 학생 — 그날 구구단 기록 전체에서 자주 틀린 단과 곱셈을 횟수와 함께 보냄
    서버(과제메일.gs의 sendSlowTasks)가 선생님 계정을 확인하고, 학생명부의 이메일로 보내고, '과제메일' 탭에 기록.
    학생 한 명에게는 하루에 한 통: 걸린 단계가 여럿이면 한 메일에 목록({과제목록})으로 담음 (2026-11-28) */
 const TASK_DEF_SUBJECT = '[수학 과제] {단계} 연습하기';
@@ -910,9 +912,35 @@ function taskDetail(r) {
   }
   return out;
 }
+// ② 구구단 정확성: 한 학생의 그날 구구단 기록 → 과제 한 항목 (단마다 최근 기록이 모두 100%면 null)
+function guAccuracyItem(n) {
+  const recs = attemptsOf(n).filter((r) => r.op === '구구단');
+  if (!recs.length) return null;
+  const latest = {}, wrongDan = {}, wrongFact = {};
+  recs.forEach((r) => {   // 시간 순: 단마다 마지막(최근) 기록이 남음, 틀린 횟수는 그날 기록 전체에서 셈
+    const dan = parseInt(shortLevel(r.level), 10); if (!dan) return;
+    latest[dan] = r;
+    taskDetail(r).redo.forEach((f) => { wrongDan[dan] = (wrongDan[dan] || 0) + 1; wrongFact[f] = (wrongFact[f] || 0) + 1; });
+  });
+  const fail = Object.keys(latest).map(Number).filter((d) => String(latest[d].results || '').includes('X')).sort((a, b) => a - b);
+  if (!fail.length) return null;
+  let ok = 0, all = 0; const faster = [];
+  Object.values(latest).forEach((r) => {
+    const res = String(r.results || ''); ok += (res.match(/O/g) || []).length; all += res.length;
+    taskDetail(r).faster.forEach((f) => { if (!wrongFact[f]) faster.push(f); });
+  });
+  const cnt = (k, c) => k + (c > 1 ? `(${c}번)` : '');
+  const byCnt = (o, num) => Object.entries(o).sort((a, b) => b[1] - a[1] || num(a[0]) - num(b[0]));
+  const factNum = (f) => { const m = f.split('×'); return Number(m[0]) * 10 + Number(m[1]); };
+  return { num: n, op: '구구단', kind: 'accuracy', stage: '구구단 ' + fail.map((d) => d + '단').join('·'),
+    sec: 0, avg: 0, gap: Infinity, n: 0, score: all ? Math.round(ok * 100 / all) : 0, right: ok + '/' + all,
+    dans: byCnt(wrongDan, Number).map(([d, c]) => cnt(d + '단', c)),
+    redo: byCnt(wrongFact, factNum).map(([f, c]) => cnt(f, c)), faster };
+}
 function slowCandidates(gapSec, minN) {
-  const groups = {};   // 영역|단계 -> { op, stage, by: { 번호: 최근 기록 } }
+  const groups = {};   // 영역|단계 -> { op, stage, by: { 번호: 최근 기록 } }  (구구단은 정확성으로 따로)
   Object.keys(data).filter((n) => String(n) !== '0').forEach((n) => attemptsOf(n).forEach((r) => {
+    if (r.op === '구구단') return;
     const k = r.op + '|' + shortLevel(r.level);
     (groups[k] || (groups[k] = { op: r.op, stage: shortLevel(r.level), by: {} })).by[n] = r;
   }));
@@ -923,17 +951,18 @@ function slowCandidates(gapSec, minN) {
     const avg = Math.round(recs.reduce((a, [, r]) => a + (Number(r.sec) || 0), 0) / recs.length);
     recs.forEach(([n, r]) => {
       const sec = Number(r.sec) || 0;
-      if (sec - avg >= gapSec) out.push({ num: n, op: g.op, stage: g.stage, sec, avg, gap: sec - avg, n: recs.length, score: r.score, ...taskDetail(r) });
+      if (sec - avg > gapSec) out.push({ num: n, op: g.op, kind: 'fluency', stage: g.stage, sec, avg, pass: avg + gapSec, gap: sec - avg, n: recs.length, score: r.score, ...taskDetail(r) });
     });
   });
-  return out.sort((a, b) => Number(a.num) - Number(b.num) || b.gap - a.gap);   // 학생 안에서는 격차가 큰 단계 먼저
+  Object.keys(data).filter((n) => String(n) !== '0').forEach((n) => { const it = guAccuracyItem(n); if (it) out.push(it); });
+  return out.sort((a, b) => Number(a.num) - Number(b.num) || b.gap - a.gap);   // 학생 안에서는 구구단 정확성 먼저, 그다음 격차가 큰 단계
 }
 function taskReq(dryRun, picked) {
   return { grade: $('grade').value, classNum: $('classNum').value, day: $('day').value, dryRun,
     subject: store.get(TK.subject, TASK_DEF_SUBJECT), body: store.get(TK.body, TASK_DEF_BODY),
     line: store.get(TK.line, TASK_DEF_LINE), link: store.get(TK.link, TASK_DEF_LINK),
     items: (picked || taskState.items).map((x) => ({ num: x.num, name: x.name, op: x.op, stage: x.stage, sec: x.sec, avg: x.avg, n: x.n,
-      redo: x.redo || [], faster: x.faster || [], right: x.right || '', score: x.score })) };
+      redo: x.redo || [], faster: x.faster || [], right: x.right || '', score: x.score, kind: x.kind, pass: x.pass, dans: x.dans || [] })) };
 }
 async function openTasks() {
   if (!user || $('board').classList.contains('hidden')) return;
@@ -967,14 +996,16 @@ function renderTasks() {
     const span = cnt[x.num] > 1 ? ` rowspan="${cnt[x.num]}"` : '';
     return `<tr class="${first ? 'tfirst' : ''}"><td><input type="checkbox" data-i="${i}" ${can ? 'checked' : 'disabled'}></td>
       ${first ? `<td${span}><b>${esc(x.num)}번</b> ${showNames ? esc(x.name) : ''}${cnt[x.num] > 1 ? `<br><small>메일 1통 · ${cnt[x.num]}개 단계</small>` : ''}</td>` : ''}
-      <td>${esc(x.op)} · ${esc(x.stage)} <small>(${x.score}점)</small>${taskDetailHtml(x)}</td>
-      <td><b>${mmss(x.sec)}</b> <small>/ 반평균 ${mmss(x.avg)} (${x.n}명)</small> <span class="gap">+${mmss(x.gap)}</span></td>
+      ${x.kind === 'accuracy'
+        ? `<td>${esc(x.stage)} <small>(최근 기록 ${esc(x.right)})</small>${taskDetailHtml(x)}</td><td><span class="gap">정확성 · 100% 아님</span></td>`
+        : `<td>${esc(x.op)} · ${esc(x.stage)} <small>(${x.score}점)</small>${taskDetailHtml(x)}</td>
+      <td><b>${mmss(x.sec)}</b> <small>/ 통과 ${mmss(x.pass)} (반평균 ${mmss(x.avg)}, ${x.n}명)</small> <span class="gap">+${mmss(x.sec - x.pass)}</span></td>`}
       ${first ? `<td${span}>${st}</td>` : ''}</tr>`;
   }).join('');
-  $('modal').innerHTML = `<h3>📧 느린 학생 과제 보내기 <small style="color:var(--sub);font-weight:500">${esc($('grade').value)}학년 ${esc($('classNum').value)} · ${esc($('day').value)}</small></h3>
-    <div class="taskopt">반평균보다 <input type="number" id="tGap" min="5" max="600" value="${s.gapSec}">초 이상 느림 ·
+  $('modal').innerHTML = `<h3>📧 과제 보내기 <small style="color:var(--sub);font-weight:500">${esc($('grade').value)}학년 ${esc($('classNum').value)} · ${esc($('day').value)}</small></h3>
+    <div class="taskopt">통과 기준 — 100칸 등: 반평균 + <input type="number" id="tGap" min="5" max="600" value="${s.gapSec}">초 안 · 구구단: 정확도 100% ·
       그 단계를 <input type="number" id="tMinN" min="1" max="40" value="${s.minN}">명 이상 풀었을 때 <button id="tRefind">다시 찾기</button></div>
-    ${s.items.length ? `<table class="tasklist"><thead><tr><th></th><th>학생</th><th>영역·단계</th><th>걸린 시간 / 반평균 · 격차</th><th>메일 (학생당 하루 1통)</th></tr></thead>
+    ${s.items.length ? `<table class="tasklist"><thead><tr><th></th><th>학생</th><th>영역·단계</th><th>걸린 시간 / 통과 기준 · 넘은 시간</th><th>메일 (학생당 하루 1통)</th></tr></thead>
       <tbody id="taskRows">${rows}</tbody></table>` : '<div class="taskmsg">조건에 맞는 학생이 없습니다. 👍</div>'}
     ${s.msg ? `<div class="taskmsg${s.err ? ' err' : ''}">${esc(s.msg)}</div>` : ''}
     ${s.items.length ? `<div class="taskform">
@@ -982,7 +1013,7 @@ function renderTasks() {
       <label>과제 한 줄 <small>(체크한 단계마다 한 줄씩 만들어 내용의 {과제목록} 자리에 들어감)</small></label><input type="text" id="tLine" value="${esc(store.get(TK.line, TASK_DEF_LINE))}">
       <label>연습 화면 주소 (메일의 {링크} 자리에 들어감, 비우면 그 줄을 뺌 · 기본: 진단시스템 첫 화면)</label><input type="text" id="tLink" placeholder="https://..." value="${esc(store.get(TK.link, TASK_DEF_LINK))}">
       <label>내용</label><textarea id="tBody">${esc(store.get(TK.body, TASK_DEF_BODY))}</textarea>
-      <div class="hint">바뀌는 글자 — 내용·제목: {이름} {번호} {과제목록} {단계} {개수} {링크} · 과제 한 줄: {영역} {단계} {시간} {반평균} {정답} {목표} {줄일시간} {다시풀기} {더빨리} (과제 한 줄에 {시간}·{목표}·{다시풀기}·{더빨리}를 안 쓰면 단계마다 내 기록·목표·틀린 셈·느린 셈이 과제 줄 아래에 저절로 붙음) · <a href="#" id="tDefault">기본 문구로</a>${s.quota != null ? ` · 오늘 남은 메일 ${s.quota}통` : ''}</div>
+      <div class="hint">바뀌는 글자 — 내용·제목: {이름} {번호} {과제목록} {단계} {개수} {링크} · 과제 한 줄: {영역} {단계} {시간} {반평균} {정답} {목표}(통과 기준 시간) {줄일시간} {다시풀기} {더빨리} (과제 한 줄에 {시간}·{목표}·{다시풀기}·{더빨리}를 안 쓰면 단계마다 내 기록·통과 기준·틀린 셈이, 구구단은 정확도·자주 틀린 단·틀린 곱셈이 과제 줄 아래에 저절로 붙음) · <a href="#" id="tDefault">기본 문구로</a>${s.quota != null ? ` · 오늘 남은 메일 ${s.quota}통` : ''}</div>
     </div>` : ''}
     <div class="foot">${s.items.length ? `<button class="primary" id="tSend" ${s.info && !s.err ? '' : 'disabled'}>선택한 학생에게 보내기</button>` : ''}
       <button id="tClose">닫기</button></div>`;
@@ -1006,7 +1037,8 @@ function renderTasks() {
 }
 function taskDetailHtml(x) {
   const a = [];
-  if (x.redo && x.redo.length) a.push(`<div class="tdet">다시 풀기: <b>${esc(x.redo.join(', '))}</b></div>`);
+  if (x.dans && x.dans.length) a.push(`<div class="tdet">자주 틀린 단: <b>${esc(x.dans.join(', '))}</b></div>`);
+  if (x.redo && x.redo.length) a.push(`<div class="tdet">${x.kind === 'accuracy' ? '틀린 곱셈' : '다시 풀기'}: <b>${esc(x.redo.join(', '))}</b></div>`);
   if (x.faster && x.faster.length) a.push(`<div class="tdet">더 빨리: <b>${esc(x.faster.join(', '))}</b></div>`);
   return a.join('');
 }
