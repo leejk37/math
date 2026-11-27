@@ -860,7 +860,7 @@ function openStudent(num, name) {
   const list = attemptsOf(num).slice().reverse();
   const avgs = classAvgSec();
   $('modal').innerHTML = `<h3>${esc(num)}번 ${esc(name)} <small style="color:var(--sub);font-weight:500">${esc($('day').value)} · ${list.length}회</small></h3>
-    <table class="feed"><thead><tr><th>시각</th><th>영역·단계</th><th>문항</th><th>걸린 시간 <small style="font-weight:500">· 반평균 · 격차</small></th></tr></thead><tbody>
+    <table class="feed"><thead><tr><th>시각</th><th>영역·단계</th><th>정답/문항</th><th>걸린 시간 <small style="font-weight:500">· 반평균 · 격차</small></th></tr></thead><tbody>
     ${list.map((r) => `<tr><td>${clock(r.at)}</td><td title="${esc(r.level)}"><div class="two">${esc(r.op)}<small>${esc(shortLevel(r.level))}</small></div></td>
       <td title="점수 ${r.score}">${marksTwo(r)}</td><td>${timeVsAvg(r, avgs)}</td></tr>`).join('')}
     </tbody></table><div class="foot"><button onclick="document.getElementById('dim').classList.remove('show')">닫기</button></div>`;
