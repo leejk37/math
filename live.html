@@ -134,6 +134,22 @@
   .tva-gap { font-size: 12px; font-weight: 700; color: var(--sub); }
   .tva.fast .tva-gap { color: var(--s100); }
   .tva.late b, .tva.late .tva-gap { color: var(--x); }
+  /* 느린 학생 과제 메일 */
+  .taskopt { display: flex; gap: 8px 14px; flex-wrap: wrap; align-items: center; font-size: 14px; color: var(--sub); margin-bottom: 6px; }
+  .taskopt input[type=number] { width: 64px; font: inherit; font-size: 14px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; }
+  .taskopt button { font-size: 13px; padding: 4px 10px; }
+  .tasklist { width: 100%; border-collapse: collapse; font-size: 14px; margin: 6px 0 4px; }
+  .tasklist th, .tasklist td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+  .tasklist th { background: #f8fafc; color: var(--sub); font-weight: 600; font-size: 13px; }
+  .tasklist .gap { color: var(--x); font-weight: 700; }
+  .tasklist small { color: var(--sub); }
+  .st-ok { color: var(--s100); font-size: 12px; } .st-no { color: var(--x); font-size: 12px; } .st-sent { color: var(--sub); font-size: 12px; }
+  .taskform label { display: block; font-size: 13px; color: var(--sub); margin: 10px 0 3px; }
+  .taskform input[type=text], .taskform textarea { width: 100%; font: inherit; font-size: 14px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; }
+  .taskform textarea { height: 170px; resize: vertical; line-height: 1.5; }
+  .taskform .hint { font-size: 12px; color: var(--sub); margin-top: 3px; }
+  .taskmsg { font-size: 14px; color: var(--sub); padding: 10px 0; }
+  .taskmsg.err { color: var(--x); }
   .modal h3 { margin: 0 0 10px; }
   .foot { margin-top: 30px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
   .foot button { font-size: 13px; color: var(--sub); }
@@ -204,6 +220,7 @@
     <span class="dot" id="conn" title="연결 상태"></span>
     <span id="who"></span>
     <button id="resetBtn" title="지금 이 시각부터 새로 보이게 화면을 비웁니다. 기록은 지워지지 않습니다.">↺ 화면 초기화</button>
+    <button id="taskBtn" title="반평균보다 많이 느린 학생을 찾아, 확인한 뒤 과제 메일을 보냅니다">📧 과제 보내기</button>
     <button id="fsBtn" title="큰 화면용: 학생 카드를 가로 5 × 세로 4로 크게 보여 줍니다">⛶ 전체화면</button>
     <button id="loginBtn" class="primary">선생님 로그인</button>
     <button id="logoutBtn" class="hidden">로그아웃</button>
@@ -340,6 +357,7 @@ async function init() {
   $('cleanBtn').onclick = cleanOld;
   $('guImportBtn').onclick = importGuToSheet;
   $('resetBtn').onclick = resetScreen;
+  $('taskBtn').onclick = openTasks;
   $('resetUndo').onclick = undoReset;
   $('dim').onclick = (e) => { if (e.target.id === 'dim') $('dim').classList.remove('show'); };
   setInterval(render, 30000); // '몇 분 전' 표시 갱신
@@ -832,6 +850,125 @@ function openStudent(num, name) {
       <td><div class="marks" style="margin:0">${marks(r.results, r)}</div>${guKey(r)}</td><td>${timeVsAvg(r, avgs)}</td></tr>`).join('')}
     </tbody></table><div class="foot"><button onclick="document.getElementById('dim').classList.remove('show')">닫기</button></div>`;
   $('dim').classList.add('show');
+}
+
+/* ---------- 느린 학생 과제 메일 (선생님 확인 후 보내기) ----------
+   대상: 같은 날·같은 영역·단계를 푼 학생마다 가장 최근 기록 1개씩으로 반평균을 내고(기록 창의 반평균과 같은 기준),
+         그 단계를 '최소 인원' 이상 풀었을 때만, 반평균보다 '기준 초' 이상 느린 학생
+   서버(과제메일.gs의 sendSlowTasks)가 선생님 계정을 확인하고, 학생명부의 이메일로 보내고, '과제메일' 탭에 기록.
+   같은 날·같은 학생·같은 단계는 한 번만 보냄 */
+const TASK_DEF_SUBJECT = '[수학 과제] {단계} 연습하기';
+const TASK_DEF_BODY = `{이름} 학생, 안녕하세요.
+
+오늘 {영역} {단계}를 열심히 풀었어요.
+조금 더 빠르고 정확해질 수 있도록 과제를 보내요.
+
+📌 과제: {단계} 3번 더 연습하기
+👉 바로가기: {링크}
+
+천천히, 정확하게 푸는 것부터 시작해 봐요. 화이팅!`;
+let taskState = null;
+
+function slowCandidates(gapSec, minN) {
+  const groups = {};   // 영역|단계 -> { op, stage, by: { 번호: 최근 기록 } }
+  Object.keys(data).filter((n) => String(n) !== '0').forEach((n) => attemptsOf(n).forEach((r) => {
+    const k = r.op + '|' + shortLevel(r.level);
+    (groups[k] || (groups[k] = { op: r.op, stage: shortLevel(r.level), by: {} })).by[n] = r;
+  }));
+  const out = [];
+  Object.values(groups).forEach((g) => {
+    const recs = Object.entries(g.by);
+    if (recs.length < minN) return;
+    const avg = Math.round(recs.reduce((a, [, r]) => a + (Number(r.sec) || 0), 0) / recs.length);
+    recs.forEach(([n, r]) => {
+      const sec = Number(r.sec) || 0;
+      if (sec - avg >= gapSec) out.push({ num: n, op: g.op, stage: g.stage, sec, avg, gap: sec - avg, n: recs.length, score: r.score });
+    });
+  });
+  return out.sort((a, b) => Number(a.num) - Number(b.num) || b.gap - a.gap);
+}
+const taskKey = (x) => `${x.num}|${x.op}|${x.stage}`;
+function taskReq(dryRun, picked) {
+  return { grade: $('grade').value, classNum: $('classNum').value, day: $('day').value, dryRun,
+    subject: store.get('taskSubject', TASK_DEF_SUBJECT), body: store.get('taskBody', TASK_DEF_BODY), link: store.get('taskLink', ''),
+    items: (picked || taskState.items).map((x) => ({ num: x.num, name: x.name, op: x.op, stage: x.stage, sec: x.sec, avg: x.avg, n: x.n })) };
+}
+async function openTasks() {
+  if (!user || $('board').classList.contains('hidden')) return;
+  const gapSec = Number(store.get('taskGap', '30')) || 30, minN = Number(store.get('taskMinN', '5')) || 1;
+  const names = (roster[$('grade').value] || {})[$('classNum').value] || {};
+  const items = slowCandidates(gapSec, minN).map((x) => ({ ...x, name: names[x.num] || '' }));
+  taskState = { items, gapSec, minN, info: null, msg: items.length ? '메일 주소와 오늘 보낸 기록을 확인하는 중…' : '', err: false };
+  renderTasks();
+  $('dim').classList.add('show');
+  if (!items.length) return;
+  try {
+    const r = await callApi('sendSlowTasks', [{ idToken: await user.getIdToken() }, taskReq(true)]);
+    if (r && r.status === 'error') throw new Error(r.message);
+    taskState.info = (r && r.info) || {};
+    taskState.msg = (r && r.rosterMsg) || '';
+    taskState.err = !!(r && r.rosterMsg);
+    taskState.quota = r && r.quota;
+  } catch (e) { taskState.msg = '확인하지 못했습니다: ' + e.message; taskState.err = true; }
+  if (taskState) renderTasks();
+}
+function renderTasks() {
+  const s = taskState, showNames = $('showNames').checked;
+  const rows = s.items.map((x, i) => {
+    const inf = s.info && s.info[taskKey(x)];
+    const st = !inf ? '' : inf.sent ? '<span class="st-sent">오늘 이미 보냄</span>'
+      : inf.email ? `<span class="st-ok">${esc(inf.email)}</span>` : '<span class="st-no">이메일 없음</span>';
+    const can = inf && inf.email && !inf.sent;
+    return `<tr><td><input type="checkbox" data-i="${i}" ${can ? 'checked' : 'disabled'}></td>
+      <td><b>${esc(x.num)}번</b> ${showNames ? esc(x.name) : ''}</td><td>${esc(x.op)} · ${esc(x.stage)} <small>(${x.score}점)</small></td>
+      <td><b>${mmss(x.sec)}</b> <small>/ 반평균 ${mmss(x.avg)} (${x.n}명)</small> <span class="gap">+${mmss(x.gap)}</span></td><td>${st}</td></tr>`;
+  }).join('');
+  $('modal').innerHTML = `<h3>📧 느린 학생 과제 보내기 <small style="color:var(--sub);font-weight:500">${esc($('grade').value)}학년 ${esc($('classNum').value)} · ${esc($('day').value)}</small></h3>
+    <div class="taskopt">반평균보다 <input type="number" id="tGap" min="5" max="600" value="${s.gapSec}">초 이상 느림 ·
+      그 단계를 <input type="number" id="tMinN" min="1" max="40" value="${s.minN}">명 이상 풀었을 때 <button id="tRefind">다시 찾기</button></div>
+    ${s.items.length ? `<table class="tasklist"><thead><tr><th></th><th>학생</th><th>영역·단계</th><th>걸린 시간 / 반평균 · 격차</th><th>메일</th></tr></thead>
+      <tbody id="taskRows">${rows}</tbody></table>` : '<div class="taskmsg">조건에 맞는 학생이 없습니다. 👍</div>'}
+    ${s.msg ? `<div class="taskmsg${s.err ? ' err' : ''}">${esc(s.msg)}</div>` : ''}
+    ${s.items.length ? `<div class="taskform">
+      <label>제목</label><input type="text" id="tSubject" value="${esc(store.get('taskSubject', TASK_DEF_SUBJECT))}">
+      <label>연습 화면 주소 (메일의 {링크} 자리에 들어감, 비우면 그 줄을 뺌)</label><input type="text" id="tLink" placeholder="https://..." value="${esc(store.get('taskLink', ''))}">
+      <label>내용</label><textarea id="tBody">${esc(store.get('taskBody', TASK_DEF_BODY))}</textarea>
+      <div class="hint">바뀌는 글자: {이름} {번호} {영역} {단계} {시간} {반평균} {링크} · <a href="#" id="tDefault">기본 문구로</a>${s.quota != null ? ` · 오늘 남은 메일 ${s.quota}통` : ''}</div>
+    </div>` : ''}
+    <div class="foot">${s.items.length ? `<button class="primary" id="tSend" ${s.info && !s.err ? '' : 'disabled'}>선택한 학생에게 보내기</button>` : ''}
+      <button id="tClose">닫기</button></div>`;
+  $('tClose').onclick = () => { taskState = null; $('dim').classList.remove('show'); };
+  $('tRefind').onclick = () => {
+    saveTaskForm();
+    store.set('taskGap', String(Math.max(5, Number($('tGap').value) || 30)));
+    store.set('taskMinN', String(Math.max(1, Number($('tMinN').value) || 5)));
+    openTasks();
+  };
+  if (!s.items.length) return;
+  const count = () => { const k = $('modal').querySelectorAll('#taskRows input:checked').length; const b = $('tSend'); if (b) b.textContent = `선택한 ${k}명에게 보내기`; };
+  $('modal').querySelectorAll('#taskRows input').forEach((cb) => { cb.onchange = count; });
+  count();
+  ['tSubject', 'tLink', 'tBody'].forEach((id) => { $(id).onchange = saveTaskForm; });
+  $('tDefault').onclick = (e) => { e.preventDefault(); $('tSubject').value = TASK_DEF_SUBJECT; $('tBody').value = TASK_DEF_BODY; saveTaskForm(); };
+  $('tSend').onclick = sendTasks;
+}
+function saveTaskForm() {
+  if (!$('tSubject')) return;
+  store.set('taskSubject', $('tSubject').value); store.set('taskLink', $('tLink').value.trim()); store.set('taskBody', $('tBody').value);
+}
+async function sendTasks() {
+  saveTaskForm();
+  const picked = taskState.items.filter((x, i) => { const cb = $('modal').querySelector(`#taskRows input[data-i="${i}"]`); return cb && cb.checked; });
+  if (!picked.length) { alert('보낼 학생을 골라 주세요.'); return; }
+  const list = picked.map((x) => `${x.num}번 ${x.name} · ${x.stage}`).join('\n');
+  if (!confirm(`아래 ${picked.length}명에게 과제 메일을 보냅니다.\n\n${list}\n\n계속할까요?`)) return;
+  const btn = $('tSend'); btn.disabled = true; btn.textContent = '보내는 중…';
+  try {
+    const r = await callApi('sendSlowTasks', [{ idToken: await user.getIdToken() }, taskReq(false, picked)]);
+    if (r && r.status === 'error') throw new Error(r.message);
+    alert(`보냈습니다. 보냄 ${r.sent}통 · 건너뜀 ${r.skipped}통` + (r.errors && r.errors.length ? '\n\n' + r.errors.join('\n') : ''));
+  } catch (e) { alert('보내지 못했습니다: ' + e.message); }
+  openTasks();   // '오늘 이미 보냄'으로 새로 표시
 }
 
 /* ---------- 도움 요청 ---------- */
