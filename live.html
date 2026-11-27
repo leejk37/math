@@ -142,6 +142,8 @@
   .tasklist th, .tasklist td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
   .tasklist th { background: #f8fafc; color: var(--sub); font-weight: 600; font-size: 13px; }
   .tasklist .gap { color: var(--x); font-weight: 700; }
+  .tasklist tr.tfirst td { border-top: 2px solid var(--line); }
+  .taskform label small { font-weight: 400; }
   .tasklist small { color: var(--sub); }
   .st-ok { color: var(--s100); font-size: 12px; } .st-no { color: var(--x); font-size: 12px; } .st-sent { color: var(--sub); font-size: 12px; }
   .taskform label { display: block; font-size: 13px; color: var(--sub); margin: 10px 0 3px; }
@@ -856,17 +858,22 @@ function openStudent(num, name) {
    대상: 같은 날·같은 영역·단계를 푼 학생마다 가장 최근 기록 1개씩으로 반평균을 내고(기록 창의 반평균과 같은 기준),
          그 단계를 '최소 인원' 이상 풀었을 때만, 반평균보다 '기준 초' 이상 느린 학생
    서버(과제메일.gs의 sendSlowTasks)가 선생님 계정을 확인하고, 학생명부의 이메일로 보내고, '과제메일' 탭에 기록.
-   같은 날·같은 학생·같은 단계는 한 번만 보냄 */
+   학생 한 명에게는 하루에 한 통: 걸린 단계가 여럿이면 한 메일에 목록({과제목록})으로 담음 (2026-11-28) */
 const TASK_DEF_SUBJECT = '[수학 과제] {단계} 연습하기';
+const TASK_DEF_LINE = '✔ {단계} 3번 더 연습하기';
 const TASK_DEF_BODY = `{이름} 학생, 안녕하세요.
 
-오늘 {영역} {단계}를 열심히 풀었어요.
-조금 더 빠르고 정확해질 수 있도록 과제를 보내요.
+오늘 수학 연산을 열심히 풀었어요.
+조금 더 빠르고 정확해질 수 있도록 오늘의 과제를 보내요.
 
-📌 과제: {단계} 3번 더 연습하기
+📌 오늘의 과제
+{과제목록}
+
 👉 바로가기: {링크}
 
 천천히, 정확하게 푸는 것부터 시작해 봐요. 화이팅!`;
+// 메일 글 저장 칸 (2026-11-28: 한 통에 묶으면서 기본 문구가 바뀌어 새 이름으로 저장)
+const TK = { subject: 'taskSubject2', body: 'taskBody2', line: 'taskLine', link: 'taskLink' };
 let taskState = null;
 
 function slowCandidates(gapSec, minN) {
@@ -885,12 +892,12 @@ function slowCandidates(gapSec, minN) {
       if (sec - avg >= gapSec) out.push({ num: n, op: g.op, stage: g.stage, sec, avg, gap: sec - avg, n: recs.length, score: r.score });
     });
   });
-  return out.sort((a, b) => Number(a.num) - Number(b.num) || b.gap - a.gap);
+  return out.sort((a, b) => Number(a.num) - Number(b.num) || b.gap - a.gap);   // 학생 안에서는 격차가 큰 단계 먼저
 }
-const taskKey = (x) => `${x.num}|${x.op}|${x.stage}`;
 function taskReq(dryRun, picked) {
   return { grade: $('grade').value, classNum: $('classNum').value, day: $('day').value, dryRun,
-    subject: store.get('taskSubject', TASK_DEF_SUBJECT), body: store.get('taskBody', TASK_DEF_BODY), link: store.get('taskLink', ''),
+    subject: store.get(TK.subject, TASK_DEF_SUBJECT), body: store.get(TK.body, TASK_DEF_BODY),
+    line: store.get(TK.line, TASK_DEF_LINE), link: store.get(TK.link, ''),
     items: (picked || taskState.items).map((x) => ({ num: x.num, name: x.name, op: x.op, stage: x.stage, sec: x.sec, avg: x.avg, n: x.n })) };
 }
 async function openTasks() {
@@ -914,26 +921,33 @@ async function openTasks() {
 }
 function renderTasks() {
   const s = taskState, showNames = $('showNames').checked;
+  const cnt = {}; s.items.forEach((x) => { cnt[x.num] = (cnt[x.num] || 0) + 1; });
+  // 학생마다 한 묶음: 번호·이름·메일 칸은 그 학생의 첫 줄에만 (메일은 학생당 한 통)
   const rows = s.items.map((x, i) => {
-    const inf = s.info && s.info[taskKey(x)];
+    const first = i === 0 || s.items[i - 1].num !== x.num;
+    const inf = s.info && s.info[x.num];
     const st = !inf ? '' : inf.sent ? '<span class="st-sent">오늘 이미 보냄</span>'
       : inf.email ? `<span class="st-ok">${esc(inf.email)}</span>` : '<span class="st-no">이메일 없음</span>';
     const can = inf && inf.email && !inf.sent;
-    return `<tr><td><input type="checkbox" data-i="${i}" ${can ? 'checked' : 'disabled'}></td>
-      <td><b>${esc(x.num)}번</b> ${showNames ? esc(x.name) : ''}</td><td>${esc(x.op)} · ${esc(x.stage)} <small>(${x.score}점)</small></td>
-      <td><b>${mmss(x.sec)}</b> <small>/ 반평균 ${mmss(x.avg)} (${x.n}명)</small> <span class="gap">+${mmss(x.gap)}</span></td><td>${st}</td></tr>`;
+    const span = cnt[x.num] > 1 ? ` rowspan="${cnt[x.num]}"` : '';
+    return `<tr class="${first ? 'tfirst' : ''}"><td><input type="checkbox" data-i="${i}" ${can ? 'checked' : 'disabled'}></td>
+      ${first ? `<td${span}><b>${esc(x.num)}번</b> ${showNames ? esc(x.name) : ''}${cnt[x.num] > 1 ? `<br><small>메일 1통 · ${cnt[x.num]}개 단계</small>` : ''}</td>` : ''}
+      <td>${esc(x.op)} · ${esc(x.stage)} <small>(${x.score}점)</small></td>
+      <td><b>${mmss(x.sec)}</b> <small>/ 반평균 ${mmss(x.avg)} (${x.n}명)</small> <span class="gap">+${mmss(x.gap)}</span></td>
+      ${first ? `<td${span}>${st}</td>` : ''}</tr>`;
   }).join('');
   $('modal').innerHTML = `<h3>📧 느린 학생 과제 보내기 <small style="color:var(--sub);font-weight:500">${esc($('grade').value)}학년 ${esc($('classNum').value)} · ${esc($('day').value)}</small></h3>
     <div class="taskopt">반평균보다 <input type="number" id="tGap" min="5" max="600" value="${s.gapSec}">초 이상 느림 ·
       그 단계를 <input type="number" id="tMinN" min="1" max="40" value="${s.minN}">명 이상 풀었을 때 <button id="tRefind">다시 찾기</button></div>
-    ${s.items.length ? `<table class="tasklist"><thead><tr><th></th><th>학생</th><th>영역·단계</th><th>걸린 시간 / 반평균 · 격차</th><th>메일</th></tr></thead>
+    ${s.items.length ? `<table class="tasklist"><thead><tr><th></th><th>학생</th><th>영역·단계</th><th>걸린 시간 / 반평균 · 격차</th><th>메일 (학생당 하루 1통)</th></tr></thead>
       <tbody id="taskRows">${rows}</tbody></table>` : '<div class="taskmsg">조건에 맞는 학생이 없습니다. 👍</div>'}
     ${s.msg ? `<div class="taskmsg${s.err ? ' err' : ''}">${esc(s.msg)}</div>` : ''}
     ${s.items.length ? `<div class="taskform">
-      <label>제목</label><input type="text" id="tSubject" value="${esc(store.get('taskSubject', TASK_DEF_SUBJECT))}">
-      <label>연습 화면 주소 (메일의 {링크} 자리에 들어감, 비우면 그 줄을 뺌)</label><input type="text" id="tLink" placeholder="https://..." value="${esc(store.get('taskLink', ''))}">
-      <label>내용</label><textarea id="tBody">${esc(store.get('taskBody', TASK_DEF_BODY))}</textarea>
-      <div class="hint">바뀌는 글자: {이름} {번호} {영역} {단계} {시간} {반평균} {링크} · <a href="#" id="tDefault">기본 문구로</a>${s.quota != null ? ` · 오늘 남은 메일 ${s.quota}통` : ''}</div>
+      <label>제목 <small>({단계}는 단계가 여럿이면 '나눗셈 50칸 외 2개'처럼 들어감)</small></label><input type="text" id="tSubject" value="${esc(store.get(TK.subject, TASK_DEF_SUBJECT))}">
+      <label>과제 한 줄 <small>(체크한 단계마다 한 줄씩 만들어 내용의 {과제목록} 자리에 들어감)</small></label><input type="text" id="tLine" value="${esc(store.get(TK.line, TASK_DEF_LINE))}">
+      <label>연습 화면 주소 (메일의 {링크} 자리에 들어감, 비우면 그 줄을 뺌)</label><input type="text" id="tLink" placeholder="https://..." value="${esc(store.get(TK.link, ''))}">
+      <label>내용</label><textarea id="tBody">${esc(store.get(TK.body, TASK_DEF_BODY))}</textarea>
+      <div class="hint">바뀌는 글자 — 내용·제목: {이름} {번호} {과제목록} {단계} {개수} {링크} · 과제 한 줄: {영역} {단계} {시간} {반평균} · <a href="#" id="tDefault">기본 문구로</a>${s.quota != null ? ` · 오늘 남은 메일 ${s.quota}통` : ''}</div>
     </div>` : ''}
     <div class="foot">${s.items.length ? `<button class="primary" id="tSend" ${s.info && !s.err ? '' : 'disabled'}>선택한 학생에게 보내기</button>` : ''}
       <button id="tClose">닫기</button></div>`;
@@ -945,28 +959,36 @@ function renderTasks() {
     openTasks();
   };
   if (!s.items.length) return;
-  const count = () => { const k = $('modal').querySelectorAll('#taskRows input:checked').length; const b = $('tSend'); if (b) b.textContent = `선택한 ${k}명에게 보내기`; };
+  const count = () => {
+    const p = pickedTasks(), k = new Set(p.map((x) => x.num)).size, b = $('tSend');
+    if (b) b.textContent = `선택한 ${k}명에게 보내기 (메일 ${k}통 · ${p.length}개 단계)`;
+  };
   $('modal').querySelectorAll('#taskRows input').forEach((cb) => { cb.onchange = count; });
   count();
-  ['tSubject', 'tLink', 'tBody'].forEach((id) => { $(id).onchange = saveTaskForm; });
-  $('tDefault').onclick = (e) => { e.preventDefault(); $('tSubject').value = TASK_DEF_SUBJECT; $('tBody').value = TASK_DEF_BODY; saveTaskForm(); };
+  ['tSubject', 'tLine', 'tLink', 'tBody'].forEach((id) => { $(id).onchange = saveTaskForm; });
+  $('tDefault').onclick = (e) => { e.preventDefault(); $('tSubject').value = TASK_DEF_SUBJECT; $('tLine').value = TASK_DEF_LINE; $('tBody').value = TASK_DEF_BODY; saveTaskForm(); };
   $('tSend').onclick = sendTasks;
+}
+function pickedTasks() {
+  return taskState.items.filter((x, i) => { const cb = $('modal').querySelector(`#taskRows input[data-i="${i}"]`); return cb && cb.checked; });
 }
 function saveTaskForm() {
   if (!$('tSubject')) return;
-  store.set('taskSubject', $('tSubject').value); store.set('taskLink', $('tLink').value.trim()); store.set('taskBody', $('tBody').value);
+  store.set(TK.subject, $('tSubject').value); store.set(TK.line, $('tLine').value); store.set(TK.link, $('tLink').value.trim()); store.set(TK.body, $('tBody').value);
 }
 async function sendTasks() {
   saveTaskForm();
-  const picked = taskState.items.filter((x, i) => { const cb = $('modal').querySelector(`#taskRows input[data-i="${i}"]`); return cb && cb.checked; });
+  const picked = pickedTasks();
   if (!picked.length) { alert('보낼 학생을 골라 주세요.'); return; }
-  const list = picked.map((x) => `${x.num}번 ${x.name} · ${x.stage}`).join('\n');
-  if (!confirm(`아래 ${picked.length}명에게 과제 메일을 보냅니다.\n\n${list}\n\n계속할까요?`)) return;
+  const by = {}; picked.forEach((x) => { (by[x.num] || (by[x.num] = { name: x.name, st: [] })).st.push(x.stage); });
+  const list = Object.entries(by).map(([n, v]) => `${n}번 ${v.name} · ${v.st.join(', ')}`).join('\n');
+  const k = Object.keys(by).length;
+  if (!confirm(`아래 ${k}명에게 과제 메일을 한 통씩 보냅니다.\n\n${list}\n\n계속할까요?`)) return;
   const btn = $('tSend'); btn.disabled = true; btn.textContent = '보내는 중…';
   try {
     const r = await callApi('sendSlowTasks', [{ idToken: await user.getIdToken() }, taskReq(false, picked)]);
     if (r && r.status === 'error') throw new Error(r.message);
-    alert(`보냈습니다. 보냄 ${r.sent}통 · 건너뜀 ${r.skipped}통` + (r.errors && r.errors.length ? '\n\n' + r.errors.join('\n') : ''));
+    alert(`보냈습니다. 보냄 ${r.sent}통 · 건너뜀 ${r.skipped}명` + (r.errors && r.errors.length ? '\n\n' + r.errors.join('\n') : ''));
   } catch (e) { alert('보내지 못했습니다: ' + e.message); }
   openTasks();   // '오늘 이미 보냄'으로 새로 표시
 }
