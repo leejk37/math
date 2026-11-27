@@ -126,7 +126,14 @@
 
   .dim { position: fixed; inset: 0; background: rgba(16,24,40,.45); display: none; align-items: center; justify-content: center; z-index: 20; padding: 16px; }
   .dim.show { display: flex; }
-  .modal { background: #fff; border-radius: 14px; padding: 18px 20px; width: min(640px, 100%); max-height: 85vh; overflow: auto; }
+  .modal { background: #fff; border-radius: 14px; padding: 18px 20px; width: min(760px, 100%); max-height: 85vh; overflow: auto; }
+  /* 학생 기록 창의 걸린 시간 · 반평균 · 격차 */
+  .tva { display: flex; flex-direction: column; line-height: 1.3; white-space: nowrap; }
+  .tva b { font-size: 15px; }
+  .tva-avg { font-size: 12px; color: var(--sub); }
+  .tva-gap { font-size: 12px; font-weight: 700; color: var(--sub); }
+  .tva.fast .tva-gap { color: var(--s100); }
+  .tva.late b, .tva.late .tva-gap { color: var(--x); }
   .modal h3 { margin: 0 0 10px; }
   .foot { margin-top: 30px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
   .foot button { font-size: 13px; color: var(--sub); }
@@ -794,12 +801,35 @@ async function jumpDay(dir) {
   } finally { updateDayUi(); if (dir < 0) btn.disabled = false; }
 }
 
+/* 학생 기록 창의 반평균 시간: 같은 날·같은 영역·단계(예: 100칸 '나눗셈 50칸', 구구단 '7단')를
+   푼 학생마다 가장 최근 기록 1개씩의 걸린 시간 평균 (카드의 '반 평균'과 같은 기준, 0번 테스트 계정 제외) */
+function classAvgSec() {
+  const latest = {};   // 영역|단계 -> { 번호: 걸린 초 }
+  Object.keys(data).filter((n) => String(n) !== '0').forEach((n) => attemptsOf(n).forEach((r) => {
+    const k = r.op + '|' + shortLevel(r.level);
+    (latest[k] || (latest[k] = {}))[n] = Number(r.sec) || 0;   // 시간 순이라 마지막(최근) 기록이 남음
+  }));
+  const out = {};
+  Object.entries(latest).forEach(([k, m]) => { const v = Object.values(m); out[k] = { n: v.length, sec: v.reduce((a, b) => a + b, 0) / v.length }; });
+  return out;
+}
+// 걸린 시간 칸: 본인 시간 · 반평균 · 격차 (반평균보다 30초 이상 늦으면 붉은색)
+function timeVsAvg(r, avgs) {
+  const my = Number(r.sec) || 0, a = avgs[r.op + '|' + shortLevel(r.level)];
+  if (!a) return `<b>${mmss(my)}</b>`;
+  const avg = Math.round(a.sec), diff = my - avg, late = diff >= 30;
+  const gap = diff > 0 ? '+' + mmss(diff) : diff < 0 ? '−' + mmss(-diff) : '±0:00';
+  return `<div class="tva${late ? ' late' : diff < 0 ? ' fast' : ''}" title="반 ${a.n}명(학생마다 최근 기록)의 평균과 비교">
+    <b>${mmss(my)}</b><span class="tva-avg">반평균 ${mmss(avg)}</span><span class="tva-gap">${gap}</span></div>`;
+}
+
 function openStudent(num, name) {
   const list = attemptsOf(num).slice().reverse();
+  const avgs = classAvgSec();
   $('modal').innerHTML = `<h3>${esc(num)}번 ${esc(name)} <small style="color:var(--sub);font-weight:500">${esc($('day').value)} · ${list.length}회</small></h3>
-    <table class="feed"><thead><tr><th>시각</th><th>영역·단계</th><th>점수</th><th>문항</th><th>걸린 시간</th></tr></thead><tbody>
+    <table class="feed"><thead><tr><th>시각</th><th>영역·단계</th><th>점수</th><th>문항</th><th>걸린 시간 <small style="font-weight:500">· 반평균 · 격차</small></th></tr></thead><tbody>
     ${list.map((r) => `<tr><td>${clock(r.at)}</td><td title="${esc(r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td>
-      <td><div class="marks" style="margin:0">${marks(r.results, r)}</div>${guKey(r)}</td><td>${mmss(r.sec)}</td></tr>`).join('')}
+      <td><div class="marks" style="margin:0">${marks(r.results, r)}</div>${guKey(r)}</td><td>${timeVsAvg(r, avgs)}</td></tr>`).join('')}
     </tbody></table><div class="foot"><button onclick="document.getElementById('dim').classList.remove('show')">닫기</button></div>`;
   $('dim').classList.add('show');
 }
