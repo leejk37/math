@@ -128,12 +128,17 @@
   .dim.show { display: flex; }
   .modal { background: #fff; border-radius: 14px; padding: 18px 20px; width: min(760px, 100%); max-height: 85vh; overflow: auto; }
   /* 학생 기록 창의 걸린 시간 · 반평균 · 격차 */
-  .tva { display: flex; flex-direction: column; line-height: 1.3; white-space: nowrap; }
+  /* 첫째 줄: 걸린 시간 · 반평균, 둘째 줄: 격차 (초록=반평균보다 빠름, 주황=30초 안으로 늦음, 빨강=30초 이상 늦음) */
+  .tva { display: flex; flex-direction: column; line-height: 1.35; white-space: nowrap; }
   .tva b { font-size: 15px; }
-  .tva-avg { font-size: 12px; color: var(--sub); }
+  .tva-avg { font-size: 12px; color: var(--sub); margin-left: 6px; }
   .tva-gap { font-size: 12px; font-weight: 700; color: var(--sub); }
   .tva.fast .tva-gap { color: var(--s100); }
+  .tva.near .tva-gap { color: #f79009; }
   .tva.late b, .tva.late .tva-gap { color: var(--x); }
+  /* 학생 기록 창: 영역·단계와 문항을 두 줄로 */
+  .two { display: flex; flex-direction: column; line-height: 1.35; }
+  .two small { font-size: 12px; color: var(--sub); }
   /* 느린 학생 과제 메일 */
   .taskopt { display: flex; gap: 8px 14px; flex-wrap: wrap; align-items: center; font-size: 14px; color: var(--sub); margin-bottom: 6px; }
   .taskopt input[type=number] { width: 64px; font: inherit; font-size: 14px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; }
@@ -833,23 +838,31 @@ function classAvgSec() {
   Object.entries(latest).forEach(([k, m]) => { const v = Object.values(m); out[k] = { n: v.length, sec: v.reduce((a, b) => a + b, 0) / v.length }; });
   return out;
 }
-// 걸린 시간 칸: 본인 시간 · 반평균 · 격차 (반평균보다 30초 이상 늦으면 붉은색)
+// 걸린 시간 칸: 첫째 줄 본인 시간 · 반평균, 둘째 줄 격차
+// 격차 색: 반평균 이하=초록, 30초 안으로 늦음=주황, 30초 이상 늦음=빨강
 function timeVsAvg(r, avgs) {
   const my = Number(r.sec) || 0, a = avgs[r.op + '|' + shortLevel(r.level)];
   if (!a) return `<b>${mmss(my)}</b>`;
-  const avg = Math.round(a.sec), diff = my - avg, late = diff >= 30;
+  const avg = Math.round(a.sec), diff = my - avg;
+  const cls = diff >= 30 ? 'late' : diff > 0 ? 'near' : 'fast';
   const gap = diff > 0 ? '+' + mmss(diff) : diff < 0 ? '−' + mmss(-diff) : '±0:00';
-  return `<div class="tva${late ? ' late' : diff < 0 ? ' fast' : ''}" title="반 ${a.n}명(학생마다 최근 기록)의 평균과 비교">
-    <b>${mmss(my)}</b><span class="tva-avg">반평균 ${mmss(avg)}</span><span class="tva-gap">${gap}</span></div>`;
+  return `<div class="tva ${cls}" title="반 ${a.n}명(학생마다 최근 기록)의 평균과 비교">
+    <div><b>${mmss(my)}</b><span class="tva-avg">반평균 ${mmss(avg)}</span></div><span class="tva-gap">${gap}</span></div>`;
+}
+// 학생 기록 창의 문항 칸: 100칸은 첫째 줄 "정답/전체", 둘째 줄 틀린 셈 / 나머지는 O·X 표시
+function marksTwo(r) {
+  if (r.op !== '100칸 계산') return `<div class="marks" style="margin:0">${marks(r.results, r)}</div>${guKey(r)}`;
+  const p = String(r.level || '').split(' · '), wrong = p.slice(2).join(' · ');
+  return `<div class="two"><b>${esc(p[1] || r.score)}</b>${wrong ? `<small>${esc(wrong)}</small>` : ''}</div>`;
 }
 
 function openStudent(num, name) {
   const list = attemptsOf(num).slice().reverse();
   const avgs = classAvgSec();
   $('modal').innerHTML = `<h3>${esc(num)}번 ${esc(name)} <small style="color:var(--sub);font-weight:500">${esc($('day').value)} · ${list.length}회</small></h3>
-    <table class="feed"><thead><tr><th>시각</th><th>영역·단계</th><th>점수</th><th>문항</th><th>걸린 시간 <small style="font-weight:500">· 반평균 · 격차</small></th></tr></thead><tbody>
-    ${list.map((r) => `<tr><td>${clock(r.at)}</td><td title="${esc(r.level)}">${esc(r.op)} · ${esc(shortLevel(r.level))}</td><td><b>${r.score}</b></td>
-      <td><div class="marks" style="margin:0">${marks(r.results, r)}</div>${guKey(r)}</td><td>${timeVsAvg(r, avgs)}</td></tr>`).join('')}
+    <table class="feed"><thead><tr><th>시각</th><th>영역·단계</th><th>문항</th><th>걸린 시간 <small style="font-weight:500">· 반평균 · 격차</small></th></tr></thead><tbody>
+    ${list.map((r) => `<tr><td>${clock(r.at)}</td><td title="${esc(r.level)}"><div class="two">${esc(r.op)}<small>${esc(shortLevel(r.level))}</small></div></td>
+      <td title="점수 ${r.score}">${marksTwo(r)}</td><td>${timeVsAvg(r, avgs)}</td></tr>`).join('')}
     </tbody></table><div class="foot"><button onclick="document.getElementById('dim').classList.remove('show')">닫기</button></div>`;
   $('dim').classList.add('show');
 }
